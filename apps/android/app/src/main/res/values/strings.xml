@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Owns: the phone-use texts Android shows in its Accessibility settings. Never: app_name / app_label (styles.xml). -->
+<resources>
+    <string name="use_label" translatable="false">Use this phone</string>
+    <string name="use_summary" translatable="false">Your Autark AI can operate this phone when you ask it to</string>
+    <string name="use_description" translatable="false">Lets the AI of your Autark company read the screen and tap, swipe and type on this phone – only when it is asked to do something here. While it acts, a bubble shows at the top: tap it to stop and pause for 30 seconds. Each app asks you once before the AI uses it. Nothing is read in the background.</string>
+</resources>

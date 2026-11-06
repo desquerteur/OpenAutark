@@ -1,0 +1,31 @@
+/* Settings › Calendar (B-041 §4–§5, src/ui/settings/calendar-*.tsx, track G): the My day
+   rows and the connected calendars; groups and rows are settings.css's (.set-group, .set-row). Here only the calendar
+   link's small form, the "Use your own Google app" dialog's hint and fields, the text buttons' optical end at the
+   controls' edge and the colour of a sync problem.
+   Owns: `calendar-settings*` and `calendar-google-*` classes. Never: the shared settings controls (settings.css), colors outside tokens.css. */
+
+.calendar-settings { min-width: 0; }
+
+.calendar-settings-problem { color: var(--danger); }
+
+/* One row – link, name, button – across the whole group; it wraps only in a narrow group. */
+.set-inline.wrap.calendar-settings-form { flex: 1 1 100%; flex-wrap: nowrap; justify-content: flex-start; width: 100%; }
+.calendar-settings-form .set-input { min-width: 0; }
+.calendar-settings-form .set-input.wide { flex: 1 1 auto; width: auto; }
+.calendar-settings-form .set-input:not(.wide) { flex: 0 1 180px; width: 180px; }
+.calendar-settings-form .button { flex: none; min-width: 64px; } /* Add keeps one width: the fields end at one x */
+/* a quiet text button at a row's or the group head's end (Sync now, Remove): its text ends on the controls' edge */
+.calendar-settings .set-row-control > .set-inline > .button.ghost:last-child { margin-right: -12px; }
+
+/* A control that cannot be used here yet (Connect without a Google client ID) reads as such. */
+.calendar-settings .set-row .button:disabled { border-color: transparent; background: var(--hover); color: var(--muted); opacity: 1; cursor: not-allowed; }
+
+/* A narrow group (phone, 640 px window): each field takes the whole line. */
+@container (max-width: 520px) {
+  .set-inline.wrap.calendar-settings-form { flex-wrap: wrap; }
+  .calendar-settings-form .set-input.wide, .calendar-settings-form .set-input:not(.wide) { flex: 1 1 100%; width: 100%; }
+}
+
+/* "Use your own Google app" (a dialog, calendar-sources.tsx): where to find the client ID above its two fields. */
+.calendar-google-hint { margin: 0 0 14px; font-size: 13px; }
+.calendar-google-app .input + .field-label { margin-top: 14px; }

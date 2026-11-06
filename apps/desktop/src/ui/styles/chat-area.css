@@ -1,0 +1,26 @@
+/* A chat's area (chat/ChatArea.tsx): the first part of the chat column, right under the chat header row – one workspace
+   surface on the chat's space. Open it has one height, a share of the column (never of its content), so the header
+   cells and the composer never move and the message list keeps its newest line in view; in full view
+   (workspace/full-view.ts) – and on the phone (mobile.css) – it takes the column above the composer, the message list
+   stays mounted under it. Its look belongs to the chat, not to the frame: the chat's surface colour, no divider at its side, rounded
+   tabs, one 1 px line to the messages – the person's own pane at the frame's right keeps its Chrome look
+   (workspace-browser.css). Hover and the shown tab change colour only.
+   Owns: `chat-area`, `area-full`. Never: the strip's measuring (strip-slots.ts) or native geometry (native-surface.ts). */
+
+.chat-area {
+  position: relative; display: flex; flex: none; flex-direction: column; height: clamp(220px, 48%, 100% - 240px); min-height: 0;
+  border-bottom: 1px solid var(--line); background: var(--surface);
+}
+.chat-area > .workspace-pane { flex: 1 1 auto; height: auto; min-height: 0; }
+/* the shown tab stays inside the area; the address field's suggestions may reach over the messages */
+.chat-area > .workspace-pane > :last-child { min-height: 0; overflow: hidden; }
+.chat-column.area-full > .chat-area { flex: 1 1 auto; height: auto; }
+.chat-column.area-full > .chat-area ~ .message-scroller { display: none; }
+
+/* the strip: the chat's colour and rounded tabs in the strip's middle (no Chrome tab growing into the row under it) */
+.chat-area .browser-strip, .chat-area .browser-strip-tabs { align-items: center; }
+.chat-area .browser-strip { background: var(--surface); box-shadow: none; }
+.chat-area .browser-strip-tab { border-radius: 16px; }
+.chat-area .browser-strip-choose { border-radius: 16px 0 0 16px; }
+.chat-area .browser-strip-tab:hover { background: var(--tab-hover); }
+.chat-area .browser-strip-tab.selected { background: var(--selected); box-shadow: none; }

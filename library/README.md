@@ -35,8 +35,9 @@ An agent publishes with `library.publish` (the setting `library.publish`, on by 
 2. It opens a pull request to this repository with the person's own GitHub sign-in (through a fork when the account
    cannot push here). Each pull request changes one entry.
 3. The workflow [`library-automerge.yml`](../.github/workflows/library-automerge.yml) merges a pull request by itself
-   when every changed file is a Markdown file under `library/<kind>/<name>/` and its secret scan (a pattern check, then
-   gitleaks) finds nothing. Anything else waits for a maintainer.
+   when it only adds new entries – `library/<kind>/<name>/SKILL.md` in a folder that does not exist yet – and its
+   secret scan (a pattern check, then gitleaks) finds nothing. A change to an existing entry, and anything else, waits
+   for a maintainer.
 
 An entry that should not be here – a secret, personal data, something harmful – is reported as described in
 [SECURITY.md](../SECURITY.md) and removed.

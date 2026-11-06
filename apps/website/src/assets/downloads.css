@@ -1,0 +1,66 @@
+/* Owns: the downloads rows (PC first, then phone), the platform pages, /pair/ and the download overview.
+   Third of the four files build.mjs joins into assets/site.css.
+   Never: tokens or shared components (styles.css), home sections (home.css), motion (pages.css). */
+
+/* ───────── downloads: PC first, then phone ───────── */
+.get { padding: clamp(40px, 6vw, 72px) 0 0; }
+.get + .section--tight { padding-top: 0; }
+.get__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px 24px; margin-bottom: 28px; }
+.plats { display: grid; gap: 14px; }
+.plats__row { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 14px 22px; align-items: center; padding-top: 14px; border-top: 1px solid var(--line); }
+.plats__kind { font: 500 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.plats__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .plats__row { grid-template-columns: 1fr; } .plats__list { grid-template-columns: 1fr; } }
+.plat {
+  position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr) 18px; grid-template-rows: auto auto; gap: 2px 14px; align-items: center;
+  padding: 16px 18px; border-radius: var(--r); border: 1px solid var(--line-2); background: var(--white);
+  transition: transform .45s var(--ease), border-color .3s var(--ease), box-shadow .45s var(--ease), background-color .3s;
+}
+.plat__ic { grid-row: 1 / span 2; width: 26px; height: 26px; transition: transform .6s cubic-bezier(.3, 1.6, .5, 1), color .3s; }
+.plat__os { font-size: 19px; letter-spacing: -.025em; line-height: 1.15; font-weight: 500; }
+.plat__meta { grid-column: 2; font: 500 11px/1.4 var(--mono); letter-spacing: .03em; color: var(--ink-3); }
+.plat__go { grid-column: 3; grid-row: 1 / span 2; width: 18px; height: 18px; color: var(--ink-3); transition: transform .4s var(--ease), color .3s; }
+.plat:hover { transform: translateY(-3px); border-color: var(--ink); box-shadow: 0 18px 40px -26px rgba(11, 11, 12, .45); }
+.plat:hover .plat__ic { transform: rotate(-8deg) scale(1.12); color: var(--signal); }
+.plat:hover .plat__go { transform: translateX(4px); color: var(--ink); }
+.plat.is-you { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.plat.is-you::after { content: 'Your device'; position: absolute; right: 14px; top: -9px; font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; background: var(--ink); color: var(--white); }
+.plat[aria-current='page'] { background: var(--paper); border-style: dashed; }
+.plat[aria-current='page']:hover { transform: none; box-shadow: none; }
+.section--paper2 .plat { background: var(--paper); }
+/* reveal: the tiles of a row pop in one after another */
+.js .plats__row[data-reveal] .plat { opacity: 0; transform: translateY(14px) scale(.98); transition: opacity .7s var(--ease), transform .8s cubic-bezier(.3, 1.4, .5, 1), border-color .3s, box-shadow .45s; }
+.js .plats__row[data-reveal] .plat:nth-child(2) { transition-delay: 90ms; }
+.js .plats__row[data-reveal] .plat:nth-child(3) { transition-delay: 180ms; }
+.js .plats__row.in .plat { opacity: 1; transform: none; }
+.js .plats__row.in .plat:hover { transform: translateY(-3px); transition-delay: 0s; }
+.js .plats__row.in .plat[aria-current='page']:hover { transform: none; }
+
+/* platform pages */
+.plat-hero__btn .ic { transition: transform .5s cubic-bezier(.3, 1.6, .5, 1); }
+.plat-hero__btn:hover .ic { transform: translateY(3px); }
+.plat-facts { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--line); }
+.plat-facts div { padding: 16px 18px 16px 0; display: grid; gap: 6px; min-width: 0; }
+.plat-facts div + div { padding-left: 18px; border-left: 1px solid var(--line); }
+.plat-facts dt { font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.plat-facts dd { margin: 0; font-size: 16px; letter-spacing: -.015em; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .plat-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .plat-facts div:nth-child(3) { padding-left: 0; border-left: 0; } .plat-facts div:nth-child(n+3) { border-top: 1px solid var(--line); } }
+
+/* /pair/ */
+.pair { display: grid; gap: 12px; justify-items: start; padding: 26px; border-radius: var(--r-lg); border: 1px solid var(--line-2); background: var(--white); }
+.pair__id { font: 400 18px/1.1 var(--mono); letter-spacing: .04em; color: var(--ink-3); overflow-wrap: anywhere; }
+.pair__id.is-on { color: var(--ink); font-size: clamp(30px, 6vw, 56px); animation: pop .7s cubic-bezier(.3, 1.5, .5, 1) both; }
+@keyframes pop { from { opacity: 0; transform: scale(.92); } }
+
+/* ───────── download ───────── */
+.dl { position: relative; overflow: hidden; }
+.dl__big { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+@media (max-width: 960px) { .dl__big { grid-template-columns: 1fr; } }
+.dl__title { font-size: clamp(56px, 10vw, 168px); line-height: .88; letter-spacing: -.06em; }
+.dl__main { display: grid; gap: 16px; justify-items: start; }
+.dl__facts { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 500 12px/1.5 var(--mono); color: var(--ink-3); }
+.dark .dl__facts { color: var(--moon-3); }
+.dl__other { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14.5px; }
+.dl__other a { display: inline-flex; align-items: center; gap: 7px; opacity: .8; }
+.dl__other a:hover { opacity: 1; }
+.dl__other .ic { width: 16px; height: 16px; }

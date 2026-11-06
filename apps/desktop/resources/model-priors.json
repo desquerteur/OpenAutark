@@ -1,0 +1,194 @@
+{
+  "$comment": "Curated routing priors of the Autark project: OUR OWN judgement (public evidence + user experience, state 2026-11-06). NOT Artificial Analysis data. strengths: category -> prior in [-1, 1]. smarts: how capable the model is overall, 0..100, curated from public rankings (LMArena, Artificial Analysis) and our own use – a newer, cheaper model that is as smart ranks above an older, pricier one (Fable 5.1 and GPT-6 Astra sit below Opus 5.5 and GPT-6.1 Sol). relCost: relative marginal price 0..1 – derived from the list prices when both are given ((3 x input + output) / 4 per 1M, $20 = 1.0), else set by hand; subscriptions are discounted by the router while quota remains. First matching entry wins; 'match' is a provider model id or a glob with '*'.",
+  "$prices": "Optional per model: priceInputPerM / priceOutputPerM = API list price in USD per 1M input/output tokens; priceCachedInputPerM = the list price per 1M cached input tokens (cache reads), for the cached part of the input the engine reports. Used to book pay-per-use turns whose provider reported no cost (runtime/models/pricing.ts) and shown to the agents (models.list, the models line of 'My environment'). Only verified list prices; leave them out when unsure (a keyless daily OpenRouter price list fills missing ones, runtime/models/price-feed.ts; an unpriced turn is booked with amount 0 and flagged, never guessed).",
+  "version": "2026-11-06",
+  "categories": {
+    "chat": "Everyday conversation and quick answers",
+    "manager-planner": "Planning, delegation, review and final judgement",
+    "personal-assistant": "Secretary work: calendar, mail, errands, reminders",
+    "video-animation": "Video editing, animation code (Remotion), timing and pacing",
+    "frontend-ui": "UI, frontend and visual design",
+    "computer-use": "Operating desktop apps and browsers through the GUI",
+    "research": "Research, document QA, comparisons with sources",
+    "writing": "Long-form writing, scripts, brand voice (German and English)",
+    "social-media": "Posts, captions, comment replies, community work",
+    "business-workflows": "Finance, bookkeeping, business processes and spreadsheets",
+    "coding": "Software engineering",
+    "cheap-chat": "Summaries, extraction, compaction, small helper calls",
+    "decision": "Typed decisions (routing, guardian, widget choice)",
+    "embeddings": "Vector embeddings for search"
+  },
+  "models": [
+    {
+      "match": "claude-opus-5-5*", "name": "Claude Opus 5.5", "tier": "frontier", "smarts": 94, "priceInputPerM": 4, "priceOutputPerM": 20,
+      "caps": { "vision": true, "tools": true, "computerUse": true, "structuredOutput": true, "contextTokens": 1000000 },
+      "efforts": ["low", "medium", "high", "xhigh", "max"], "defaultEffort": "high",
+      "strengths": {
+        "video-animation": 0.9, "frontend-ui": 0.8, "computer-use": 0.8, "writing": 0.8, "manager-planner": 0.8,
+        "coding": 0.7, "research": 0.6, "chat": 0.4, "personal-assistant": 0.6,
+        "social-media": 0.6, "business-workflows": 0.5, "cheap-chat": -0.6, "decision": -0.5
+      },
+      "note": "The smartest Claude model now: best animation, video pacing, UI taste, writing and computer use in public comparisons."
+    },
+    {
+      "match": "claude-fable-5-1*", "name": "Claude Fable 5.1", "tier": "frontier", "smarts": 92, "priceInputPerM": 10, "priceOutputPerM": 50,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true, "contextTokens": 1000000 },
+      "efforts": ["low", "medium", "high", "xhigh", "max"], "defaultEffort": "high",
+      "strengths": {
+        "writing": 0.8, "manager-planner": 0.6, "research": 0.5, "coding": 0.4, "video-animation": 0.5,
+        "frontend-ui": 0.5, "chat": 0.2, "cheap-chat": -0.8, "decision": -0.7
+      },
+      "note": "Older and 2.5x the price of Opus 5.5, not smarter now; a distinct writing voice when a text asks for it."
+    },
+    {
+      "match": "claude-sonnet-5-5*", "name": "Claude Sonnet 5.5", "tier": "strong", "smarts": 88, "priceInputPerM": 2, "priceOutputPerM": 10,
+      "caps": { "vision": true, "tools": true, "computerUse": true, "structuredOutput": true, "contextTokens": 1000000 },
+      "efforts": ["low", "medium", "high", "xhigh", "max"], "defaultEffort": "high",
+      "strengths": {
+        "coding": 0.8, "frontend-ui": 0.6, "video-animation": 0.6, "writing": 0.6, "computer-use": 0.5,
+        "research": 0.5, "manager-planner": 0.5, "social-media": 0.5,
+        "personal-assistant": 0.5, "business-workflows": 0.4, "chat": 0.5, "cheap-chat": -0.2
+      },
+      "note": "Cost-efficient Anthropic coding point (xhigh)."
+    },
+    {
+      "match": "claude-haiku-5-5*", "name": "Claude Haiku 5.5", "tier": "small", "smarts": 74, "priceInputPerM": 0.1, "priceOutputPerM": 0.5,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true, "contextTokens": 1000000 },
+      "efforts": ["low", "medium", "high", "xhigh", "max"], "defaultEffort": "low",
+      "strengths": {
+        "cheap-chat": 0.8, "chat": 0.4, "decision": 0.5, "personal-assistant": 0.3, "social-media": 0.2,
+        "coding": -0.2, "video-animation": -0.5, "frontend-ui": -0.3, "manager-planner": -0.3
+      },
+      "note": "Fast and cheap: summaries, extraction, compaction, helper calls."
+    },
+    {
+      "match": "gpt-6.1-sol*", "name": "GPT-6.1 Sol", "tier": "frontier", "relCost": 0.3, "smarts": 93,
+      "caps": { "vision": true, "tools": true, "computerUse": true, "structuredOutput": true, "contextTokens": 1050000 },
+      "efforts": ["low", "medium", "high", "xhigh", "max"], "defaultEffort": "medium",
+      "strengths": {
+        "coding": 0.8, "research": 0.8, "business-workflows": 0.7, "chat": 0.4, "manager-planner": 0.4,
+        "computer-use": 0.5, "writing": 0.3, "frontend-ui": 0.1, "social-media": 0.3, "personal-assistant": 0.4,
+        "video-animation": -0.7, "cheap-chat": -0.3
+      },
+      "note": "Strong, cheap routine coding and research; the user reports it is bad at video editing and animation."
+    },
+    {
+      "match": "gpt-6-astra*", "name": "GPT-6 Astra", "tier": "frontier", "smarts": 92, "priceInputPerM": 10, "priceOutputPerM": 50,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true, "contextTokens": 1050000 },
+      "efforts": ["low", "medium", "high", "xhigh", "max"], "defaultEffort": "high",
+      "strengths": {
+        "coding": 0.6, "manager-planner": 0.4, "research": 0.6,
+        "writing": 0.3, "video-animation": -0.7, "cheap-chat": -0.8, "decision": -0.6
+      },
+      "note": "Over 3x the price of GPT-6.1 Sol and not smarter now."
+    },
+    {
+      "match": "gpt-6.1-terra*", "name": "GPT-6.1 Terra", "tier": "strong", "smarts": 86, "priceInputPerM": 1, "priceOutputPerM": 5, "priceCachedInputPerM": 0.05,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true },
+      "efforts": ["low", "medium", "high", "xhigh"], "defaultEffort": "medium",
+      "strengths": { "coding": 0.6, "research": 0.5, "business-workflows": 0.5, "chat": 0.4, "writing": 0.3, "cheap-chat": 0.2, "video-animation": -0.6 },
+      "note": "Cheap strong routine model."
+    },
+    {
+      "match": "gpt-6-sol*", "name": "GPT-6 Sol", "tier": "strong", "relCost": 0.25, "smarts": 88,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true },
+      "efforts": ["low", "medium", "high", "xhigh"], "defaultEffort": "medium",
+      "strengths": { "coding": 0.6, "research": 0.6, "business-workflows": 0.5, "chat": 0.3, "video-animation": -0.6, "frontend-ui": -0.1 }
+    },
+    {
+      "match": "gpt-6-luna*", "name": "GPT-6 Luna", "tier": "small", "relCost": 0.03, "smarts": 72,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true },
+      "efforts": ["none", "low", "medium", "high", "xhigh", "max"], "defaultEffort": "low",
+      "strengths": {
+        "cheap-chat": 0.8, "decision": 0.6, "chat": 0.4, "personal-assistant": 0.3, "coding": -0.1,
+        "video-animation": -0.6, "manager-planner": -0.3
+      }
+    },
+    {
+      "match": "gemini-4-argon*", "name": "Gemini 4 Argon", "tier": "frontier", "relCost": 0.3, "smarts": 90,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true, "contextTokens": 1000000 },
+      "strengths": { "research": 0.6, "coding": 0.5, "video-animation": 0.2, "writing": 0.4, "cheap-chat": -0.4 },
+      "note": "Native video input: good for footage understanding."
+    },
+    {
+      "match": "gemini-3.8-flash*", "name": "Gemini 3.8 Flash", "tier": "strong", "relCost": 0.08, "smarts": 82,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true },
+      "strengths": { "cheap-chat": 0.5, "coding": 0.4, "research": 0.4, "chat": 0.4 }
+    },
+    {
+      "match": "gemini-3.5-flash-lite*", "name": "Gemini 3.5 Flash-Lite", "tier": "small", "relCost": 0.02, "smarts": 68,
+      "caps": { "vision": true, "tools": true, "structuredOutput": true },
+      "strengths": { "cheap-chat": 0.6, "decision": 0.3, "chat": 0.2, "video-animation": -0.6 }
+    },
+    {
+      "match": "grok-4.7*", "name": "Grok 4.7", "tier": "strong", "relCost": 0.3, "smarts": 85,
+      "caps": { "tools": true, "structuredOutput": true },
+      "strengths": { "research": 0.3, "social-media": 0.3, "chat": 0.3 }
+    },
+    {
+      "match": "deepseek-v4*", "name": "DeepSeek V4", "tier": "small", "relCost": 0.02, "smarts": 80,
+      "caps": { "tools": true, "structuredOutput": true },
+      "strengths": { "cheap-chat": 0.6, "coding": 0.3, "video-animation": -0.6 }
+    },
+    {
+      "match": "nimble*", "name": "nimble (decision)", "tier": "local", "relCost": 0,
+      "strengths": { "decision": 0.9 }
+    },
+    {
+      "match": "tev1*", "name": "tev1 (decision)", "tier": "local", "relCost": 0,
+      "strengths": { "decision": 0.8 }
+    },
+    {
+      "match": "jev*", "name": "Jev (decision)", "tier": "small", "relCost": 0,
+      "strengths": { "decision": 0.9 }
+    },
+    {
+      "match": "text-embedding-3-small", "name": "OpenAI text-embedding-3-small", "tier": "small", "relCost": 0, "priceInputPerM": 0.02,
+      "strengths": { "embeddings": 0.9, "chat": -1, "cheap-chat": -1 }
+    },
+    {
+      "match": "text-embedding-3-large", "name": "OpenAI text-embedding-3-large", "tier": "small", "relCost": 0, "priceInputPerM": 0.13,
+      "strengths": { "embeddings": 0.9, "chat": -1, "cheap-chat": -1 }
+    },
+    {
+      "match": "*embed*", "name": "Embedding model", "tier": "local", "relCost": 0,
+      "strengths": { "embeddings": 0.9, "chat": -1, "cheap-chat": -1 }
+    },
+    {
+      "match": "bge-m3*", "name": "BGE-M3", "tier": "local", "relCost": 0,
+      "strengths": { "embeddings": 0.9, "chat": -1, "cheap-chat": -1 }
+    },
+    {
+      "match": "gemma4*", "tier": "local", "relCost": 0,
+      "caps": { "vision": true, "tools": true },
+      "strengths": { "cheap-chat": 0.3, "decision": 0.2, "chat": 0.1, "video-animation": -0.8, "manager-planner": -0.6 }
+    },
+    {
+      "match": "qwen3.8*", "tier": "local", "relCost": 0,
+      "caps": { "vision": true, "tools": true },
+      "strengths": { "cheap-chat": 0.4, "coding": -0.2, "chat": 0.2, "video-animation": -0.8, "manager-planner": -0.5 }
+    },
+    {
+      "match": "granite4*", "tier": "local", "relCost": 0,
+      "caps": { "tools": true },
+      "strengths": { "cheap-chat": 0.3, "decision": 0.2, "video-animation": -0.8 }
+    },
+    {
+      "match": "gpt-oss*", "tier": "local", "relCost": 0,
+      "caps": { "tools": true },
+      "strengths": { "cheap-chat": 0.3, "coding": -0.3, "video-animation": -0.8 }
+    },
+    {
+      "match": "gemini-cli:default", "tier": "strong", "relCost": 0.3,
+      "caps": { "tools": true },
+      "strengths": { "research": 0.5, "coding": 0.4, "writing": 0.3, "chat": 0.3, "cheap-chat": -0.2 },
+      "note": "Gemini CLI plan (PR8) when its agent offers no model list: the model Gemini CLI picks itself. Models it lists by id use the Gemini entries above."
+    },
+    {
+      "match": "copilot:default", "tier": "strong", "relCost": 0.3,
+      "caps": { "tools": true },
+      "strengths": { "coding": 0.6, "frontend-ui": 0.4, "chat": 0.2, "video-animation": -0.5 },
+      "note": "Copilot CLI plan (PR8) when its agent offers no model list: the model Copilot CLI picks itself."
+    }
+  ]
+}

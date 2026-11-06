@@ -1,0 +1,18 @@
+/* People of the organisation (F-52): Team › People rows and dialogs, a person's details and history line.
+   Owns: these layouts only (colors and radii come from tokens.css). Never: global rules. */
+
+.person-scopes { display: flex; flex-direction: column; gap: 6px; margin: 14px 0 0; padding: 0; border: 0; min-width: 0; }
+.person-scopes legend { padding: 0; }
+.check-row { display: flex; align-items: center; gap: 8px; min-height: 28px; color: var(--text); font-size: 14px; }
+.check-row input { flex: none; width: 16px; height: 16px; margin: 0; }
+.person-manager.select-button { width: 100%; min-height: 40px; padding: 8px 12px; font-size: 14px; }
+.person-list { display: flex; flex-direction: column; margin: 0 0 6px; padding: 0; list-style: none; }
+.person-list-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; padding: 4px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.person-list-row:last-child { border-bottom: 0; }
+.person-list-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.person-list-text > span, .person-list-text > small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person-privacy, .person-invite-note { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+.person-details .details-heading { margin: 16px 0 4px; }
+.person-details .details-heading:first-child { margin-top: 0; }
+.person-history { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 4px 0; min-width: 0; flex-wrap: wrap; }
+.person-history .details-member-text { font-size: 13px; color: var(--secondary); }

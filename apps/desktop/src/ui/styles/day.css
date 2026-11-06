@@ -1,0 +1,229 @@
+/* My day (B-041, src/ui/day/*): the person's own day – the briefing, the input row, the list (Needs you · Today ·
+   Unplanned · Handed off · Later) beside the calendar pane (day grid or week), the sidebar's mini month and calendars. The
+   list rows keep the to-do styles of tasks.css (.for-you, .todo-list, .todo-item); this file adds the day's parts
+   around and inside them.
+   Owns: `day-*` classes from src/ui/day/* and the row parts tasks/HumanItem.tsx renders with them.
+   Never: the to-do rows themselves (tasks.css), phone tab geometry (mobile.css), colors outside tokens.css. */
+
+/* ---------------------------------------------------------------- the view */
+.day-view { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; background: var(--surface); container-type: inline-size; }
+.day-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden; container-type: inline-size; }
+.day-body { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 40%, 440px); height: 100%; min-height: 0; }
+.day-main { min-width: 0; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.day-listpane { max-width: 720px; margin: 0 auto; padding: 16px clamp(16px, 4vw, 40px) 56px; }
+/* the list fills the column under the input: rows that regroup (a to-do done) change what is in its box, never the box */
+.day-main { display: flex; flex-direction: column; }
+.day-listpane { display: flex; flex-direction: column; flex: 1 0 auto; width: 100%; }
+.day-listpane > .day-list { flex: 1 0 auto; }
+.day-cal-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--line); }
+.day-switch { display: none; }
+
+/* A narrow column or a phone: List | Calendar. */
+@container (max-width: 760px) {
+  .day-body { display: flex; flex-direction: column; }
+  .day-body .day-main { flex: 0 1 auto; }
+  .day-body[data-layout=list] .day-main { flex: 1 1 auto; }
+  .day-body[data-layout=list] .day-cal-pane { display: none; }
+  .day-body[data-layout=calendar] .day-listpane { display: none; }
+  .day-body[data-layout=calendar] .day-cal-pane { flex: 1 1 auto; border-left: 0; }
+  .day-switch { display: inline-flex; flex: none; margin: 10px 16px 0; } /* a computer: a row of its own above the list or the calendar */
+  .day-head > .frame-header-text { display: none; } /* the controls need the room; the side header names the view */
+  .day-toolbar .day-switch { align-self: center; margin: 0 0 0 4px; padding: 2px; } /* in the toolbar row: no row of its own */
+  .day-toolbar .day-seg { min-height: 24px; padding: 2px 10px; }
+}
+.mobile-shell .day-listpane { padding: var(--stack-body-top) 16px calc(24px + env(safe-area-inset-bottom)); } /* top: the stack's one inset (mobile.css) */
+
+/* ---------------------------------------------------------------- header controls */
+/* on a computer in the header's title cell (DayHeader.tsx dayHeader): "My day", then the controls */
+.day-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.day-head > .frame-header-text { flex: 0 1 auto; }
+.day-head > .day-toolbar { flex: none; }
+.day-toolbar { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.day-toolbar-row { display: flex; padding: 8px 12px 0; }
+.day-toolbar-row .day-toolbar { flex: 1 1 auto; }
+.day-toolbar-row .day-datenav { margin-right: auto; }
+.day-toolbar-row .day-toolbar { flex-wrap: wrap; row-gap: 6px; }
+.day-datenav { display: inline-flex; align-items: center; gap: 2px; margin-right: 4px; }
+/* one fixed width for every label ("Yesterday", "Wed 29 Oct"), so ‹ and › never move under the cursor */
+.day-date {
+  width: calc(11ch + 16px); min-height: 28px; padding: 2px 8px; border-radius: var(--r-sm); color: var(--text); font-size: 13px; font-weight: 500;
+  font-variant-numeric: tabular-nums; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.day-date:hover:not(:disabled) { background: var(--hover); }
+.day-date:disabled { cursor: default; opacity: 1; } /* today shown: the current date at full strength, not a greyed control */
+.day-seg {
+  min-height: 28px; padding: 4px 12px; border-radius: var(--r-sm); color: var(--secondary); font-size: 13px; white-space: nowrap;
+}
+.day-seg:hover { color: var(--text); }
+.day-seg.current { background: var(--surface); color: var(--text); box-shadow: var(--shadow-raised); }
+.day-switch { gap: 2px; padding: 3px; border-radius: var(--r-md); background: var(--hover); }
+.day-switch { align-self: flex-start; }
+/* Day | Week: a fixed cell of the header (DayHeader.tsx SpanSwitch), as high as the other header controls */
+.day-span { display: inline-flex; flex: none; gap: 2px; padding: 2px; border-radius: var(--r-md); background: var(--hover); }
+.day-toolbar .day-seg { min-height: 24px; padding: 2px 10px; }
+
+/* ---------------------------------------------------------------- the input row */
+.day-input { align-items: flex-start; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.day-input .todo-add-icon { margin-top: 4px; }
+.day-input-field { resize: none; min-height: 40px; max-height: 180px; padding: 10px 0; font-family: inherit; line-height: 1.45; overflow-y: auto; }
+.day-input-actions { display: inline-flex; flex: none; align-items: center; gap: 4px; margin-top: 6px; }
+.day-input.compact { padding-left: 2px; }
+.mobile-shell .day-input-field { font-size: 16px; }
+
+/* ---------------------------------------------------------------- groups and rows */
+.day-group { margin-top: 18px; }
+.day-group:first-child { margin-top: 10px; }
+.day-group-heading { display: flex; align-items: baseline; gap: 6px; margin: 0 0 2px; padding: 0 6px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.day-group-count { color: var(--muted); font-weight: 400; }
+.for-you .todo-later { margin-top: 12px; }
+.day-check {
+  display: grid; place-items: center; flex: none; width: 22px; height: 22px; margin: 0 11px; border: 1.5px solid var(--muted); /* 11 + 22 + 11, the row's 2 px gap and the open button's 4 px: the title 50 px into the row, as beside a 32 px icon or avatar */
+  border-radius: 50%; color: transparent; transition: background-color .12s, border-color .12s, color .12s;
+}
+.day-check:hover:not(:disabled) { border-color: var(--success); color: var(--success); }
+.day-check.ringing { border-color: var(--warn); }
+.day-check.done, .todo-item.leaving .day-check { border-color: var(--success); background: var(--success); color: var(--surface); }
+.day-check + .todo-open { padding-left: 4px; }
+.day-slot-time { color: var(--secondary); }
+.day-prepared { color: var(--secondary); }
+@media (pointer: coarse) { .day-check { width: 26px; height: 26px; margin: 0 7px 0 9px; } }
+
+/* the expanded row: the preparation, the day line, a paired summary mini-app */
+.day-prep { display: flex; gap: 8px; margin-bottom: 10px; color: var(--secondary); font-size: 13px; line-height: 1.5; }
+.day-prep-text { min-width: 0; overflow-wrap: anywhere; }
+.day-prep-by { color: var(--text); }
+.day-prep-links { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0 0; padding: 0; list-style: none; }
+.day-prep-links a { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+/* Handed off */
+.day-handed { margin: 0; padding: 0; list-style: none; border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.day-handed-row { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.day-handed-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.day-handed-title { overflow: hidden; color: var(--text); font-size: 14px; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+button.day-handed-title:hover { text-decoration: underline; text-underline-offset: 2px; }
+.day-handed-state { color: var(--muted); font-size: 12px; text-align: left; }
+.day-handed-state.step { color: var(--text); }
+.day-handed-state.step:hover { text-decoration: underline; text-underline-offset: 2px; }
+.day-handed-row.done .day-handed-title { color: var(--secondary); }
+
+/* ---------------------------------------------------------------- the calendar pane */
+.day-cal { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.day-cal-stale { display: flex; align-items: center; gap: 6px; margin: 0 12px 6px; color: var(--warn); font-size: 12px; }
+.day-cal-state { display: grid; place-items: center; padding: 24px; }
+.day-cal > .empty-state { padding: 16px; }
+.day-cal-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.day-cal-grid, .day-week-grid { position: relative; touch-action: pan-y; user-select: none; }
+.day-cal-off { position: absolute; left: 48px; right: 0; background: color-mix(in srgb, var(--hover) 55%, transparent); pointer-events: none; }
+.day-cal-hour { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); pointer-events: none; }
+.day-cal-hour:first-child { border-top: 0; }
+/* the label ends at 38 px, the now-line's dot starts at 42 px: "23:00" stays readable under the dot */
+.day-cal-hour-label { position: absolute; top: -8px; left: 2px; width: 36px; color: var(--muted); font-size: 11px; text-align: right; background: var(--surface); }
+.day-cal-events { position: absolute; top: 0; bottom: 0; left: 52px; right: 8px; }
+.day-cal-now { position: absolute; left: 46px; right: 0; height: 0; border-top: 2px solid var(--danger); pointer-events: none; z-index: 3; }
+.day-cal-now::before { content: ''; position: absolute; top: -5px; left: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+
+/* blocks: an event, a to-do's block (with its check), a read-only calendar's event, done or cut */
+.day-block {
+  position: absolute; display: flex; align-items: flex-start; gap: 6px; min-height: 18px; padding: 4px 6px; overflow: hidden;
+  border-left: 3px solid var(--secondary); border-radius: var(--r-sm); background: var(--selected); color: var(--text);
+  font-size: 12px; line-height: 1.3; cursor: pointer; z-index: 1;
+}
+.day-block[data-kind=todo] { border-left-color: var(--success); background: color-mix(in srgb, var(--success) 13%, var(--surface)); }
+.day-block[data-readonly] { border-left-style: dashed; background: color-mix(in srgb, var(--hover) 70%, var(--surface)); color: var(--secondary); cursor: default; }
+.day-block[data-state=done], .day-block[data-state=cut] { background: var(--hover); color: var(--muted); }
+.day-block[data-state=done] .day-block-title, .day-block[data-state=cut] .day-block-title { text-decoration: line-through; }
+.day-block[data-dragging] { z-index: 4; box-shadow: var(--shadow-popover); cursor: grabbing; }
+.day-block[data-short] { padding-top: 1px; padding-bottom: 1px; }
+.day-block:has(.day-block-open:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
+.day-block-open {
+  display: flex; flex: 1 1 auto; align-self: stretch; min-width: 0; padding: 0; border: 0; background: none; color: inherit;
+  font: inherit; line-height: inherit; text-align: left; cursor: inherit;
+}
+.day-block-open:focus-visible { outline: none; }
+.day-block-check {
+  display: grid; place-items: center; flex: none; width: 16px; height: 16px; margin-top: 1px; border: 1.5px solid var(--success);
+  border-radius: 50%; color: transparent;
+}
+.day-block-check:hover:not(:disabled), .day-block-check.done { background: var(--success); color: var(--surface); }
+.day-block-text { display: flex; flex-direction: column; min-width: 0; }
+.day-block[data-short] .day-block-text { flex-direction: row; gap: 6px; }
+.day-block-title { overflow: hidden; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.day-block-time { color: var(--secondary); font-size: 11px; white-space: nowrap; }
+.day-block-popover { padding: 12px; }
+.day-block-details-title { margin: 0 0 2px; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.day-block-details-time { margin: 0 0 8px; color: var(--secondary); font-size: 12px; }
+.day-block-details-notes { margin: 0 0 8px; color: var(--secondary); font-size: 12px; overflow-wrap: anywhere; }
+.day-move { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.day-move-label { color: var(--secondary); font-size: 12px; }
+.day-move-time.input { width: 104px; padding: 4px 8px; font-size: 13px; }
+
+/* the inline field of a selected range */
+.day-slot {
+  position: absolute; left: 0; right: 0; display: flex; flex-direction: column; gap: 2px; padding: 4px 6px; z-index: 5;
+  border: 1px solid var(--focus); border-radius: var(--r-sm); background: var(--surface); box-shadow: var(--shadow-popover);
+}
+.day-slot-row { display: flex; align-items: center; gap: 4px; }
+.day-slot-input { flex: 1 1 auto; min-width: 0; padding: 2px 0; border: 0; outline: none; background: transparent; color: var(--text); font-size: 13px; }
+.day-slot .day-slot-time { font-size: 11px; }
+.mobile-shell .day-slot-input { font-size: 16px; }
+
+/* the keyboard's hour stops (day/DaySlot.tsx): invisible until focused; pointers pass through */
+.day-cal-stops { position: absolute; inset: 0; pointer-events: none; }
+.day-cal-stop { position: absolute; left: 0; right: 0; padding: 0; border: 0; border-radius: var(--r-sm); background: none; pointer-events: none; }
+.day-cal-stop:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; background: color-mix(in srgb, var(--focus) 8%, transparent); }
+
+/* ---------------------------------------------------------------- the sidebar */
+.day-month { padding: 0 14px 12px 16px; }
+.day-month-head { display: flex; align-items: center; gap: 2px; min-height: 32px; padding-left: 4px; }
+.day-month-title { flex: 1 1 auto; min-width: 0; color: var(--text); font-size: 13px; font-weight: 600; }
+.day-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; }
+.day-month-weekday { padding: 4px 0; color: var(--muted); font-size: 11px; text-align: center; }
+.day-month-day {
+  position: relative; display: grid; place-items: center; aspect-ratio: 1; min-height: 28px; border-radius: 50%;
+  color: var(--text); font-size: 12px;
+}
+.day-month-day:hover { background: var(--hover); }
+.day-month-day.outside { color: var(--muted); }
+.day-month-day.current { color: var(--update); box-shadow: inset 0 0 0 1px currentColor; }
+.day-month-day.selected { background: var(--text); color: var(--surface); }
+.day-month-dot { position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--success); }
+.day-month-day.selected .day-month-dot { background: var(--surface); }
+.day-month-today { margin: 6px 0 0 4px; font-size: 12px; }
+.day-nav-heading { margin: 8px 20px 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.day-sources { margin-bottom: 4px; }
+.day-source-list { margin: 0; padding: 0; list-style: none; }
+.day-source { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 16px 0 20px; }
+.day-source-dot { flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--secondary); }
+.day-source-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.day-source-label { overflow: hidden; color: var(--text); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.day-source-status { color: var(--warn); font-size: 11px; }
+.day-source .switch { flex: none; }
+
+@media (pointer: coarse) { .day-month-day { min-height: 40px; } }
+
+/* ---------------------------------------------------------------- the briefing (DayBriefing.tsx) */
+.day-briefing { margin: 0 0 14px; padding: 0 6px; }
+.day-briefing-line { margin: 0 0 4px; color: var(--text); font-size: 14px; line-height: 1.5; }
+.day-briefing-facts { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+/* the calendar's all-day row (above the day grid) */
+.day-cal-allday { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 8px 6px 52px; }
+.day-block[data-allday] { position: static; display: inline-flex; max-width: 100%; padding: 2px 8px; cursor: default; }
+
+/* ---------------------------------------------------------------- the week (DayWeek.tsx) */
+/* wide view: the week takes the list's width too (a narrow view shows the calendar or the list as before) */
+@container (min-width: 761px) {
+  .day-body.week { grid-template-columns: minmax(0, 1fr); }
+  .day-body.week .day-main { display: none; }
+  .day-body.week .day-cal-pane { border-left: 0; }
+}
+.day-week { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.day-week-head { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); flex: none; margin-left: 52px; margin-right: 8px; border-bottom: 1px solid var(--line); }
+.day-week-day { min-height: 32px; padding: 4px 2px; border-radius: var(--r-sm); color: var(--secondary); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.day-week-day:hover { background: var(--hover); color: var(--text); }
+.day-week-day.current { color: var(--update); }
+.day-week-day.selected { background: var(--selected); color: var(--text); }
+.day-week-cols { position: absolute; top: 0; bottom: 0; left: 52px; right: 8px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.day-week-col { position: relative; border-left: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.day-week-col.current { background: color-mix(in srgb, var(--hover) 40%, transparent); }
+.day-week-col .day-cal-now { left: 0; }
+.day-week-col .day-block { padding: 2px 4px; font-size: 11px; }

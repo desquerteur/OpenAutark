@@ -1,0 +1,58 @@
+// Owns: the questions people (and AI search) ask, `home: true` = also on the home page.
+// Never: markup; answers are plain text so they work in HTML, JSON-LD and llms.txt alike.
+import { release } from '../config.mjs';
+
+const { app } = release;
+
+export const faq = [
+  { home: true, q: 'What is Autark?',
+    a: 'Autark is a desktop app that gives you your own AI company: a manager, specialist agents and a private secretary. You talk to them in chats and drop tasks into one inbox. They pick up the work, delegate it among themselves, finish it and write it down, and they wake up on their own when something needs doing.' },
+  { home: true, q: 'Is it free?',
+    a: 'Yes. The app is a free download with no account and no subscription from us. The AI work runs on the plans you already have (for example a ChatGPT or Claude plan), on your own API keys or on local models, so you pay your AI providers directly.' },
+  { home: true, q: 'Which AI subscriptions does it use?',
+    a: 'ChatGPT plans through OpenAI Codex, and paid Claude plans through Claude Code, both via the official command-line tools of each provider. Gemini CLI, GitHub Copilot CLI and Kimi Code are built in too, but we have never seen them in a live run. The Claude Free plan cannot run agents.' },
+  { q: 'Do I need API keys?',
+    a: 'No, not if you have a ChatGPT plan or a paid Claude plan. API keys and local model servers (Ollama, LM Studio, llama.cpp, vLLM) are optional and early: built, with no recorded live run yet. An AI provider the app does not know works if it speaks one of the supported protocols: it is one entry in settings.json.' },
+  { home: true, q: 'What can agents do on my PC?',
+    a: 'Everything your user account can. Agents run without a sandbox and without approval prompts: they can read and change your files, run commands, use a browser and every secret in the catalog. The first thing the AI asks is how far it may go, and that is a question, not a technical barrier. If a PC holds something you cannot risk, give the app its own Windows user or a virtual machine.' },
+  { home: true, q: 'Can agents spend money or delete things?',
+    a: 'Yes, technically. There is no money limit and no approval gate in the app. How agents weigh a purchase is written in a skill with reference points such as about 20 euros, and the rules ask them to check target, amount and recipient once before something they cannot undo. That is guidance you can edit, not a lock. An agent can pay with anything it can reach, such as a card you saved in the catalog or a shop where its browser is logged in.' },
+  { home: true, q: 'Does my data go to your servers?',
+    a: 'No. No Autark server holds your data and the app has no analytics; our meeting server only connects your devices and passes end-to-end encrypted traffic. Chats, tasks, memory, agents and the secrets catalog live on your own computer. Everything an agent works with goes to the AI provider you connected, including private files if it opened them. The access page lists every other place something leaves your PC.' },
+  { q: 'How are my passwords and keys handled?',
+    a: 'They are encrypted with your operating system’s protection. Agents refer to them by ID, such as secret://github, and the app fills the value in at the last moment, so values stay out of prompts. Known values are masked in output. A command that receives a value can still do anything with it, and a password lying in a plain file on your disk is open to agents like any other file.' },
+  { q: 'Does Autark read my ChatGPT or Claude password or tokens?',
+    a: 'The app does not. You sign in through the official command-line tools of each provider, each added account in its own folder, and Autark does not read, copy or forward those tokens. An agent with full access could open those folders like any others.' },
+  { q: 'How do I stop everything at once?',
+    a: 'Use "Stop all agent work" in the tray, in the list behind the chat header’s live line or in the command palette, or press Ctrl+Alt+Shift+X while agents work. Every agent on this PC stops, and it stays that way after a restart until you resume. It does not reach work running on another PC or a script an agent left running on its own, such as a WhatsApp bridge, and it does not undo what was done.' },
+  { home: true, q: 'Do agents keep working when I close the window?',
+    a: 'Yes. By default the app keeps running in the system tray, and agents wake up on schedules, messages and events as long as your computer is on.' },
+  { q: 'What does "proactive" mean here?',
+    a: 'Agents do not wait for a prompt. A schedule, a timer, a new task, a message or an event wakes them up. They decide what to do, do it, and can plan their own next step, for example a morning briefing, a follow-up email or a check on a running job. How much they do on a vague request still varies by model and by run.' },
+  { q: 'What happens on the first start?',
+    a: `${release.renamed ? 'A short start:' : 'The new short start ships with the next release:'} a short tour, connect one AI, type your name and company, press Start. The manager then gets to know you and your work, first asks how far it may go, and afterwards points you to the two models it still needs, one for decisions and one for search.` },
+  { q: 'Can the AI change the app itself?',
+    a: 'Yes, because the app is a set of open files: settings.json, skills, memory, connectors, theme.css and its prompts. Your agent edits them or calls the running app. It can add an AI provider, restyle the window or connect WhatsApp with a small script, without a connector being built for it first.' },
+  { q: 'Which platforms are supported?',
+    a: `Windows, macOS and Linux get the same version. Windows is where it is developed and tested most. On macOS agents get screenshots but cannot control the computer${release.renamed ? '' : ', and updates are a manual download for now'}. On Linux computer control needs X11 for input, and the AppImage needs FUSE 2 and a system keyring.` },
+  { q: 'Why does Windows warn me about the installer?',
+    a: 'The installer is not code-signed, so Windows SmartScreen shows “Windows protected your PC”. Choose "More info" and then "Run anyway". With Smart App Control turned on, Windows can block it outright. You can check the file against SHA256SUMS.txt from the same release.' },
+  { q: 'Why does my Mac refuse to open it?',
+    a: `The Mac app is signed ad hoc and not notarized, because there is no Apple Developer ID yet. On macOS 15 and newer, try to open it, choose Done, then go to System Settings, Privacy & Security, and choose Open Anyway. On older versions, Control-click the app and choose Open. If macOS says the app is damaged, remove the quarantine mark in Terminal: xattr -dr com.apple.quarantine "/Applications/${app.macBundle}".` },
+  { q: 'How do updates work?',
+    a: `The app checks GitHub Releases every minute while the window is open and every 15 minutes from the tray. On Windows and Linux a small icon appears when an update exists; one click downloads it, verifies it against the SHA-512 in the update manifest, installs it and restarts. ${release.renamed ? 'On macOS the app replaces itself where macOS allows it, and otherwise the icon leads to the download. A Mac with a version from before the rename gets this one once by hand.' : 'On macOS the icon leads to the download for now, and you replace the app by hand.'}` },
+  { q: 'Can I use it from my phone?',
+    a: 'Yes. On Android, install the app (an APK from the download page), type your PC’s Remote ID, compare the code and accept on the PC; it then works in any network and belongs to your whole company, not one PC. On an iPhone there is no App Store app: your PC serves the same app to Safari over Wi-Fi or Tailscale, and your manager sets that up. Agents and data stay on your PCs either way.' },
+  { q: 'Can colleagues join my company?',
+    a: 'Yes. Invite people by link or QR code. They work in the chats and tasks they belong to, next to your agents, and all data stays on your PC. This is early: it is built for one person first.' },
+  { q: 'What hardware do I need?',
+    a: 'Autark is built and tested against an ordinary 8 GB RAM laptop. The heavy AI work happens at your AI provider, unless you choose a local model.' },
+  { q: 'Is Autark open source?',
+    a: `Yes. The source code is public under the Apache-2.0 license at ${release.repoUrl}, together with the installers and the shared library of skills.` },
+  { q: 'Who makes Autark?',
+    a: 'Teydra Lab from Salzburg, Austria, founded by Stanislaus Hees. Autark grew up in Meta Jarvis, the Teydra Lab family of projects around AI agents and the human who stays in charge of them.' },
+  { q: 'Was "Proactive Agent Workforce" the same product?',
+    a: release.renamed
+      ? 'Yes. Proactive Agent Workforce was the working name. Updating from an older version moves the data folder to the new name, so there is no second app.'
+      : 'Yes. Proactive Agent Workforce was the working name. The installed app, its data folder and the download files still use it until the rename release, which is built to move the data folder once, so there is no second app.' },
+];

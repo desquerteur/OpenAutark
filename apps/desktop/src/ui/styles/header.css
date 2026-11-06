@@ -1,0 +1,129 @@
+/* One header for every zone (lib/header.tsx) and the status line (shell/StatusLine.tsx).
+   The header is a grid of fixed tracks at the row height:
+       [lead 36px | 0] [title minmax(0, 1fr)] [cells n × 32px, 4 px apart] [caption var(--caption-space)]
+   A segmented header (the chat's row) has a fixed-width title track, its near cells right after it, a free
+   track that holds the open side panel's name and X above that panel, the end cells and the caption room:
+       [lead] [title var(--title-track)] [near cells] [panel 1fr] [end cells] [caption]
+   so a toggle, a badge, the search field or a call state changes only colour or icon inside its own box; a
+   placeholder cell keeps its box, inert. Text starts 8 px into the title track (title, sub line and search
+   field alike). The status line lies over the top of its zone (never a reserved band): small lines at the
+   right under the header row – in a chat over the top of its messages, so under its open area –, so nothing
+   below them moves when one comes or goes.
+   Owns: header grid, cells, placeholders, badges, busy cells, the in-place search field, the panel segment
+   and the status line.
+   Never: where a zone sits or the caption reserve's value (the frame sets --caption-start-space on the first
+   zone and --caption-space on the last), view content, colours outside tokens.css, and no state selector here changes font-weight, padding,
+   width or margin. */
+
+/* ---------------------------------------------------------------- header grid */
+.frame-header {
+  --header-bg: var(--chrome); /* rings around overlapping avatars and badges */
+  display: grid; grid-template-columns: 0 minmax(0, 1fr) auto var(--caption-space, 0px); align-items: center;
+  flex: none; height: var(--header-h); min-width: 0; padding: 0 12px 0 calc(12px + var(--caption-start-space, 0px)); background: var(--header-bg);
+  -webkit-app-region: drag; app-region: drag;
+}
+.frame-header.has-lead { grid-template-columns: 36px minmax(0, 1fr) auto var(--caption-space, 0px); }
+.frame-header.has-segments { grid-template-columns: 0 minmax(0, var(--title-track, 320px)) auto minmax(0, 1fr) auto var(--caption-space, 0px); }
+.frame-header.has-segments.has-lead { grid-template-columns: 36px minmax(0, var(--title-track, 320px)) auto minmax(0, 1fr) auto var(--caption-space, 0px); }
+/* where the global pane's tab strip lies in this row above the pane's place (shell.css `strip-in-row`), a main view's
+   title and cells end before that place – open or closed alike, so opening the pane moves no cell and a long title ends
+   in an ellipsis before the strip: a segmented row's title track gives way, another row's caption track takes the
+   pane's place, so its cells end the row's 12 px inset before it */
+.app-frame.strip-in-row > .main-slot .frame-header.zone-main.has-segments { grid-template-columns: 0 minmax(0, min(var(--title-track, 320px), 100% - var(--pane-size, 0px) - 64px)) auto minmax(0, 1fr) auto var(--caption-space, 0px); }
+.app-frame.strip-in-row > .main-slot .frame-header.zone-main.has-segments.has-lead { grid-template-columns: 36px minmax(0, min(var(--title-track, 320px), 100% - var(--pane-size, 0px) - 100px)) auto minmax(0, 1fr) auto var(--caption-space, 0px); }
+.app-frame.strip-in-row > .main-slot .frame-header.zone-main:not(.has-segments) { grid-template-columns: 0 minmax(0, 1fr) auto max(var(--caption-space, 0px), var(--pane-size, 0px)); }
+.app-frame.strip-in-row > .main-slot .frame-header.zone-main.has-lead:not(.has-segments) { grid-template-columns: 36px minmax(0, 1fr) auto max(var(--caption-space, 0px), var(--pane-size, 0px)); }
+.frame-header :is(button, input, a, [role=button]) { -webkit-app-region: no-drag; app-region: no-drag; }
+
+.frame-header-title { grid-column: 2; display: grid; grid-template-rows: 32px; align-content: center; min-width: 0; height: 32px; padding-right: 8px; }
+.frame-header.two-line .frame-header-title { grid-template-rows: 20px 16px; height: 36px; }
+/* clip, not hidden, with a margin: a title or sub-line button's hover tint (a few px past the line) stays
+   whole; focus rings lie inside the controls (base.css .frame-header :focus-visible), never across a line */
+.frame-header-line, .frame-header-sub { display: flex; align-items: center; min-width: 0; padding-left: 8px; overflow: clip; overflow-clip-margin: 6px; white-space: nowrap; }
+.frame-header-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: 14px; font-weight: 500; line-height: 20px; }
+.frame-header.zone-side .frame-header-text { font-size: 17px; font-weight: 600; line-height: 24px; }
+.frame-header.zone-phone .frame-header-text { font-size: 20px; font-weight: 600; line-height: 26px; letter-spacing: -.3px; }
+.frame-header-sub { color: var(--muted); font-size: 12px; line-height: 16px; }
+.frame-header-sub > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------------------------------------------------------------- cells */
+.frame-header-cells { grid-column: 3; display: grid; grid-auto-flow: column; grid-auto-columns: 32px; column-gap: 4px; align-items: center; }
+.frame-header.has-segments .frame-header-end { grid-column: 5; }
+.frame-header-cell { position: relative; display: grid; place-items: center; width: 32px; height: 32px; }
+.frame-header-cell > .icon-button { width: 32px; height: 32px; border-radius: var(--r-sm); }
+.frame-header-cell.frame-header-lead { grid-column: 1; width: 36px; height: 36px; }
+.frame-header-cell.frame-header-lead > .icon-button { width: 36px; height: 36px; border-radius: var(--r-md); }
+.frame-header-cell.placeholder { pointer-events: none; }
+
+/* tones: colour only (with a light tint of the same colour), never the box */
+.frame-header-button.tone-success { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+.frame-header-button.tone-danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.frame-header-button.tone-accent { color: var(--update); }
+.frame-header-button:is(.tone-success, .tone-danger, .tone-accent) .icon { opacity: 1; }
+.frame-header-button:is(.tone-success, .tone-danger):hover:not(:disabled) { background: color-mix(in srgb, currentColor 22%, transparent); }
+/* a cell's menu (Timer, Add): 6 px clear of the row's lower edge, never touching it */
+.popover.frame-header-menu { margin-top: 6px; }
+
+/* busy: the box stays, the icon turns transparent under a centred spinner */
+.frame-header-cell.busy > .icon-button { color: transparent; }
+.frame-header-spin { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text); pointer-events: none; }
+
+/* badge: over the box's top-right corner, inside the cell's own 32 px (the 4 px gap to the next cell
+   stays clear, so a count never touches a tinted neighbour such as Leave call), never part of the layout */
+.frame-header-badge {
+  position: absolute; top: -2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+  background: var(--badge-bg); color: var(--badge-fg); box-shadow: 0 0 0 2px var(--header-bg);
+  font-size: 10px; font-weight: 600; line-height: 16px; text-align: center; pointer-events: none;
+}
+.frame-header-badge.dot { top: 5px; right: 5px; min-width: 0; width: 8px; height: 8px; padding: 0; border-radius: 50%; }
+
+/* ---------------------------------------------------------------- search in the title track */
+/* the box takes the title's rows; the field's right end is reserved for the ✕ (shown with a query), so typing never moves it */
+.frame-header-search-box { position: relative; grid-row: 1 / -1; display: flex; min-width: 0; height: 100%; }
+.frame-header-search-clear.icon-button { position: absolute; top: 50%; right: 3px; transform: translateY(-50%); }
+.frame-header-search {
+  width: 100%; height: 100%; min-width: 0; margin: 0; padding: 0 32px 0 7px; /* 1 px border + 7 = the title's 8 px; 32 px for the ✕ */
+  border: 1px solid var(--field); border-radius: var(--r-sm); background: var(--surface); color: var(--text);
+  font-size: 14px; line-height: 20px; outline: none; -webkit-appearance: none; appearance: none;
+}
+.frame-header-search:focus { border-color: var(--focus); }
+.frame-header-search::placeholder { color: var(--muted); }
+.frame-header-search::-webkit-search-cancel-button { display: none; } /* the field's own ✕ (HeaderSearch) is the one clear button; base.css draws the native one for other fields */
+
+/* ---------------------------------------------------------------- panel segment
+   the open side panel's name and X, ending above that panel's right edge: the chat panel sits left of the
+   browser pane (--pane-reserve) while the header row runs on over the pane up to the caption room. With the
+   pane open the panel lies over the messages and only its X fits above it: the name goes rather than a cut "C" */
+.frame-header-panel {
+  grid-column: 4; display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; height: 32px;
+  margin-right: max(0px, calc(var(--pane-reserve, 0px) - var(--caption-space, 0px)));
+  container: header-panel / inline-size;
+}
+.frame-header-panel-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: 13px; font-weight: 600; }
+@container header-panel (max-width: 110px) { .frame-header-panel-title { display: none; } }
+
+/* ---------------------------------------------------------------- status line */
+.status-host {
+  position: absolute; z-index: 10; top: calc(var(--header-h) + 8px); right: calc(12px + var(--pane-reserve, 0px)); display: flex; flex-direction: column; align-items: flex-end;
+  gap: 6px; width: min(480px, calc(100% - 24px)); pointer-events: none;
+}
+/* in a chat the lines lie over the top of its messages: under the header row, or under the chat's open area (chat-area.css),
+   never on its tabs, its address row or its page, however long a to-do's line lasts; with no messages shown (another view,
+   the area in full view) at the zone's top as above, and so where anchor positioning is missing */
+.message-scroller { anchor-name: --status-top; }
+.main-slot > .status-host { top: calc(anchor(--status-top top, var(--header-h)) + 8px); }
+/* where the global pane lies over the chat (full view, a narrow window's floating pane) they keep the zone's top */
+.app-frame.pane-full > .main-slot > .status-host { top: calc(var(--header-h) + 8px); }
+@media (max-width: 875px) { .app-frame.with-pane > .main-slot > .status-host { top: calc(var(--header-h) + 8px); } }
+.status-note {
+  display: flex; align-items: center; gap: 8px; max-width: 100%; min-height: 32px; padding: 3px 4px 3px 12px; pointer-events: auto;
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-popover);
+  color: var(--text); font-size: 13px;
+}
+.status-note.tone-warn { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.status-note.tone-error { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); color: var(--danger); }
+.status-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-action.button { position: relative; flex: none; min-height: 24px; padding: 2px 10px; font-size: 12px; }
+.status-action.button[aria-busy=true] { color: transparent; }
+.status-action-spin { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text); }
+.status-dismiss { flex: none; }

@@ -1,0 +1,47 @@
+/* B-048 E4.5: the chat header's working popover (chat/WorkingPopover.tsx) and the live block's model
+   slot (chat/WorkingMessage.tsx). The popover lies over the content (lib/popover.tsx), so nothing in
+   the header or the chat moves; on a phone it is a bottom sheet (mobile.css). A row: a fixed 24 px
+   avatar cell beside the name and – in a fixed slot at the line's end – the model · effort, the note
+   as a disclosure line (the chat's caret column), the task; an open row adds the live steps (the live
+   block's 24 px lines) and the newest words, clamped to three lines.
+   Owns: these rules. Never: colours of its own (tokens only). */
+
+.popover.working-popover { max-height: min(70vh, 560px); }
+.working-rows { margin: 0; padding: 0; list-style: none; }
+.working-row { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 10px; padding: 4px 10px 6px; }
+.working-row + .working-row { margin-top: 2px; }
+.working-row-avatar { display: grid; place-items: center; width: 24px; height: 24px; }
+.working-row-main { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.working-row-head { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; height: 24px; }
+.working-row-name {
+  flex: 0 1 auto; min-width: 0; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text); font-size: 13px; font-weight: 600; line-height: 20px; text-align: left;
+}
+.working-row-name:hover { text-decoration: underline; text-underline-offset: 2px; }
+.working-row-model { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; line-height: 16px; text-align: right; }
+.working-row-toggle {
+  display: flex; align-items: center; gap: 7px; width: calc(100% + 6px); min-height: 22px; margin-left: -4px; padding: 0 4px;
+  border-radius: 6px; color: var(--secondary); font-size: 12px; line-height: 1.5; text-align: left;
+}
+button.working-row-toggle:hover, button.working-row-toggle[aria-expanded=true] { background: var(--hover); color: var(--text); }
+.working-row-toggle > .icon, .working-row-caret { flex: none; width: 12px; }
+.working-row-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.working-row .working-task { margin: 2px 0 0; }
+.working-row-detail { align-self: stretch; min-width: 0; padding: 4px 0 2px; }
+.working-row-detail > .run-items.live-steps { margin: 0 0 0 -4px; padding: 0; border: 0; }
+.working-row-words {
+  display: -webkit-box; margin: 4px 0 0; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  color: var(--secondary); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere;
+}
+.working-empty { margin: 0; padding: 4px 10px 6px; color: var(--muted); font-size: 12px; }
+.working-row-empty { margin: 0; padding: 2px 0; color: var(--muted); font-size: 12px; }
+.working-row-loading { display: flex; padding: 4px 0; }
+@media (pointer: coarse) {
+  .working-row-head { height: 32px; }
+  .working-row-toggle { min-height: 32px; }
+}
+
+/* the live block's byline: the model slot after the name – there from the first frame, empty while routing */
+.working-message .message-author .working-model {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; line-height: 20px;
+}

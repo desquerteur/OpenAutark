@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "workforce-feedback",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "vars": {
+    "GITHUB_OWNER": "your-github-owner",
+    "PUBLIC_REPO": "your-github-owner/your-public-feedback-repo",
+    "PRIVATE_REPO": "your-github-owner/your-private-feedback-repo"
+  }
+}

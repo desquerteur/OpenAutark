@@ -1,0 +1,64 @@
+/* The first-run layer (onboarding/FirstRun.tsx and its two cards: AI, About you). The layer is Home's place in
+   the main zone: the same airy column as Home, one card at a time. Nothing moves: the card's status line and
+   every async hint are reserved one-line slots and busy buttons keep their box (base.css). One card build and one card height for every
+   step: the title with its rule, the body from the top, the status line on the body's foot and the action row
+   at the card's foot, so Continue, Back and Start sit at the same place on every step. On the phone the card
+   is the page and its action row is pinned to the bottom of the scroll area (sticky).
+   Owns: `first-run-*` classes. Never: colors outside tokens.css. */
+
+.first-run-view { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; background: var(--surface); }
+.first-run-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.first-run-column { max-width: 620px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 56px; }
+.first-run-step { margin: 0 0 8px; padding: 0 2px; color: var(--muted); font-size: 12px; line-height: 18px; }
+
+.first-run-card { display: flex; flex-direction: column; gap: 12px; min-height: 552px; padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.first-run-title { margin: 0; padding-bottom: 12px; border-bottom: 1px solid var(--line); color: var(--text); font-size: 17px; font-weight: 600; line-height: 24px; }
+.first-run-body { display: flex; flex-direction: column; flex: 1 0 auto; gap: 10px; min-width: 0; }
+.first-run-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.first-run-status { min-height: 18px; margin: 0; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.first-run-body > .first-run-status { margin-top: auto; } /* the status line sits on the body's foot in every card */
+.first-run-status.error { color: var(--danger); }
+.first-run-status.ok { color: var(--success); }
+
+/* The AI card's model setup (settings/ModelSetup.tsx) */
+.first-run-rows { margin-top: -12px; } /* the title's rule is the rows' top edge: no second rule, no double gap */
+.first-run-rows > .set-row:last-child { border-bottom: 0; }
+.first-run-rows .set-row-text { flex-basis: 160px; }
+.first-run-rows .set-row-control { flex-wrap: nowrap; }
+
+/* The "Open sign-in page" / "Get a key" link cell (onboarding/sign-in-link.tsx, settings/account-forms.tsx): the link, or an inert
+   placeholder of the same text and size */
+.first-run-link {
+  flex: none; padding: 0; border: 0; background: none; color: var(--secondary); font-size: 12px; line-height: 18px; white-space: nowrap;
+  text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+.first-run-link:hover { color: var(--text); }
+.first-run-link.inert { color: transparent; text-decoration-color: transparent; pointer-events: none; user-select: none; cursor: default; }
+
+/* About you: name and company side by side */
+.first-run-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.first-run-field { display: flex; flex-direction: column; min-width: 0; }
+.first-run-field .input { width: 100%; }
+
+@media (max-width: 640px) {
+  .first-run-card { padding: 16px; }
+  .first-run-rows .set-row-control { flex-wrap: wrap; justify-content: flex-start; }
+  .first-run-fields { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The phone: the card is the page (no frame of its own), at least as tall as the scroll area; the
+   action row sticks to the bottom edge – at the card's foot on a short step, pinned over the content
+   on a long one, so Continue, Back and Start sit at the same place and never under the tab bar. Its
+   divider spans the column's content, as the dividers inside the card do. */
+.mobile-shell .first-run-scroll { display: flex; flex-direction: column; }
+.mobile-shell .first-run-column { display: flex; flex-direction: column; flex: 1 0 auto; width: 100%; padding: var(--stack-body-top) 16px 0; } /* top: the stack's one inset (mobile.css) */
+.mobile-shell .first-run-card { flex: 1 0 auto; min-height: 0; padding: 0; border: 0; border-radius: 0; }
+.mobile-shell .first-run-actions {
+  position: sticky; z-index: 1; bottom: 0; margin: 0 -16px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: var(--line-fill) 16px top / calc(100% - 32px) 1px no-repeat, var(--surface);
+}
+/* pinned over a long step, the content above fades out into the bar (12 px, the card's gap) instead of its
+   divider cutting a line (the AI step's status line at 640 × 480); at the card's foot it covers only that gap */
+.mobile-shell .first-run-actions::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 12px; background: var(--fade-above); pointer-events: none;
+}

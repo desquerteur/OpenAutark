@@ -1,0 +1,44 @@
+/* Side pane (workspace/*): one tab list – websites and the app's own panels (workspace-tabs.css) – with
+   the tab strip on top (TabStrip.tsx, workspace-browser.css) and a 40 px address row (BrowserHeader.tsx)
+   directly above the page area (BrowserPage.tsx). Every cell of the row is always
+   there at its place, so nothing shifts on a click; a cell that cannot act now is clearly faint;
+   loading is a thin line on the row's lower edge; a failure lies over the page area's foot (the native
+   view is hidden while it shows), so the page is never pushed.
+   The address field, the strip and its list are workspace-browser.css; the agent live view is
+   workspace-chrome.css.
+   Owns: the pane frame, the header row, the page area and the note of an empty one (`workspace-*`,
+   `browser-bar`, `browser-body`, `browser-native-slot`, `browser-error`, `browser-loading`).
+   Never: the pane frame/divider (shell.css), native view geometry (native-surface.ts) or the header grid (header.css). */
+
+.workspace-pane { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--surface); }
+
+.browser-bar {
+  position: relative; display: flex; flex: none; align-items: center; gap: 2px; height: 40px; padding: 0 8px;
+  border-bottom: 1px solid var(--line); -webkit-app-region: no-drag; app-region: no-drag;
+}
+.browser-bar .icon-button:disabled { opacity: .35; }
+.browser-loading { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; overflow: hidden; pointer-events: none; }
+.browser-loading::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 1px; background: var(--focus);
+  animation: browser-loading 1.1s linear infinite;
+}
+@keyframes browser-loading { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .browser-loading::after { width: 100%; animation: none; opacity: .5; } }
+@media (pointer: coarse) { .browser-bar { height: 48px; } }
+
+/* the page area: the native view lies exactly on the slot */
+.browser-body { position: relative; display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 0; }
+.browser-native-slot { position: relative; flex: 1 1 auto; min-height: 0; }
+.browser-error {
+  position: absolute; z-index: 2; left: 8px; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 8px 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line)); border-radius: var(--r-md); background: var(--surface);
+  box-shadow: var(--shadow-popover); color: var(--danger); font-size: 13px;
+}
+.browser-error > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+/* a pane without a browser, a file without a picture: a quiet note with an icon in the page's middle */
+.workspace-start {
+  display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  max-width: 320px; margin: 0 auto; padding: 24px; color: var(--muted); font-size: 13px; line-height: 19px; text-align: center;
+}
+.workspace-start > .icon { opacity: .5; }
+.workspace-start > p { margin: 0; }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Owns: the one plain-http exception – the app's own local entrance on 127.0.0.1 (relay/StreamProxy). Everything else
+     stays TLS with the system's certificates; the meeting server is wss. Never: user CAs or other cleartext hosts. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,34 @@
+/* B-078: sub-chats under their parent chat in the chat list (ui/chat/ChatList.tsx, ChatRow.tsx), a message's thread
+   line (MessageItem.tsx) and a thread in the chat's side panel (ThreadPanel.tsx).
+   Owns: these rules. Never: the row itself (chat.css), colours outside tokens.css. */
+
+/* the caret sits in the row's left inset (16 px): it takes no room, so a row with sub-chats keeps every other cell where
+   a row without them has it; above the row's click overlay like the avatar */
+.chat-tree-caret {
+  position: absolute; z-index: 1; top: 50%; left: 1px; display: grid; place-items: center; width: 14px; height: 24px;
+  transform: translateY(-50%); border-radius: var(--r-xs); color: var(--muted);
+}
+.chat-tree-caret:hover { background: var(--hover); color: var(--text); }
+/* a finger needs more than 14 px: an invisible 36 × 44 px hit area over the avatar's left part (nothing moves) */
+@media (pointer: coarse) {
+  .chat-tree-caret { z-index: 2; }
+  .chat-tree-caret::before { content: ''; position: absolute; top: 50%; left: 0; width: 36px; height: 44px; transform: translateY(-50%); }
+}
+/* a sub-chat: indented under its parent's avatar, a smaller avatar, the same row height */
+.chat-row.child { padding-left: 40px; }
+.chat-row.child .chat-row-avatar { width: 36px; place-items: center; }
+.mobile-main .chat-row.child { padding-left: 40px; }
+
+/* under a message with a thread: one quiet line ("3 replies · Mara") that opens or closes it in the side panel */
+.thread-link {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: 24px; margin: 2px 0 0 -6px; padding: 0 6px;
+  border-radius: var(--r-sm); color: var(--muted); font-size: 12px; line-height: 16px;
+}
+.thread-link > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thread-link:hover, .thread-link[aria-expanded=true] { background: var(--hover); color: var(--text); }
+.thread-link.unread { color: var(--badge-bg); }
+.message.human .thread-link { display: flex; width: fit-content; margin: 2px -6px 0 auto; }
+
+/* the thread in the side panel: a chat column of its own (a chat-column container), the quote of its message on top */
+.chat-panel > .thread-column { flex: 1 1 auto; }
+.thread-anchor { flex: none; padding: 8px var(--panel-x) 0; }

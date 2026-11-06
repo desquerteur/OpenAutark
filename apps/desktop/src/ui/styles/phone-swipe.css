@@ -1,0 +1,5 @@
+/* B-078: on the phone, a sideways swipe between a chat's messages and its area (ui/workspace/phone-swipe.ts). The chat
+   column leaves vertical panning to the browser and hands sideways moves to the swipe; nothing animates or moves.
+   Owns: the touch handling hint of the phone's chat column. Never: the area's or the messages' layout (chat-area.css, mobile.css). */
+
+.mobile-shell .chat-column { touch-action: pan-y pinch-zoom; }

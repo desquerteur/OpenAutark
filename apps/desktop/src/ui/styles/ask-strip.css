@@ -1,0 +1,30 @@
+/* B-078: the important-question strip above the composer (ui/chat/AskStrip.tsx). Fixed height, nothing shifts:
+   one line – avatar, the question (a click jumps to its message), the quick answers (each fills the composer). Its
+   text gives way first; the buttons keep their size. Works in light and dark (tokens only) and at phone width.
+   Owns: .ask-strip*. Never: colors outside tokens.css. */
+.ask-strip { /* the composer's axis and width (chat.css .message-column, .composer-area) */
+  --col-inset: clamp(16px, 5cqi, 24px);
+  display: flex; flex: none; align-items: center; gap: 8px; box-sizing: border-box; width: min(var(--message-max), 100cqi - 2 * var(--col-inset));
+  height: 44px; margin: 0 auto 6px; padding: 0 8px 0 10px; overflow: hidden;
+  border: 1.5px solid var(--warn); border-radius: var(--r-lg); background: color-mix(in srgb, var(--warn) 6%, var(--surface));
+}
+.ask-strip > .avatar { flex: none; }
+.ask-strip-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.ask-strip-text {
+  display: flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 0; height: 100%; padding: 0;
+  color: var(--text); font-size: 13px; text-align: left; white-space: nowrap;
+}
+.ask-strip-who { flex: none; color: var(--secondary); font-weight: 600; }
+.ask-strip-question { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ask-strip-text:hover .ask-strip-question { text-decoration: underline; text-underline-offset: 3px; }
+.ask-strip-answers { display: flex; flex: none; align-items: center; gap: 4px; }
+.ask-strip-answer {
+  flex: none; max-width: 140px; height: 28px; padding: 0 10px; overflow: hidden; border: 1px solid var(--field);
+  border-radius: 999px; background: var(--surface); color: var(--text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap;
+}
+.ask-strip-answer:hover { background: var(--hover); }
+.ask-strip-answer.quiet { border-color: transparent; background: none; color: var(--secondary); }
+.ask-strip-answer.quiet:hover { background: var(--hover); color: var(--text); }
+@media (pointer: coarse) { .ask-strip { height: 48px; } .ask-strip-answer { height: 34px; } }
+.mobile-shell .ask-strip { width: auto; margin: 0 10px 6px; } /* the phone composer's side margin (mobile.css) */
+.mobile-shell .ask-strip-answer { max-width: 96px; }

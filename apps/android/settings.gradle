@@ -1,0 +1,5 @@
+// Owns: this standalone Android build. Never: configures the desktop build.
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+rootProject.name = 'AutarkAndroid'
+include ':app'

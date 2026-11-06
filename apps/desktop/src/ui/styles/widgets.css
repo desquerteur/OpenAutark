@@ -1,0 +1,186 @@
+/* Ask blocks (web-genui.md §4, §7.3, §7.7): the calm shell (`ask-*`: one subtle surface,
+   optional title + collapsed "why", one-line receipt once answered) and every widget (`w-*`):
+   choice, form, approve (a plain question), checklist (round circles, check +
+   strike-through, thin progress), timer, record + teleprompter (large text, speed, camera
+   preview), upload drop zone, confirm and review. At most one primary + one secondary action.
+   Owns: these looks. Never: display blocks (blocks.css), task rows (tasks.css), colors outside
+   tokens.css. */
+
+/* ---------------------------------------------------------------- shell */
+.ask-block { margin: 14px 0; padding: 14px 16px; border-radius: var(--r-xl); background: var(--sidebar); container-type: inline-size; }
+.ask-block:first-child { margin-top: 0; }
+.ask-block:last-child { margin-bottom: 0; }
+.ask-head { display: flex; align-items: center; gap: 8px; min-width: 0; margin-bottom: 10px; }
+.ask-title { flex: 1 1 auto; min-width: 0; color: var(--text); font-weight: 600; line-height: 1.4; }
+.ask-why-toggle { display: grid; place-items: center; flex: none; width: 26px; height: 26px; margin-left: auto; border-radius: 6px; color: var(--muted); }
+.ask-why-toggle:hover, .ask-why-toggle[aria-expanded=true] { background: var(--hover); color: var(--text); }
+.ask-why { margin: -4px 0 10px; color: var(--secondary); font-size: 12px; line-height: 1.5; }
+.ask-receipt { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; color: var(--secondary); font-size: 13px; line-height: 1.5; }
+.ask-receipt > .icon { margin-top: 2px; color: var(--success); }
+.ask-receipt:first-child { margin-top: 0; }
+.ask-receipt:last-child { margin-bottom: 0; }
+
+/* shared widget parts */
+.w-question { margin-bottom: 10px; color: var(--text); font-weight: 500; line-height: 1.5; }
+.w-details { margin-bottom: 10px; color: var(--secondary); font-size: 13px; }
+.w-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.w-actions .button { min-height: 34px; }
+.ask-block .input { background: var(--surface); font-size: 13px; }
+.ask-block textarea.input { min-height: 72px; resize: vertical; line-height: 1.5; }
+
+/* ---------------------------------------------------------------- choice */
+.w-choice { min-width: 0; }
+.w-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.w-option {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%; min-height: 36px; padding: 7px 14px;
+  border: 1px solid var(--field); border-radius: var(--r-md); background: var(--surface);
+  color: var(--text); font-size: 13px; line-height: 1.4; text-align: left;
+}
+.w-option:hover:not(:disabled) { background: var(--hover); }
+.w-option.is-selected { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
+.w-check {
+  display: grid; place-items: center; flex: none; width: 16px; height: 16px;
+  border: 1.5px solid var(--field); border-radius: var(--r-xs); color: var(--surface);
+}
+.w-option.is-selected .w-check { border-color: var(--text); background: var(--text); }
+.w-other { display: flex; gap: 8px; margin-top: 10px; }
+.w-other .input { flex: 1 1 auto; min-width: 0; padding: 7px 12px; }
+@container (max-width: 420px) {
+  .w-options { flex-direction: column; align-items: stretch; }
+  .w-option { width: 100%; }
+}
+
+/* ---------------------------------------------------------------- form */
+.w-form { display: grid; gap: 12px; }
+.w-form-field { display: grid; gap: 6px; min-width: 0; }
+.w-form-field .field-label { margin: 0; }
+.w-required { color: var(--muted); }
+.w-form-field .input { padding: 8px 12px; }
+.w-select.input { padding: 7px 30px 7px 10px; }
+.w-form-field.has-problem .input { border-color: var(--danger); }
+.w-form-problem { color: var(--danger); font-size: 12px; line-height: 1.4; }
+.w-form-note { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.w-form-toggle { display: flex; align-items: center; gap: 10px; min-height: 32px; color: var(--text); font-size: 13px; cursor: pointer; }
+.w-form-toggle input[type=checkbox] { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--text); }
+.w-form > .w-actions { margin-top: 2px; }
+
+/* ---------------------------------------------------------------- approve */
+.w-approve-main { display: flex; align-items: flex-start; gap: 12px; }
+.w-approve-text { flex: 1 1 auto; min-width: 0; }
+.w-approve .w-question { margin-bottom: 2px; }
+.w-risk { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; }
+.w-risk::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.w-risk.risk-medium { color: var(--warn); }
+.w-risk.risk-high { color: var(--danger); }
+.w-amount { flex: none; color: var(--text); font-size: 17px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+.w-approve .w-details { margin: 8px 0 0; }
+.w-approve > .text-button { display: block; margin-top: 6px; padding: 2px 0; font-size: 12px; }
+.w-note.input { margin-top: 8px; padding: 7px 12px; }
+
+/* ---------------------------------------------------------------- checklist (ChatGPT phone photo) */
+.w-progress-head { margin-bottom: 6px; color: var(--secondary); font-size: 13px; }
+.w-thin-bar { height: 4px; overflow: hidden; border-radius: 4px; background: var(--selected); }
+.w-thin-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--text); transition: width .25s ease-out; }
+.w-checklist ul { margin: 8px 0 0; padding: 0; list-style: none; }
+.w-checklist li > button {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 40px; padding: 8px 0;
+  border-radius: 6px; color: var(--text); text-align: left;
+}
+.w-checklist li + li > button { border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); border-radius: 0; }
+.w-checklist li > button:disabled { opacity: 1; }
+.w-checklist .b-circle { margin-top: 1px; }
+.w-check-text { min-width: 0; line-height: 1.5; }
+.w-checklist li.is-done .w-check-text { color: var(--muted); text-decoration: line-through; }
+.w-checklist li > button:hover .b-circle:not(.is-done) { border-color: var(--secondary); }
+
+/* ---------------------------------------------------------------- timer */
+.w-timer-main { display: flex; align-items: flex-start; gap: 12px; }
+.w-timer-main > .icon { flex: none; margin-top: 2px; color: var(--secondary); }
+.w-timer-text { display: flex; flex-direction: column; min-width: 0; }
+.w-timer .w-question { margin-bottom: 2px; }
+.w-timer-when { display: flex; flex-wrap: wrap; gap: 2px 10px; color: var(--secondary); font-size: 13px; }
+.w-timer-repeat { color: var(--muted); }
+.w-timer .w-actions { margin-top: 10px; }
+
+/* ---------------------------------------------------------------- record + teleprompter */
+.w-record { display: grid; gap: 12px; min-width: 0; }
+.w-record > .w-details { margin: 0; }
+.w-record > .w-actions { margin-top: 0; }
+/* teleprompter: large readable script. A short one is only as tall as its text (min three
+   lines); a long one fills min(40vh, 300px) and scrolls itself while recording (tap pauses). */
+.w-prompter { display: grid; gap: 6px; }
+.w-prompter-text {
+  --prompter-max: min(40vh, 300px);
+  position: relative; min-height: calc(1.45em * 3 + 32px); max-height: var(--prompter-max); padding: 16px 20px; overflow: hidden;
+  border-radius: var(--r-lg); background: var(--surface); color: var(--text);
+  font-size: 26px; font-weight: 500; line-height: 1.45; letter-spacing: -.2px; cursor: pointer;
+}
+.w-prompter-text.is-static { cursor: default; }
+.w-prompter-text .md p { margin-bottom: .6em; }
+.w-prompter-text .md > :last-child, .w-prompter-text ul:last-child { margin-bottom: 0; }
+.w-prompter-text ul { margin: .4em 0 0; padding-left: 1.2em; }
+.w-prompter-text.is-paused { color: var(--secondary); }
+/* room after the last line so a long script can scroll fully past the reading line */
+.w-prompter-end { height: calc(var(--prompter-max) * .7); }
+.w-prompter-controls { display: flex; align-items: center; gap: 4px; color: var(--secondary); font-size: 12px; }
+.w-prompter-controls > .tabular { min-width: 16px; text-align: center; }
+.w-prompter-controls .text-button { margin-left: 8px; font-size: 12px; }
+/* camera / screen preview under the script */
+.w-record-preview { display: block; width: 100%; max-height: 360px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--r-lg); background: var(--chrome); }
+.w-record-preview.is-mirrored { transform: scaleX(-1); }
+.w-record.mode-screen .w-record-preview { object-fit: contain; }
+.w-record-playback { display: block; width: 100%; border-radius: var(--r-lg); }
+audio.w-record-playback { height: 40px; border-radius: 0; }
+video.w-record-playback { max-height: 360px; background: var(--chrome); }
+.w-record-status { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 13px; }
+.w-record-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--danger); animation: wf-rec 1.2s ease-in-out infinite; }
+.w-record-dot.is-starting { background: var(--muted); animation: none; } /* Record clicked, the recorder not yet writing */
+@keyframes wf-rec { 50% { opacity: .35; } }
+.w-record-error { color: var(--danger); font-size: 12px; line-height: 1.5; }
+
+/* ---------------------------------------------------------------- upload */
+.w-upload { display: grid; gap: 10px; }
+.w-upload > .w-details { margin: 0; }
+.w-drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%;
+  min-height: 112px; padding: 16px; border: 1.5px dashed var(--field); border-radius: var(--r-lg);
+  background: var(--surface); color: var(--secondary); font-size: 13px; text-align: center;
+}
+.w-drop:hover:not(:disabled), .w-drop.is-over { border-color: var(--focus); color: var(--text); }
+.w-drop.is-over { background: color-mix(in srgb, var(--hover) 50%, var(--surface)); }
+.w-drop .icon { opacity: .6; }
+.w-drop small { font-size: 12px; }
+.w-upload-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.w-upload-list li { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; }
+.w-upload-list li > .icon { flex: none; opacity: .6; }
+.w-upload-list li .muted { flex: none; font-size: 12px; }
+.w-upload-list li.is-running { color: var(--secondary); }
+.w-upload-name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-upload > .w-actions { margin-top: 0; }
+
+/* ---------------------------------------------------------------- confirm + review */
+.w-confirm .md { color: var(--text); }
+.w-review { display: grid; gap: 10px; min-width: 0; }
+.w-review > .w-question, .w-review > .w-actions { margin: 0; }
+.w-review-media { min-width: 0; }
+.w-review-media .b-media-img { max-height: 420px; border: 1px solid var(--line); }
+.w-review-media .b-media-video { max-height: 420px; }
+.w-review-file {
+  display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface);
+}
+.w-review-file > .icon { flex: none; opacity: .7; }
+.w-review-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.w-review-file .button { flex: none; min-height: 32px; padding: 5px 12px; font-size: 12px; }
+.w-review-note { display: grid; gap: 0; }
+
+/* ---------------------------------------------------------------- record: device choice + unsent take (F07) */
+/* camera/microphone select at the end of the ready row; wraps under the buttons on narrow cards */
+.w-record-device { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; margin-left: auto; }
+.w-record-device .w-record-select { max-width: 240px; }
+.w-record-device-note { flex: none; color: var(--secondary); font-size: 12px; white-space: nowrap; }
+.w-record-resume { margin: 0; color: var(--secondary); font-size: 13px; line-height: 1.5; }
+@container (max-width: 420px) {
+  .w-record-device { flex: 1 1 100%; margin-left: 0; }
+  .w-record-device .w-record-select { flex: 1 1 auto; max-width: none; }
+}

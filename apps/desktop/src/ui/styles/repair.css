@@ -1,0 +1,67 @@
+/* Repair screen (23.10.2026, ui/repair/RepairScreen.tsx): one centered card on the chrome
+   background, scrollable in small windows; buttons wrap at narrow widths. Light and dark come from
+   the tokens. The window is frameless (titleBarStyle hidden) and the screen sits outside .app, so
+   it keeps the shared --header-h area draggable at the top: the window
+   stays movable and the caption controls / traffic lights keep their room; buttons stay no-drag.
+   Owns: .repair-* rules only. Never: rules for the app shell or other screens, colors outside tokens.css. */
+
+.repair-view {
+  height: 100%;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges; /* B-044 §2: a bar that comes never shifts the centred card */
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: var(--chrome);
+  color: var(--text);
+}
+:root[data-platform=desktop] .repair-view { padding-top: calc(var(--header-h) + 16px); }
+:root[data-platform=desktop] .repair-view::before {
+  content: ''; position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+  -webkit-app-region: drag; app-region: drag;
+}
+.repair-view :is(button, a, input, select, textarea) { -webkit-app-region: no-drag; app-region: no-drag; }
+.repair-card {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--secondary);
+}
+.repair-card > .icon, .repair-card > svg { color: var(--warn); }
+.repair-card h1 { margin: 4px 0 0; color: var(--text); font-size: 18px; font-weight: 600; line-height: 1.35; }
+.repair-card p { margin: 0; font-size: 14px; line-height: 1.5; }
+.repair-detail {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--chrome);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px !important;
+  overflow-wrap: anywhere;
+}
+.repair-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.repair-copies { display: flex; flex-direction: column; border-top: 1px solid var(--line); margin-top: 6px; }
+.repair-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--text);
+}
+.repair-copy > span { min-width: 0; overflow-wrap: anywhere; }
+.repair-note { color: var(--text); overflow-wrap: anywhere; }
+.repair-note.error { color: var(--danger); }
+.repair-muted { color: var(--muted); font-size: 12px !important; }
+
+@media (max-width: 420px) {
+  .repair-card { padding: 18px 16px; }
+  .repair-copy { flex-direction: column; align-items: flex-start; }
+}

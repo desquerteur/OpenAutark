@@ -1,0 +1,238 @@
+/* Team: the team sidebar (agents nested under their manager, height-limited report blocks, status ring/dot +
+   one-line status), the agent page (identity, facts, editor, model, skills, schedules, runs with tool calls; its
+   Browser view's two fixed halves: its own browser live, its area), the name dropdown in a page header and the hire dialog.
+   Owns: classes from src/ui/team/*. Never: colors outside tokens.css. */
+
+/* ---------------------------------------------------------------- status avatar */
+.agent-status-avatar { position: relative; display: inline-grid; flex: none; }
+.agent-status-dot {
+  position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border: 2px solid var(--surface);
+  border-radius: 50%; background: var(--muted);
+}
+.team-nav .agent-status-dot { border-color: var(--sidebar); }
+.agent-status-avatar.status-waiting .agent-status-dot { background: var(--warn); }
+.agent-status-avatar.status-error .agent-status-dot { background: var(--danger); }
+
+/* ---------------------------------------------------------------- sidebar */
+.team-nav { padding: 12px 0 18px; }
+.team-rows { display: flex; flex-direction: column; }
+.team-space + .team-space { margin-top: 10px; }
+.team-space-title { padding: 10px 20px 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.team-row {
+  position: relative; display: flex; align-items: center; min-height: 52px;
+  padding: 0 12px 0 calc(4px + var(--depth, 0) * 14px); color: var(--text);
+}
+.team-row:hover { background: var(--hover); }
+.team-row.active { background: var(--selected); }
+.team-row:has(.team-row-open:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
+.team-caret { display: grid; place-items: center; flex: none; width: 24px; height: 32px; border-radius: 6px; color: var(--muted); }
+.team-caret:hover { color: var(--text); }
+.team-caret-space { flex: none; width: 24px; }
+.team-row-open { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; align-self: stretch; min-width: 0; padding: 6px 0; color: inherit; text-align: left; }
+.team-row-open:focus-visible { outline: none; }
+.team-row-text { display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; min-width: 0; }
+.team-reports { display: flex; flex-direction: column; }
+.team-reports.limited { max-height: 264px; overflow: hidden auto; overscroll-behavior: contain; box-shadow: inset 0 -1px 0 var(--line); }
+.team-empty { padding: 8px 20px; }
+/* the collapsed "Archived (n)" group at the end of the list (ArchivedGroup.tsx): one fixed toggle row, opening adds rows below it only */
+.team-archived { margin-top: 10px; }
+.team-archived-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 32px; padding: 0 20px; color: var(--muted); font-size: 12px; font-weight: 600; text-align: left; }
+.team-archived-toggle:hover { color: var(--text); }
+.team-row.archived .row-title { color: var(--secondary); }
+@media (pointer: coarse) { .team-archived-toggle { min-height: 44px; } }
+
+/* ---------------------------------------------------------------- pages */
+.team-view, .agent-view { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; background: var(--surface); }
+.team-scroll, .agent-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.agent-column { max-width: 740px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 40px) 56px; }
+.team-view > .empty-state { padding: 24px clamp(16px, 4vw, 40px); } /* #/team's pointer to the sidebar, off the zone's edge */
+
+/* ---------------------------------------------------------------- agent page */
+.agent-column > .spinner { display: block; margin: 24px auto; }
+.agent-archived { display: inline-block; margin-bottom: 12px; padding: 2px 10px; border-radius: 10px; background: var(--hover); color: var(--secondary); font-size: 12px; }
+.agent-profile { margin-bottom: 32px; }
+.agent-identity { display: flex; align-items: center; gap: 16px; }
+.agent-identity-text { flex: 1 1 auto; min-width: 0; }
+.agent-name { color: var(--text); font-size: 22px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.agent-role { margin-top: 2px; color: var(--secondary); font-size: 13px; }
+.agent-status-line { margin-top: 4px; color: var(--secondary); font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.agent-status-label { font-weight: 500; }
+.agent-status-line.status-working .agent-status-label { color: var(--text); }
+.agent-status-line.status-waiting .agent-status-label { color: var(--warn); }
+.agent-status-line.status-error .agent-status-label { color: var(--danger); }
+.agent-editor { display: flex; flex-direction: column; margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-lg); }
+.agent-editor .field-label { margin-top: 10px; }
+.agent-editor .field-label:first-child { margin-top: 0; }
+.agent-instructions-input.input { min-height: 160px; resize: vertical; font-size: 13px; line-height: 1.5; }
+.agent-editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.agent-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 18px; margin: 22px 0 0; font-size: 13px; }
+.agent-facts > div { display: contents; }
+.agent-facts dt { color: var(--muted); }
+.agent-facts dd { display: flex; flex-wrap: wrap; gap: 6px 14px; min-width: 0; margin: 0; color: var(--text); }
+.agent-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-size: 13px; }
+button.agent-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+.agent-link > .ai-tag { margin-left: -1px; } /* the link's 6 px gap less 1: the same 5 px before "AI" as in every other list */
+.agent-section-title { margin: 0 0 8px; color: var(--text); font-size: 15px; font-weight: 600; }
+.agent-instructions { margin-top: 22px; }
+/* the instructions as rendered Markdown, compact: headings in the text's size, tight lists; until "Show
+   more" only the first blocks (no ellipsis after the text's own full stop) */
+.agent-instructions-text.md { color: var(--secondary); font-size: 13px; line-height: 1.55; }
+.agent-instructions-text.md :is(h1, h2, h3, h4, h5, h6) { margin: 8px 0 2px; color: var(--text); font-size: 13px; line-height: 1.55; }
+.agent-instructions-text.md > :first-child { margin-top: 0; }
+.agent-instructions-text.md :is(p, ul, ol) { margin: 0 0 4px; }
+.agent-instructions-text.md li + li { margin-top: 0; }
+/* clipped: the first three blocks, a list's first two points – whole lines, never one cut through */
+.agent-instructions-text.clipped { max-height: calc(1.55em * 8); overflow: hidden; }
+.agent-instructions-text.clipped > :nth-child(n+4), .agent-instructions-text.clipped li:nth-child(n+3) { display: none; }
+/* a heading as the last shown block would stand alone over "Show more" (its text is hidden): it goes too */
+.agent-instructions-text.clipped > :is(h1, h2, h3, h4, h5, h6):nth-child(3) { display: none; }
+.agent-instructions .text-button { font-size: 12px; }
+.agent-runs { margin-top: 8px; }
+/* the Browser view (AgentBrowser.tsx): two halves of the page, never sized by their content – the live view of the
+   agent's own browser above, its area (a workspace surface on agent:<id>) below, one 1 px line between; in the area's
+   full view the area alone takes the view */
+.agent-split { display: grid; flex: 1 1 0; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); min-width: 0; min-height: 0; }
+.agent-split.area-full { grid-template-rows: minmax(0, 1fr); }
+.agent-area { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.agent-split > .agent-area:not(:first-child) { border-top: 1px solid var(--line); }
+.agent-area > .workspace-pane { flex: 1 1 auto; height: auto; min-height: 0; }
+/* the shown tab stays inside the area; the address field's suggestions may reach over its page */
+.agent-area > .workspace-pane > :last-child { min-height: 0; overflow: hidden; }
+
+/* ---------------------------------------------------------------- runs */
+.run-list, .run-items { margin: 0; padding: 0; list-style: none; }
+.run-row { border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.run-head { display: flex; align-items: center; gap: 8px; }
+.run-toggle { display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0; min-height: 52px; padding: 8px 6px; border-radius: var(--r-md); color: var(--text); text-align: left; }
+.run-toggle:hover { background: var(--hover); }
+.run-state { display: grid; place-items: center; flex: none; width: 18px; color: var(--secondary); }
+.run-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--field); }
+.run-dot.done { background: var(--success); }
+.run-dot.failed { background: var(--danger); }
+.run-dot.unknown { background: var(--warn); }
+.run-text { display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; min-width: 0; }
+.run-title, .run-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.run-title { font-size: 14px; }
+.run-meta { color: var(--muted); font-size: 12px; }
+.run-time { flex: none; color: var(--muted); font-size: 11px; }
+.run-error { margin: 0 6px 8px 36px; color: var(--danger); font-size: 12px; overflow-wrap: anywhere; }
+.run-route { margin: 0 6px 6px 36px; font-size: 12px; }
+.run-loading { padding: 10px 36px; }
+.run-items { margin: 0 0 12px 30px; padding-left: 12px; border-left: 1px solid var(--line); }
+.run-items > .empty-state, .run-list ~ .empty-state { padding: 8px 0; }
+/* D5 step lines (run-items.tsx): one 24 px line each – a fixed 16 px icon slot (a spinner while the call
+   runs), the verb, the target with an ellipsis; red when it failed; a thought is muted and shimmers while
+   it is written. Nothing on the line changes size between running and done. */
+.run-item { padding: 0; font-size: 13px; }
+.run-item-head { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; min-height: 24px; padding: 0 4px; border-radius: 6px; color: var(--text); line-height: 1.4; text-align: left; }
+.run-item-head:hover, .run-item-head[aria-expanded=true] { background: var(--hover); }
+.run-item .icon { flex: none; opacity: .6; }
+.run-item-icon { display: inline-grid; flex: none; place-items: center; width: 16px; height: 16px; color: var(--secondary); }
+.run-item-icon > .spinner { opacity: .8; }
+.run-item-verb { flex: none; color: var(--secondary); white-space: nowrap; }
+.run-item-target { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.run-item-target.mono { font: 12px/1.4 var(--mono); }
+.run-item.failed :is(.run-item-icon, .run-item-verb, .run-item-target) { color: var(--danger); }
+.run-item.failed .run-item-icon .icon { opacity: 1; }
+.run-item:is(.reasoning, .answer, .more) :is(.run-item-verb, .run-item-target) { color: var(--muted); }
+.run-item.approval.failed .run-item-verb { color: var(--danger); }
+.run-item.reasoning.live .run-item-head :is(.run-item-verb, .run-item-target) {
+  background: var(--shimmer-text) 0 0 / 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: wf-shimmer 1.8s linear infinite;
+}
+@keyframes wf-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .run-item.reasoning.live .run-item-head :is(.run-item-verb, .run-item-target) { animation: none; background: none; color: var(--muted); } }
+.run-thought { color: var(--secondary); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.run-thought > strong { display: block; margin: 4px 0 2px; color: var(--text); font-weight: 600; }
+.run-thought > p { margin: 0 0 6px; white-space: pre-wrap; }
+.run-item-note { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+.run-effect { flex: none; margin-left: auto; padding: 0 6px; border-radius: 6px; background: var(--hover); color: var(--secondary); font-size: 11px; }
+.run-effect.confirmed { color: var(--success); }
+.run-effect.failed { color: var(--danger); }
+.run-effect.unknown, .run-effect.pending { color: var(--warn); }
+.run-item-body { padding: 4px 4px 8px 26px; }
+.run-item-body > .run-item-text { margin-left: 0; }
+.run-data + .run-data { margin-top: 6px; }
+.run-data-label { display: block; margin-bottom: 2px; color: var(--muted); font-size: 11px; }
+.run-data-value {
+  max-height: 260px; margin: 0; padding: 8px 10px; overflow: auto; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--sidebar); font: 12px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.run-item-text { margin: 2px 0 4px 26px; color: var(--secondary); font-size: 12px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.run-plan { margin: 2px 0 4px 26px; padding-left: 16px; color: var(--secondary); font-size: 12px; }
+
+/* ---------------------------------------------------------------- hire dialog */
+.new-agent .input { margin-bottom: 12px; }
+
+/* ---------------------------------------------------------------- touch */
+@media (pointer: coarse) {
+  .team-row,
+.run-toggle { min-height: 56px; }
+  .team-caret { width: 36px; height: 44px; }
+  .run-item-head { min-height: 44px; }
+}
+.mobile-shell .agent-column { padding: 4px 16px calc(24px + env(safe-area-inset-bottom)); } /* the stack's reserved notice line above is the top air (mobile.css) */
+.mobile-shell .agent-identity { flex-wrap: wrap; }
+
+/* ---------------------------------------------------------------- agent editor (O6: AgentEditor.tsx, AvatarPicker.tsx) */
+.agent-editor { gap: 16px; }
+.agent-editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 14px 16px; }
+.agent-field { display: flex; flex-direction: column; min-width: 0; }
+.agent-editor .agent-field .field-label { margin: 0 0 6px; }
+.agent-field-hint { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.agent-editor > .agent-editor-actions { margin-top: 0; }
+.avatar-picker { display: flex; flex-direction: column; gap: 12px; }
+.avatar-picker-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.avatar-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.avatar-swatch { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; }
+.avatar-swatch.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--focus); }
+.avatar-swatch:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.avatar-swatch:disabled { opacity: .45; }
+.avatar-swatch[data-color="0"] { background: var(--av-0-bg); color: var(--av-0-fg); }
+.avatar-swatch[data-color="1"] { background: var(--av-1-bg); color: var(--av-1-fg); }
+.avatar-swatch[data-color="2"] { background: var(--av-2-bg); color: var(--av-2-fg); }
+.avatar-swatch[data-color="3"] { background: var(--av-3-bg); color: var(--av-3-fg); }
+.avatar-swatch[data-color="4"] { background: var(--av-4-bg); color: var(--av-4-fg); }
+.avatar-swatch[data-color="5"] { background: var(--av-5-bg); color: var(--av-5-fg); }
+.avatar-emoji-picker { display: flex; flex-direction: column; gap: 8px; }
+.avatar-emoji-picks { display: flex; flex-wrap: wrap; gap: 4px; }
+.avatar-emoji-pick { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; font-size: 20px; line-height: 1; }
+.avatar-emoji-pick:hover { background: var(--hover); }
+.avatar-emoji-pick.on { background: var(--selected); }
+.avatar-emoji-input.input { max-width: 220px; }
+.avatar-image-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (pointer: coarse) {
+  .avatar-swatch { width: 40px; height: 40px; }
+  .avatar-emoji-pick { width: 44px; height: 44px; }
+}
+.mobile-shell .agent-editor { padding: 14px 12px; }
+
+/* ---------------------------------------------------------------- humans and AI (B-041 §8: parts.tsx AiTag) */
+.ai-tag { flex: none; margin-left: 5px; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .04em; line-height: 1; }
+.team-row-name { display: flex; align-items: baseline; min-width: 0; }
+.team-row-name .row-title { flex: 0 1 auto; } /* on the line's baseline with the "AI" (as in the sidebar), not raised */
+.agent-name .ai-tag { margin-left: 8px; font-size: 11px; vertical-align: baseline; }
+
+/* ---------------------------------------------------------------- name dropdown in a page header (TitleMenu.tsx) */
+.title-menu {
+  display: inline-flex; align-items: center; gap: 7px; justify-self: start; min-width: 0; max-width: 100%; height: 26px;
+  margin: -3px 0 -3px -6px; padding: 0 6px; border-radius: var(--r-sm); color: var(--text); font-size: 14px; font-weight: 500; line-height: 20px;
+}
+.title-menu:hover { background: var(--hover); }
+.title-menu-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.title-menu-caret { flex: none; opacity: .55; }
+.title-menu[aria-expanded=true] .title-menu-caret { opacity: 1; }
+
+/* ---------------------------------------------------------------- agent page sections (AgentDetails.tsx) */
+.agent-section { margin: 0 0 28px; }
+.agent-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; margin-bottom: 4px; }
+.agent-section-head > .agent-section-title { margin: 0; }
+.agent-row { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 6px; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.agent-row:hover { background: var(--hover); }
+.agent-row-text { display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; min-width: 0; }
+.agent-row-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.agent-row-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+.agent-work-link { margin: -16px 0 24px; padding: 0; font-size: 13px; }
+/* the phone's Add: a quiet text button at the top of the team list (the side header has the plus on a computer) */
+.team-add { display: block; padding: 8px 20px; font-size: 14px; }

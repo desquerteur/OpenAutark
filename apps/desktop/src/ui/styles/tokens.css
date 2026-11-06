@@ -1,0 +1,194 @@
+/* Design tokens (Codex/ChatGPT-desktop-like). Source: decisions-vision.md §5.3–5.5.
+   Owns: every color, radius, size and font value; light, dark and system themes; provider
+   colors; the avatar palette; and the --wf-* aliases used by generative-UI blocks.
+   Never: component layout (see base.css and the per-area files). */
+
+:root {
+  color-scheme: light;
+  --font: "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: Consolas, "SF Mono", ui-monospace, monospace;
+
+  --chrome: #f3f3f3;
+  --sidebar: #f5f5f5;
+  --surface: #fff;
+  /* menus and popovers lie over the content: one step lighter than it in dark (Codex), the surface in light */
+  --elevated: #fff; --elevated-hover: #e9eaec; --elevated-selected: #dfe2e5;
+  --elevated-line: #dadcde; /* a menu's or popover's edge: in dark one step lighter than --line, so it parts from the page */
+  --text: #1a1c1f;
+  --secondary: #55595e;
+  --muted: #72767c;
+  --line: #dadcde;
+  --hover: #e9eaec;
+  --selected: #dfe2e5;
+  /* a hovered tab on the content surface beside a chosen one (workspace strip): under half-way from the
+     surface to --selected in both themes (resolved per theme here on the root), so a hover never reads
+     as a second chosen tab – light --hover sits too near --selected on white */
+  --tab-hover: color-mix(in srgb, var(--selected) 45%, var(--surface));
+  --field: #d1d3d6;
+  --switch-knob: #fff; /* an off switch's knob: light on the grey track in both themes (an on switch's knob is the surface) */
+  /* a disabled control: how far it fades, and the edge and knob of a disabled off switch (settings.css) – quieter in
+     dark, where a faded control read as enabled (visual pass settings-2, round 3) */
+  --disabled-opacity: .55; --field-disabled: #d1d3d6;
+  --update: #009fe3;
+  --update-hover: #008ecb;
+  --danger: #bc5252;
+  /* a filled destructive button (Delete in a confirm): white text needs a deep red in both themes (≥ 4.5:1) */
+  --danger-fill: #bc5252; --danger-fill-fg: #fff;
+  /* status text (Limit reached, Sign-in needed, Connected …) reads at ≥ 4.5:1 on the surface and the light chrome (round 3: 4.29 and 4.15) */
+  --warn: #b5530f;
+  --success: #367d55;
+  --connecting: #3f7fc0; /* a linked PC being dialed (Settings › Devices status dot) */
+  --remote: #1570d6; /* B-076: a website running on another PC – its glow and mark (workspace-chrome.css .remote-web-*) */
+  --focus: #868686;
+  --tooltip-bg: #1a1c1f;
+  --tooltip-fg: #fff;
+  --backdrop: #0005;
+
+  /* provider colors (B-078: the rail shows a plan's provider by colour only – Claude, Codex, and a small fixed palette
+     for any other provider, picked per provider id in shell/QuotaRail.tsx providerClass) */
+  --provider-claude: #a4472c;
+  --provider-claude-bar: #b5593d;
+  --provider-codex: #2b62b8;
+  --provider-codex-bar: #3a74cc;
+  --provider-other-0: #6b4fb0; --provider-other-1: #2f7d57; --provider-other-2: #9a6a10; --provider-other-3: #b0406e;
+
+  /* agent avatar palette: 0 = default violet, 1..5 */
+  --av-0-bg: #ded8ef; --av-0-fg: #5b448c;
+  --av-1-bg: #d7e9df; --av-1-fg: #315d49;
+  --av-2-bg: #f1dfd2; --av-2-fg: #855334;
+  --av-3-bg: #d4e2f2; --av-3-fg: #3c5d86;
+  --av-4-bg: #ead9e3; --av-4-fg: #7b4967;
+  --av-5-bg: #e3e5d0; --av-5-fg: #5f6335;
+  --human-bg: #efb340; --human-fg: #49330c;
+
+  /* shadows */
+  --shadow-composer: 0 2px 10px #00000005;
+  --shadow-popover: 0 5px 24px #00000018;
+  --shadow-panel: -6px 0 20px #00000012; /* a drawer lying over content (Work's detail, side panels): visible, still soft */
+  --shadow-raised: 0 1px 2px #00000014; /* selected segment, switch knob */
+  --shadow-sheet: 0 -6px 28px #0000001f; /* phone bottom sheets */
+
+  /* counters (rail/tab badge, unread) and fixed light surfaces */
+  --badge-bg: #009fe3;
+  --badge-fg: #fff;
+  --qr-bg: #fff; /* QR codes need a light quiet zone in both themes */
+  /* the caret of native selects (base.css select.select): --text at the Select caret's 55 % */
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%231a1c1f' fill-opacity='.55' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
+
+  /* the × of a search field's clear button (base.css): a mask, only its shape counts, so one value for both themes */
+  --clear-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z'/%3E%3C/svg%3E");
+
+  /* a scroller's edges (chat.css .message-scroller): a line scrolled up to the very top edge fades out over
+     6 px only (owner 31.10.2026: no darker band a centimetre below the top), one scrolled down to the composer
+     over 16 px; at rest the scroller's insets keep the first and last line clear of both */
+  --mask-fade-top-foot: linear-gradient(to bottom, transparent, #000 6px,
+    #000 calc(100% - 16px), rgba(0, 0, 0, .2) calc(100% - 8px), transparent calc(100% - 2px));
+  /* a height-limited list's foot (team.css .new-agent .template-list): its content fades out over 20 px above
+     a 6 px foot (the divider under it is drawn outside the mask, by the list's frame) */
+  --mask-fade-foot: linear-gradient(to bottom, #000 calc(100% - 26px), transparent calc(100% - 6px));
+  /* drawn edges (resolved per theme on the root, where --line and --surface are set): a 1 px divider as a
+     background image the area sizes and places (a scroll list's fixed top or bottom edge, as wide as its
+     column), and covered content fading into the page beside a drawer (tasks.css .tasks-detail::after) */
+  --line-fill: linear-gradient(var(--line), var(--line));
+  --fade-to-surface: linear-gradient(to right, transparent, var(--surface));
+
+  --fade-above: linear-gradient(transparent, var(--surface)); /* over a pinned foot bar's edge: content scrolling under it fades out (first-run.css) */
+  /* the moving highlight of live text (a working caption, a thought being written – chat.css, team.css): a
+     text-clipped background, sized 250 % wide and slid by @keyframes wf-shimmer (team.css) */
+  --shimmer-text: linear-gradient(90deg, var(--muted) 0%, var(--muted) 40%, var(--text) 50%, var(--muted) 60%, var(--muted) 100%);
+
+  /* sizes */
+  --rail-w: 56px;
+  --sidebar-default: 288px;
+  --header-h: 48px;
+  --panel-w: 344px;
+  --message-max: 760px;
+  --row-h: 56px;
+  --msg-gap: 24px;
+  --set-row-h: 56px;
+  --dialog-top: min(10vh, 72px); /* where an anchored dialog's top edge stays (overlays.css dialog.dialog.anchored) */
+  /* Native controls occupy the edges of the existing header; browser/PWA pages reserve neither. */
+  --caption-left: 0px;
+  --caption-reserve: 0px;
+
+  /* radii */
+  --r-xs: 5px; --r-sm: 7px; --r-md: 10px; --r-lg: 12px; --r-xl: 14px; --r-shell: 18px; --r-composer: 20px;
+  --r-sheet: var(--r-lg); /* the content sheet's top-left corner below the header row (shell.css) */
+
+  /* --wf-* aliases for blocks and sandboxed apps (web-genui.md §6) */
+  --wf-bg: var(--surface);
+  --wf-surface: var(--sidebar);
+  --wf-fg: var(--text);
+  --wf-muted: var(--muted);
+  --wf-border: var(--line);
+  --wf-accent: var(--text);
+  --wf-accent-fg: var(--surface);
+  --wf-success: var(--success);
+  --wf-warning: var(--warn);
+  --wf-danger: var(--danger);
+  --wf-radius: var(--r-md);
+  --wf-font: var(--font);
+  --wf-mono: var(--mono);
+  --wf-space: 8px;
+  --wf-c1: #3c5d86; --wf-c2: #b5593d; --wf-c3: #315d49; --wf-c4: #7b4967; --wf-c5: #5f6335; --wf-c6: #5b448c;
+}
+
+/* dark values, shared by explicit dark and system-dark */
+/* Window Controls Overlay exposes the usable rectangle, regardless of which edge holds buttons.
+   Only the unavailable-geometry defaults differ by host. Fullscreen's full-width rect reserves zero. */
+:root[data-platform=desktop] {
+  --caption-left: env(titlebar-area-x, var(--caption-left-fallback, 0px));
+  --caption-reserve: max(0px, calc(100vw - var(--caption-left) - env(titlebar-area-width, calc(100vw - var(--caption-left) - var(--caption-right-fallback, 150px)))));
+}
+:root[data-platform=desktop][data-os=mac] { --caption-left-fallback: 80px; --caption-right-fallback: 0px; }
+
+:root[data-theme=dark] {
+  color-scheme: dark;
+  --chrome: #202020; --sidebar: #232323; --surface: #2b2b2b; --text: #ececec; --secondary: #c9c9c9; --muted: #aaa;
+  --line: #454545; --hover: #343434; --selected: #424242; --field: #535353; --switch-knob: #cfcfcf; --disabled-opacity: .4; --field-disabled: #474747;
+  --elevated: #3a3a3a; --elevated-hover: #464646; --elevated-selected: #505050; --elevated-line: #626262;
+  --danger: #e07a7a; --warn: #f0954f; --success: #6cc08f; --focus: #9a9a9a; --connecting: #7fb0e6; --remote: #5aa9ff;
+  --danger-fill: #b03f3f; --danger-fill-fg: #fff;
+  --tooltip-bg: #0b0b0b; --backdrop: #0009;
+  --provider-claude: #e6a186; --provider-claude-bar: #c8714f; --provider-codex: #8fb6f2; --provider-codex-bar: #6d9ce6;
+  --provider-other-0: #b9a6ec; --provider-other-1: #8fd0ab; --provider-other-2: #e0bd73; --provider-other-3: #e59ab9;
+  --av-0-bg: #3b3352; --av-0-fg: #cfc2f2;
+  --av-1-bg: #2c4136; --av-1-fg: #b5dcc6;
+  --av-2-bg: #4a372a; --av-2-fg: #ecc9ad;
+  --av-3-bg: #2d3b4d; --av-3-fg: #b8cdea;
+  --av-4-bg: #45313d; --av-4-fg: #e4bfd4;
+  --av-5-bg: #3c3e2a; --av-5-fg: #d6daa8;
+  --shadow-composer: 0 2px 10px #00000030;
+  --shadow-popover: 0 10px 32px #0000008c, 0 2px 6px #00000059; --shadow-panel: -6px 0 22px #00000059;
+  --shadow-raised: 0 1px 2px #00000066; --shadow-sheet: 0 -6px 28px #00000080;
+  --badge-bg: #009fe3; --badge-fg: #fff; --qr-bg: #fff;
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%23ececec' fill-opacity='.55' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
+  --wf-c1: #8fb3e6; --wf-c2: #e6a186; --wf-c3: #8fd0ab; --wf-c4: #d9a5c4; --wf-c5: #c8cc8c; --wf-c6: #b9a6ec;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme=system] {
+    color-scheme: dark;
+    --chrome: #202020; --sidebar: #232323; --surface: #2b2b2b; --text: #ececec; --secondary: #c9c9c9; --muted: #aaa;
+    --line: #454545; --hover: #343434; --selected: #424242; --field: #535353; --switch-knob: #cfcfcf; --disabled-opacity: .4; --field-disabled: #474747;
+    --elevated: #3a3a3a; --elevated-hover: #464646; --elevated-selected: #505050; --elevated-line: #626262;
+    --danger: #e07a7a; --warn: #f0954f; --success: #6cc08f; --focus: #9a9a9a; --connecting: #7fb0e6; --remote: #5aa9ff;
+    --danger-fill: #b03f3f; --danger-fill-fg: #fff;
+    --tooltip-bg: #0b0b0b; --backdrop: #0009;
+    --provider-claude: #e6a186; --provider-claude-bar: #c8714f; --provider-codex: #8fb6f2; --provider-codex-bar: #6d9ce6;
+    --provider-other-0: #b9a6ec; --provider-other-1: #8fd0ab; --provider-other-2: #e0bd73; --provider-other-3: #e59ab9;
+    --av-0-bg: #3b3352; --av-0-fg: #cfc2f2;
+    --av-1-bg: #2c4136; --av-1-fg: #b5dcc6;
+    --av-2-bg: #4a372a; --av-2-fg: #ecc9ad;
+    --av-3-bg: #2d3b4d; --av-3-fg: #b8cdea;
+    --av-4-bg: #45313d; --av-4-fg: #e4bfd4;
+    --av-5-bg: #3c3e2a; --av-5-fg: #d6daa8;
+    --shadow-composer: 0 2px 10px #00000030;
+    --shadow-popover: 0 10px 32px #0000008c, 0 2px 6px #00000059; --shadow-panel: -6px 0 22px #00000059;
+    --shadow-raised: 0 1px 2px #00000066; --shadow-sheet: 0 -6px 28px #00000080;
+    --badge-bg: #009fe3; --badge-fg: #fff; --qr-bg: #fff;
+    --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%23ececec' fill-opacity='.55' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
+    --wf-c1: #8fb3e6; --wf-c2: #e6a186; --wf-c3: #8fd0ab; --wf-c4: #d9a5c4; --wf-c5: #c8cc8c; --wf-c6: #b9a6ec;
+  }
+}
+

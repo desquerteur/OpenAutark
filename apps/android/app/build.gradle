@@ -1,0 +1,43 @@
+// Owns: packaging the thin phone client: the debug build (Android debug key, package ...preview, as before) and the
+// release build signed with the release key, which lives outside the repo (apps/android/new-release-key.ps1 makes it;
+// build.ps1 -Release passes it in through AUTARK_ANDROID_KEYSTORE, AUTARK_ANDROID_KEYSTORE_PASSWORD, AUTARK_ANDROID_KEY_ALIAS).
+// Never: bundles desktop credentials or web UI copies, or holds a key or password itself.
+plugins { id 'com.android.application' }
+def releaseKeystore = System.getenv('AUTARK_ANDROID_KEYSTORE')
+android {
+    namespace = 'com.teydralab.autark.android'
+    compileSdk = 36
+    buildToolsVersion = '36.0.0'
+    defaultConfig {
+        applicationId = 'com.teydralab.autark.android'
+        minSdk = 26
+        targetSdk = 36
+        // Release 0.3.3: the first APK published in teydra/OpenAutark (latest-android.json carries this versionCode).
+        versionCode = 3
+        versionName = '0.3.3'
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    signingConfigs {
+        release {
+            if (releaseKeystore) {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv('AUTARK_ANDROID_KEYSTORE_PASSWORD')
+                keyAlias = System.getenv('AUTARK_ANDROID_KEY_ALIAS') ?: 'autark'
+                keyPassword = System.getenv('AUTARK_ANDROID_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        // The preview phones keep updating the debug build in place (same package, same debug key).
+        debug { debuggable = true; applicationIdSuffix = '.preview' }
+        release { if (releaseKeystore) signingConfig = signingConfigs.release }
+    }
+    packaging { resources { excludes += ['META-INF/versions/9/OSGI-INF/MANIFEST.MF'] } }
+}
+dependencies {
+    // Ed25519 and X25519 for Android 8+ (the platform has them only from Android 13); the same version Gradle already caches.
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.79'
+}

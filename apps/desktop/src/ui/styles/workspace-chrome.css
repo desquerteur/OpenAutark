@@ -1,0 +1,134 @@
+/* The agent live view that stays until Team and Tasks drop their views of it (workspace/BrowserLive.tsx
+   in team/AgentBrowser.tsx and tasks/BrowserTodo.tsx): the toolbar row, the controls row (Take over /
+   Hand back, Show window, one status line), the picture, the touch layer and the named cursors. The
+   controls row is reserved while the browser is open, so the picture never moves; a two-label button
+   keeps the wider label's box (.workspace-swap). Goes with those components.
+   Owns: `browser-live-*`, `workspace-screen*`, `workspace-swap`, `browser-touch`, `browser-keys`,
+   `browser-pointer*`, `agent-browser*` and the `workspace-body` / `workspace-tab` boxes Team's agent
+   page uses; B-076 `remote-web*`: a side tab running on another PC (workspace/RemoteWebTab.tsx), the same live
+   view with a blue glow, the PC's mark and the page's dialog. Never: the browser pane (workspace.css,
+   workspace-browser.css) or native geometry. */
+
+.workspace-body.tab-browser { position: relative; display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
+.workspace-screen { position: relative; display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+/* a button's two labels (Take over / Hand back …) share one grid cell: the box fits the wider, the other is transparent */
+.workspace-swap { display: inline-grid; }
+.workspace-swap > * { grid-area: 1 / 1; text-align: center; }
+.workspace-swap > [aria-hidden="true"] { opacity: 0; }
+
+/* ---------------------------------------------------------------- toolbar row */
+.browser-live-toolbar { display: flex; flex: none; align-items: center; gap: 2px; height: 40px; padding: 0 8px; border-bottom: 1px solid var(--line); }
+/* in the side pane it is the address row's place: under a touch pointer as tall as that row (workspace.css .browser-bar) */
+@media (pointer: coarse) { .workspace-pane .browser-live-toolbar { height: 48px; } }
+.browser-live-toolbar .icon-button:disabled { opacity: .35; }
+.browser-live-toolbar[data-inert] { pointer-events: none; }
+.browser-live-toolbar[data-inert] .icon-button { opacity: .3; }
+/* the side pane's menu cell works while the browser is closed too (Full view) */
+.browser-live-trail { display: contents; pointer-events: auto; }
+.browser-live-toolbar[data-inert] .browser-live-trail .icon-button { opacity: 1; }
+.browser-live-address { display: contents; }
+.browser-live-field { display: flex; flex: 1 1 auto; min-width: 0; margin: 0 2px; }
+.browser-live-input { flex: 1 1 auto; min-width: 0; height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent; color: var(--secondary); font-size: 13px; }
+.browser-live-input:hover:not(:disabled) { border-color: var(--line); }
+.browser-live-input:focus { border-color: var(--focus); background: var(--sidebar); color: var(--text); outline: none; }
+.browser-live-tabs { position: relative; display: inline-grid; flex: none; }
+.browser-live-tabs-count {
+  position: absolute; top: -3px; right: -3px; display: inline-grid; place-items: center; min-width: 15px; height: 15px; padding: 0 3px;
+  border-radius: 8px; background: var(--field); color: var(--text); font-size: 10px; font-weight: 600; line-height: 15px; pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- controls row and picture */
+.browser-live-bar { display: flex; flex: none; flex-wrap: nowrap; align-items: center; gap: 8px; height: 48px; padding: 0 12px; overflow-x: auto; scrollbar-width: none; }
+.browser-live-bar > .button { flex: none; }
+/* a phone-wide view: the buttons would squeeze the status line to nothing – it gets a second line of its own, and
+   the row keeps one fixed height while the browser is open, so the picture still never moves */
+@media (max-width: 560px) {
+  .browser-live-bar { flex-wrap: wrap; align-content: center; row-gap: 2px; height: 72px; overflow-x: hidden; }
+  .browser-live-bar > .workspace-screen-meta { flex: 1 0 100%; text-align: left; }
+}
+.workspace-screen-meta { flex: 1 1 0; min-width: 0; margin: 0; overflow: hidden; color: var(--muted); font-size: 12px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+/* the picture is top-aligned like a page; no picture: one empty page on the pane's surface. In the agent page's sized
+   column (.tab-browser) the picture is letterboxed into the room left (a size container that never grows with its
+   picture); inline in a to-do (tasks/BrowserTodo.tsx) the view has no height of its own, so it takes the picture's
+   height there (a size container would collapse to nothing) */
+.workspace-screen-view {
+  position: relative; display: grid; flex: 1 1 auto; place-items: center; min-height: 0; overflow: hidden;
+  border-top: 1px solid var(--line); background: var(--chrome); color: var(--muted);
+}
+.workspace-body.tab-browser .workspace-screen-view { container-type: size; }
+.workspace-screen-view:has(> :is(img, .browser-touch)) { align-items: start; }
+.workspace-screen-view .browser-touch:not(.browser-zoom) { place-items: start center; }
+.workspace-screen-view:not(:has(> :is(img, .browser-touch))) { border-top-color: transparent; background: var(--surface); }
+.workspace-screen-view img { display: block; width: auto; height: auto; max-width: 100%; object-fit: contain; }
+.workspace-body.tab-browser .workspace-screen-view img {
+  --frame-w: 100cqw; --frame-h: 100cqh;
+  max-width: min(100cqw, var(--frame-w)); max-height: min(100cqh, var(--frame-h));
+}
+/* zoomed: twice the view's width, scrolling in its box – above every cap of the picture's size (the sized column's too) */
+.workspace-screen-view .browser-zoom > img,
+.workspace-body.tab-browser .workspace-screen-view .browser-zoom > img { width: 200%; max-width: none; max-height: none; }
+/* a closed browser, or one hidden while a secret is filled in: a quiet note with an icon */
+.browser-live-empty {
+  display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  max-width: 320px; margin: 0 auto; padding: 24px; color: var(--muted); font-size: 13px; line-height: 19px; text-align: center;
+}
+.browser-live-empty > .icon { opacity: .5; }
+.browser-live-empty > p { margin: 0; }
+
+/* ---------------------------------------------------------------- touch screen (X02) */
+/* 1x: one finger scrolls the page (browser-touch.ts); 2x: the picture pans in its box, taps still click */
+.browser-touch { position: relative; display: grid; place-items: center; overflow: hidden; touch-action: none; }
+.browser-touch.browser-zoom { display: block; overflow: auto; touch-action: pan-x pan-y; overscroll-behavior: contain; }
+/* the hidden field for the on-screen keyboard: 16 px so iOS does not zoom, invisible, never in the way */
+.browser-keys {
+  position: fixed; top: 0; left: 0; width: 1px; height: 1px; margin: 0; padding: 0; border: 0;
+  opacity: 0; font-size: 16px; color: transparent; background: transparent; caret-color: transparent; pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- named cursors over the picture */
+.browser-pointers { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
+.browser-pointer { --pointer: var(--focus); --pointer-on: var(--surface); /* the actor's avatar colours: PointerLayer.tsx sets them per cursor */ position: absolute; top: 0; left: 0; will-change: transform; }
+.browser-pointer > svg { display: block; }
+.browser-pointer > svg > path { fill: var(--pointer); stroke: var(--pointer-on); }
+.browser-pointer-name {
+  position: absolute; top: 18px; left: 12px; padding: 1px 6px; border-radius: 6px; background: var(--pointer);
+  color: var(--pointer-on); font-size: 11px; font-weight: 600; line-height: 16px; white-space: nowrap;
+}
+.browser-pointer[data-click] > svg { animation: browser-pointer-click .3s ease-out; }
+@keyframes browser-pointer-click { 50% { transform: scale(.82); } }
+@media (prefers-reduced-motion: reduce) { .browser-pointer[data-click] > svg { animation: none; } }
+
+/* ---------------------------------------------------------------- B-076: a side tab running on another PC */
+/* the PC's mark: a fixed cell after Reload (Back, Forward, Reload and the menu cell stay where every tab has them), so the
+   name arriving moves nothing; a narrow pane – the phone, a 280 px side pane – shows its icon (the pane's width, not the screen's) */
+.remote-web { container: remote-web / inline-size; }
+.remote-web-mark {
+  display: inline-flex; flex: none; align-items: center; gap: 5px; width: 136px; height: 24px; margin: 0 2px 0 4px; padding: 0 8px;
+  border-radius: var(--r-sm); background: color-mix(in srgb, var(--remote) 14%, transparent); color: var(--remote); font-size: 12px; font-weight: 600;
+}
+.remote-web-pc { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@container remote-web (max-width: 440px) {
+  .remote-web-mark { width: 28px; padding: 0; justify-content: center; }
+  .remote-web-pc { display: none; }
+}
+/* the picture is letterboxed into the room left (a size container), at most at the page's own size */
+.remote-web-view { container-type: size; }
+.remote-web-view img { --frame-w: 100cqw; --frame-h: 100cqh; max-width: min(100cqw, var(--frame-w)); max-height: min(100cqh, var(--frame-h)); }
+/* the glow lies inside the view's edge, over the picture: it takes no room and no clicks */
+.remote-web-view::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  box-shadow: inset 0 0 0 2px var(--remote), inset 0 0 18px color-mix(in srgb, var(--remote) 45%, transparent);
+}
+/* Type and Zoom on a touch screen float over the picture's corner (no row of their own) */
+.remote-web-touch {
+  position: absolute; right: 12px; bottom: 12px; z-index: 4; display: flex; align-items: center; gap: 4px; padding: 4px;
+  border-radius: var(--r-md); background: var(--elevated); box-shadow: var(--shadow-popover);
+}
+/* the page's dialog on its PC (alert, confirm …) lies over the picture's top in one fixed place, above the glow */
+.remote-web-dialog {
+  position: absolute; top: 16px; left: 50%; z-index: 4; display: flex; flex-direction: column; gap: 12px; width: min(360px, calc(100% - 32px));
+  padding: 14px 16px; transform: translateX(-50%); border-radius: var(--r-md); background: var(--elevated); box-shadow: var(--shadow-popover);
+  color: var(--text); font-size: 13px; line-height: 19px;
+}
+.remote-web-dialog-text { max-height: 152px; margin: 0; overflow: auto; overflow-wrap: anywhere; white-space: pre-wrap; }
+.remote-web-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }

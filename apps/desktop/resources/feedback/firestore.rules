@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Workforce feedback mailbox (B-055): anyone with the app may drop one sealed letter; nobody can read, change or
+// delete one through these rules. Only the team's PC fetches and deletes letters (with its service account, which
+// does not go through rules) and only the team's private key opens them. Paste into Firebase console › Firestore ›
+// Rules and publish. Written by the app: apps/desktop/resources/feedback/firestore.rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /feedback/{id} {
+      allow create: if request.auth == null
+        && id.size() <= 64
+        && request.resource.data.keys().hasOnly(['v', 'sealed'])
+        && request.resource.data.keys().hasAll(['v', 'sealed'])
+        && request.resource.data.v == 1
+        && request.resource.data.sealed is bytes
+        && request.resource.data.sealed.size() < 1000000;
+      allow read, update, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,26 @@
+/* The blocks under My day's list (day/DayOverview.tsx): flat rows in one shape – a chat's face, title, one muted
+   line, what stands on the right. The headings are My day's own.
+   Owns: `day-over-*`. Never: the group heading (day.css), the unread badge (chat.css), colors outside tokens.css. */
+
+.day-over { margin-top: 22px; }
+.day-over-list { margin: 0; padding: 0; list-style: none; }
+.day-over-row, .day-over-event, .day-over-work { display: flex; align-items: center; width: 100%; border-radius: var(--r-md); color: var(--text); text-align: left; }
+.day-over-row:hover, .day-over-event:hover, .day-over-work:hover { background: var(--hover); }
+.day-over-row { gap: 12px; min-height: 52px; padding: 7px 6px; }
+.day-over-row > :is(.avatar, .unread-badge, .owner-badge) { flex: none; }
+.day-over-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.day-over-title { overflow: hidden; font-size: 14px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.day-over-line { overflow: hidden; color: var(--muted); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.day-over-line.waits { color: var(--secondary); }
+.day-over-event { gap: 12px; min-height: 36px; padding: 6px; }
+.day-over-time { flex: none; width: 44px; color: var(--secondary); font-size: 13px; }
+.day-over-work { gap: 8px; min-height: 36px; padding: 6px; color: var(--secondary); font-size: 13px; }
+.day-over-work:hover { color: var(--text); }
+.day-over-work-text { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.day-over-work > .icon { flex: none; color: var(--muted); }
+.day-over-more { align-self: flex-start; margin: 2px 0 0 6px; font-size: 12px; }
+
+@media (pointer: coarse) {
+  .day-over-row { min-height: 56px; }
+  .day-over-event, .day-over-work { min-height: 44px; }
+}

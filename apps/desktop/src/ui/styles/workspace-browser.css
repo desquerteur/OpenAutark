@@ -1,0 +1,152 @@
+/* A surface's top (the global pane; a chat's area restyles it in chat-area.css): the tab strip (TabStrip.tsx) like
+   Chrome's – chrome-coloured, the shown tab one surface with the address row under it, the tabs sharing the room
+   (--tab-width, strip-slots.ts) and their icon only below 72 px, the close cell shown on hover and on the shown tab, "+"
+   right after the last tab, an agent's preview tab in italics; hover and press change colour only. Where the row leaves
+   it room for three titled tabs (shell.css `strip-in-row` puts the pane at the window's top) the global pane's strip is
+   the window's title row: the row's height with the sheet's edge line at its foot, the frame's cells and the caption
+   controls kept free at its end, 34 px tabs, and its empty room moves the window. Then the list of all tabs (TabsMenu.tsx, from the surface's menu: one row per tab with a
+   close cell at its end, the shown tab marked, in reserved columns so a closed tab moves nothing else), the address field
+   (at rest a button showing the address alone, on a click the editable field in the same box) and the
+   new-tab page (NewTabPage.tsx).
+   The field's suggestions (Omnibox.tsx), the history popover (HistoryPopover.tsx) and Mark a region's picture
+   (RegionDialog.tsx) are here too.
+   Owns: `browser-strip*`, `browser-address*`, `browser-url`, `browser-tabs-*`, `browser-tab-*`, `new-tab*`, `browser-omnibox`,
+   `browser-suggestion*`, `browser-history*`, `browser-menu-cell`, `region-*`.
+   Never: the address row and the page area (workspace.css), the pane's place (shell.css) or native geometry. */
+
+/* ---------------------------------------------------------------- tab strip */
+.browser-strip {
+  display: flex; flex: none; align-items: flex-end; height: 38px; padding: 0 6px 0 6px;
+  background: var(--chrome); box-shadow: inset 0 -1px 0 var(--line); -webkit-app-region: no-drag; app-region: no-drag;
+}
+.browser-strip-room { display: flex; flex: 1 1 auto; align-items: flex-end; min-width: 0; height: 100%; }
+/* the tabs and "+" as one hold (TabStrip.tsx): no drag area between them, so the pointer stays on it from a tab to "+" */
+.browser-strip-hold { display: flex; flex: none; align-items: flex-end; gap: 2px; height: 100%; -webkit-app-region: no-drag; app-region: no-drag; }
+.browser-strip-new { flex: none; align-self: center; }
+.browser-strip-tabs {
+  display: flex; flex: none; align-items: flex-end; gap: 2px; height: 100%; overflow: auto hidden; overscroll-behavior: contain;
+  scrollbar-width: none; scroll-snap-type: x mandatory;
+}
+.browser-strip-tabs::-webkit-scrollbar { display: none; }
+.browser-strip-tab, .browser-strip-ghost { flex: none; width: var(--tab-width); height: 32px; scroll-snap-align: start; }
+.browser-strip-tab {
+  position: relative; display: flex; align-items: center; border-radius: 8px 8px 0 0; color: var(--secondary);
+  container: strip-tab / inline-size;
+}
+/* lies over the icon cell, which then shows the speaker (TabIcon): the title does not move when sound starts */
+.browser-strip-sound { position: absolute; top: calc(50% - 10px); left: 6px; width: 20px; height: 20px; border-radius: 50%; }
+.browser-strip-sound:hover { background: var(--selected); }
+.browser-strip-tab:has(.browser-strip-sound) .browser-tab-icon { position: relative; z-index: 1; pointer-events: none; } /* the speaker stays on top of its cell's hover; a click still lands on the cell */
+.browser-strip-tab:hover { background: var(--hover); color: var(--text); }
+/* the shown tab is one surface with the row under it: it covers the strip's bottom line */
+.browser-strip-tab.selected { background: var(--surface); color: var(--text); box-shadow: inset 0 1px 0 var(--line), inset 1px 0 0 var(--line), inset -1px 0 0 var(--line); }
+.browser-strip-choose {
+  display: flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 0; height: 100%; padding: 0 2px 0 8px;
+  border-radius: 8px 0 0 0; color: inherit; font-size: 12px; text-align: start;
+}
+.browser-strip-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.browser-strip-close {
+  display: grid; flex: none; place-items: center; width: 20px; height: 20px; margin-right: 5px; border-radius: 50%;
+  color: transparent;
+}
+.browser-strip-tab:hover .browser-strip-close, .browser-strip-tab.selected .browser-strip-close, .browser-strip-close:focus-visible { color: var(--muted); }
+.browser-strip-tab .browser-strip-close:hover { background: var(--selected); color: var(--text); }
+.browser-strip-tab .browser-strip-close:active { background: var(--field); color: var(--text); }
+/* an agent's preview tab (its next page replaces it): the title in italics, in the list too */
+.browser-strip-tab.transient .browser-strip-title, .browser-tab-row.transient .menu-label > span:first-child { font-style: italic; }
+/* a narrow tab: its icon only, at one x in every state – its × cell stays (shown on hover and on the shown tab, as in a
+   wide tab), so selecting it moves nothing – and the speaker centred over the icon as in a wide tab */
+@container strip-tab (width < 72px) {
+  .browser-strip-title { display: none; }
+  .browser-strip-choose { padding: 0 0 0 4px; }
+  .browser-strip-sound { left: 2px; }
+}
+/* the global pane's strip as the window's title row, where it has room for it (shell.css `strip-in-row`, see the head) */
+.app-frame.strip-in-row .global-pane .browser-strip {
+  height: calc(var(--header-h) + 1px);
+  padding-right: calc(12px + var(--native-caption-space, 0px) + var(--workspace-cell) + var(--feedback-cell));
+  -webkit-app-region: drag; app-region: drag;
+}
+.app-frame.strip-in-row .global-pane :is(.browser-strip-tab, .browser-strip-ghost) { height: 34px; }
+.app-frame.strip-in-row .global-pane .browser-strip-new { align-self: flex-end; margin-bottom: 3px; }
+
+/* ---------------------------------------------------------------- address field */
+.browser-address-form { display: flex; flex: 1 1 auto; min-width: 0; margin: 0 2px; }
+.browser-address {
+  flex: 1 1 auto; min-width: 0; height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: var(--r-sm);
+  background: var(--sidebar); color: var(--text); font-size: 13px;
+}
+.browser-address:focus { border-color: var(--focus); outline: none; }
+.browser-address-view { display: flex; align-items: center; gap: 8px; overflow: hidden; text-align: start; white-space: nowrap; cursor: text; }
+.browser-address-view:hover { border-color: var(--line); }
+.browser-url { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.browser-omnibox { position: relative; display: flex; flex: 1 1 auto; min-width: 0; }
+.browser-omnibox > .browser-address { width: 100%; }
+.browser-menu-cell { display: contents; }
+/* the suggestions: under the field, over the page (a popover – the native view hides under it), from the field's start to
+   the row's end, two lines a row – the title, then what Enter or a click does */
+.popover.browser-suggestions { position: absolute; top: calc(100% + 6px); right: -32px; left: 0; min-width: 0; max-height: min(60vh, 380px); padding: 4px; }
+.browser-suggestion { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 10px; border-radius: 8px; cursor: default; }
+.browser-suggestion.selected { background: var(--selected); }
+.browser-suggestion > .icon { flex: none; opacity: .7; }
+.browser-suggestion-text { display: grid; flex: 1 1 auto; min-width: 0; }
+.browser-suggestion-title { overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
+.browser-suggestion-note { overflow: hidden; color: var(--muted); font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------------------------------------------------------------- history */
+.popover.browser-history { display: flex; flex-direction: column; max-height: min(70vh, 560px); padding: 0; overflow: hidden; }
+.browser-history-head { display: flex; flex: none; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.browser-history-search { flex: 1 1 auto; min-width: 0; height: 30px; border: 0; background: transparent; color: var(--text); font-size: 13px; outline: none; }
+.browser-history-list { flex: 1 1 auto; min-height: 120px; padding: 4px; overflow-y: auto; scrollbar-gutter: stable; }
+.browser-history-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 4px 8px; border-radius: 8px; color: var(--text); text-align: start; }
+.browser-history-row:hover, .browser-history-row:focus-visible { background: var(--hover); }
+.browser-history-row > .icon { flex: none; opacity: .6; }
+.browser-history-text { display: grid; flex: 1 1 auto; min-width: 0; }
+.browser-history-title, .browser-history-url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.browser-history-url { color: var(--muted); font-size: 12px; }
+.browser-history-time { flex: none; color: var(--muted); font-size: 12px; }
+.browser-history-empty { margin: 0; padding: 24px 12px; color: var(--muted); text-align: center; }
+.browser-history-foot { display: flex; flex: none; justify-content: flex-end; padding: 6px 8px; border-top: 1px solid var(--line); }
+
+/* ---------------------------------------------------------------- Mark a region (in the paint dialog's stage) */
+.region-frame { position: relative; overflow: hidden; line-height: 0; cursor: crosshair; touch-action: none; user-select: none; }
+.region-dialog .paint-stage { height: min(52vh, 640px); } /* with the dialog's fixed footer, the whole picture fits without a scrollbar */
+.region-frame > img { display: block; max-width: 100%; max-height: min(52vh, 640px); }
+.region-box { position: absolute; box-sizing: border-box; border: 2px solid var(--focus); box-shadow: 0 0 0 9999px var(--backdrop); pointer-events: none; }
+
+/* ---------------------------------------------------------------- all tabs (the surface's menu › All tabs) */
+.popover.browser-tabs-menu { padding: 6px; }
+.browser-tab-row { display: flex; align-items: center; gap: 2px; min-height: 40px; border-radius: 8px; }
+.browser-tab-row.selected { background: var(--selected); }
+.browser-tab-row > .menu-item { flex: 1 1 auto; min-width: 0; padding: 6px 8px; }
+.browser-tab-row.selected > .menu-item:hover { background: transparent; }
+.browser-tab-icon { display: inline-grid; flex: none; place-items: center; width: 16px; height: 16px; }
+.browser-tab-close { flex: none; width: 28px; height: 28px; margin-right: 4px; }
+.browser-tab-icon img { display: block; width: 16px; height: 16px; object-fit: contain; }
+/* B-076: a tab of another PC – a small blue dot on its icon's corner (it lies over the cell, nothing moves) */
+.browser-strip-tab.remote .browser-tab-icon { position: relative; }
+.browser-strip-tab.remote .browser-tab-icon::after { content: ''; position: absolute; right: -3px; bottom: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--remote); pointer-events: none; }
+.browser-tab-row .menu-label small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------------------------------------------------------------- new-tab page */
+.new-tab { flex: 1 1 auto; min-height: 0; overflow: hidden auto; padding: 8px; scrollbar-gutter: stable; }
+.new-tab-list { max-width: 520px; margin: 0 auto; padding: 0; list-style: none; }
+.new-tab-head { margin-bottom: 4px; }
+.new-tab-head .new-tab-row { color: var(--muted); }
+.new-tab-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 10px; border-radius: var(--r-sm);
+  color: var(--text); font-size: 13px; text-align: start;
+}
+.new-tab-row:hover { background: var(--hover); }
+.new-tab-row:active { background: var(--selected); }
+.new-tab-icon { display: inline-grid; flex: none; place-items: center; width: 20px; height: 20px; color: var(--secondary); }
+.new-tab-label { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.new-tab-hint { flex: 1 1 0; min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (pointer: coarse) {
+  .browser-address { height: 36px; }
+  .browser-tab-row { min-height: 48px; }
+  .browser-strip { height: 44px; }
+  .browser-strip-tab, .browser-strip-ghost { height: 38px; }
+  .new-tab-row { height: 44px; }
+}

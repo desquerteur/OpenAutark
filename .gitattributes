@@ -1,0 +1,9 @@
+# Line endings: LF in the repository for every text file (tests match "\n"); Windows batch files keep CRLF.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+# Binary assets
+*.png binary
+*.ico binary
+*.jar binary
+*.woff2 binary

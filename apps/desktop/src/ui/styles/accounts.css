@@ -1,0 +1,62 @@
+/* Settings › Models and the first run's AI card (settings/ModelSetup.tsx) and Devices: the account row's
+   one hint line and two limit bars (one neutral colour for every provider), the one fixed action slot (the same width
+   in every row, so all bars end at one x), the row of four buttons with the sign-in link cell and the status line, the
+   one inline connection form, a connection's model list, the use rows and the
+   rename field of a device row.
+   Owns: these looks. Never: the settings grammar (settings.css) or the bar's colours (tokens.css). */
+
+/* ---------------------------------------------------------------- account rows */
+.account-hint { min-height: 1.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-limits { display: grid; gap: 6px; margin-top: 4px; max-width: 460px; }
+.account-limit { display: grid; gap: 0; }
+.account-limit-line { overflow: hidden; color: var(--secondary); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.account-limit .usage-bar { display: block; margin-top: 3px; }
+.account-limit .usage-bar > span { background: var(--muted); } /* one neutral colour for every provider (the rail carries the provider colours) */
+/* a connection's models (right-click › Show models): one quiet wrapped line under the hint */
+.account-models { margin-top: 4px; color: var(--secondary); font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
+.account-slot { display: inline-flex; flex: none; align-items: center; justify-content: flex-end; width: 112px; height: 32px; }
+/* one line at the slot's height on every width (a phone's 40 px button minimum would stand above the label's line) */
+.set-row .account-slot > .button.button { width: 100%; min-height: 0; height: 30px; padding-block: 0; white-space: nowrap; }
+/* the slot sits on the label's line (not centred on label, hint and bars) */
+.set-row.account-row { align-items: flex-start; }
+.set-row.account-row > .set-row-control { flex-wrap: nowrap; height: calc(14px * 1.4); }
+@container (max-width: 460px) {
+  .set-row.account-row > .set-row-control { height: auto; justify-content: flex-end; }
+}
+
+/* ---------------------------------------------------------------- the four buttons and the inline forms */
+.model-setup-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 0 6px; }
+.model-setup-buttons > .button { flex: none; }
+.model-setup-buttons > .button[aria-pressed=true] { background: var(--selected); }
+.model-setup-status { min-height: 18px; margin: 0 0 8px; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.model-setup-status.error { color: var(--danger); }
+.model-setup-status.ok { color: var(--success); }
+.add-account.inline-form { display: grid; max-width: 480px; padding: 4px 0 12px; }
+.add-account .select, .add-account .input, .add-account .set-select { width: 100%; max-width: none; }
+/* a named service's fixed URL: shown, not typed – a quiet filled field (same box, so a Provider change moves nothing) */
+.add-account .input[readonly] { background: var(--hover); color: var(--secondary); }
+.add-account .input[readonly]:not(:focus) { border-color: transparent; }
+.add-account .field-label { margin-top: 14px; }
+.add-account .field-label:first-child { margin-top: 0; }
+/* the API key's label line ends in "Get a key" (or its inert copy of the same size – the field never moves) */
+.add-key-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.add-account.inline-form > .dialog-footer { margin: 14px 0 0; padding: 0; animation: none; } /* a form's footer outside a dialog */
+
+/* ---------------------------------------------------------------- the use rows: [label + hint] [provider] [model] [action], one width each */
+.use-row .set-row-text { flex-basis: 170px; }
+.use-row > .set-row-control { flex: none; flex-wrap: nowrap; }
+.use-row .set-row-control > .set-select { flex: none; width: 150px; }
+.use-row .set-row-control > .set-select + .set-select, .use-row .set-row-control > .set-select + .use-name { flex: none; width: 170px; }
+@container (max-width: 620px) {
+  .use-row > .set-row-control { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; margin-left: 0; }
+  .use-row .set-row-control > .set-select, .use-row .set-row-control > .set-select + .set-select, .use-row .set-row-control > .set-select + .use-name { flex: 1 1 140px; width: auto; }
+}
+/* the state is a dot whose colour alone changes */
+.use-dot { margin-right: 2px; }
+.use-dot.pending { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.use-dot.ready { background: var(--success); }
+.use-dot.setup { background: var(--warn); }
+.use-dot.off { background: var(--muted); }
+
+/* ---------------------------------------------------------------- devices: the rename field takes the name's line */
+.device-row .set-row-label > .set-input { height: 28px; }

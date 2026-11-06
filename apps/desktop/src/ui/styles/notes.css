@@ -1,0 +1,7 @@
+/* Chat details › Notes (chat/details/ChatNotes.tsx): the one row that opens the chat's notes, with
+   who changed them last.
+   Owns: `details-notes*` classes. Never: the workspace pane (workspace.css). */
+
+.details-notes { width: 100%; }
+.details-notes-text { display: flex; flex-direction: column; min-width: 0; }
+.details-notes-meta { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }

@@ -1,0 +1,8 @@
+<!doctype html>
+<!-- Local test page for the browser live checks (test/live/browser.test.ts and the live part of
+     test/e2e/runtime-devices.test.mjs): served from 127.0.0.1 by the test itself, no real site. -->
+<title>WF Browser Check</title>
+<h1>Order form</h1>
+<label>Name <input id="n"></label>
+<button onclick="document.getElementById('out').textContent='Thanks '+document.getElementById('n').value; document.title='Submitted'">Send</button>
+<p id="out">Waiting</p>

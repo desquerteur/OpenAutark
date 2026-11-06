@@ -1,0 +1,44 @@
+/* Stylesheet entry (bundled by esbuild into app/ui/main.css). Order matters: tokens first,
+   then primitives, then the areas; later files may refine earlier ones.
+   Owns: the import order only. Never: rules of its own. */
+
+@import "./tokens.css";
+@import "./base.css";
+@import "./shell.css";
+@import "./header.css"; /* B-044: one header for every zone (lib/header.tsx) and the notice band */
+@import "./chat.css";
+@import "./chat-tree.css"; /* B-078: sub-chats under their parent */
+@import "./chat-area.css"; /* B-072: a chat's area – its tabs above the messages */
+@import "./working.css"; /* B-048 E4.5: the chat header's working popover and the live block's model slot */
+@import "./composer.css";
+@import "./ask-strip.css"; /* B-078: important question above the composer */
+@import "./schedule.css"; /* B-044: the schedule dialog and the chat's Scheduled line */
+@import "./blocks.css";
+@import "./widgets.css";
+@import "./settings.css";
+@import "./accounts.css"; /* B-044: account rows (limit bars, fixed action slots) and the add dialogs */
+@import "./calendar-settings.css"; /* Settings › Calendar */
+@import "./overlays.css";
+@import "./feedback.css"; /* B-055 Q4: the feedback cell, its menu and "Paint over" */
+@import "./mobile.css";
+@import "./phone-swipe.css"; /* B-078: swipe between a chat and its area on the phone */
+@import "./first-run.css"; /* B-044: the first-run layer */
+@import "./tour.css"; /* B-055 Q5: the feedback tour (first-run step and replay dialog) */
+@import "./tasks.css";
+@import "./task-center.css"; /* task center: quick composer, posts, quick-task panel, references */
+@import "./day.css"; /* B-041: My day */
+@import "./day-overview.css"; /* the blocks under My day's list */
+@import "./team.css";
+@import "./people.css"; /* F-52: people of the organisation */
+@import "./app.css";
+@import "./details.css";
+@import "./workspace.css";
+@import "./workspace-browser.css";
+@import "./workspace-chrome.css"; /* B-055: the person's browser like Chrome, named cursors */
+@import "./workspace-tabs.css"; /* the pane's app tabs (Notes, Media, Video, Screen) and find in page */
+@import "./file-tab.css"; /* the pane's file tab, the memory tree of Settings › Skills & memory */
+@import "./notes.css"; /* Chat details › Notes row */
+@import "./bridges.css";
+@import "./splits.css"; /* B-057: split rows, the sidebar's split rows, a split's page, the composer's Ultra cell */
+@import "./remote.css";
+@import "./repair.css"; /* 23.10.: repair screen after a broken upgrade or a crash loop */

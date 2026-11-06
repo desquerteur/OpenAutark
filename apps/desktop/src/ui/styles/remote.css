@@ -1,0 +1,41 @@
+/* Settings › Devices (settings/DevicesGroup.tsx) and the phone app's join screens (ui/pwa/AccessRequest.tsx,
+   JoinRequest.tsx): the Remote ID, the phone QR code in its fixed 112 px box, the "Connect a PC" row with its fixed
+   one-line status, the role / person selects and the people invite card. Rows reuse settings.css (.set-row, .dot);
+   light and dark come through the tokens; everything wraps at phone width.
+   Owns: `remote-*`, `scan-actions` and `access-code-input`. Never: literal colors (tokens only). */
+#settings-devices .set-row-hint { text-wrap: pretty; }
+
+/* the QR box is the last cell of the "Connect a phone" row */
+.remote-phone-row > .set-row-control { flex-wrap: nowrap; }
+.remote-id { display: inline-block; min-width: 11ch; color: var(--text); font-size: 14px; line-height: 1.4; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.remote-phone-row .set-row-hint { display: -webkit-box; height: 36px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.remote-role { width: 140px; flex: none; }
+.remote-qr {
+  display: grid; place-items: center; box-sizing: border-box; width: 112px; height: 112px; flex: none;
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+}
+.remote-qr.loading { background: var(--hover); }
+.remote-qr-code { display: block; width: 96px; height: 96px; padding: 4px; box-sizing: content-box; border-radius: 4px; background: var(--qr-bg); image-rendering: pixelated; }
+/* the code needs its light quiet zone in both themes; the box keeps its edge in both, so it reads the same */
+.remote-qr:has(> .remote-qr-code) { background: var(--qr-bg); }
+
+/* Connect a PC: one fixed line for the state – this PC's own request with its code, the last error, or the help –
+   and its one action; a long state ends in an ellipsis, so the row never grows. */
+.remote-slot { display: flex; height: 18px; overflow: hidden; }
+.remote-slot-line { display: flex; align-items: baseline; gap: 6px; flex: 1; min-width: 0; height: 18px; }
+.remote-slot-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.remote-slot-title.ok { color: var(--success); }
+.remote-slot-title.error { color: var(--danger); }
+.remote-slot-code { flex: none; color: var(--text); font-family: var(--mono); font-weight: 600; letter-spacing: 1px; }
+.remote-slot .text-button { flex: none; padding: 0; color: var(--secondary); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; }
+.remote-slot .text-button:hover { color: var(--text); }
+
+/* the people invite card (team/PersonInvite.tsx): QR or code */
+.remote-invite { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 16px; min-width: 0; }
+.remote-invite-code { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: 300px; }
+.remote-invite-code .pair-code { font-size: 28px; letter-spacing: 4px; }
+.remote-invite-code .muted { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+
+/* the phone app's join screens (boot-note screens, app.css) */
+.scan-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.access-code-input { width: 10ch; max-width: 100%; font: 600 22px/1.3 var(--mono); letter-spacing: 3px; text-align: center; }

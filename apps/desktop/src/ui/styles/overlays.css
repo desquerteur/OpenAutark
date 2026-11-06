@@ -1,0 +1,81 @@
+/* Overlays: refinements of the dialog/popover/menu/toast primitives from base.css (quiet
+   entrance, spacing of form content, the fixed title and footer of a long form, the top-anchored
+   form dialog), the confirm host and its one text field (askText; the feedback menu and
+   "Paint over": feedback.css).
+   Owns: these looks. Never: the primitives' base geometry (base.css), phone sheets
+   (mobile.css), colors outside tokens.css. */
+
+/* ---------------------------------------------------------------- dialogs */
+dialog.dialog[open] { animation: wf-dialog-in .16s ease-out; }
+dialog.dialog[open]::backdrop { animation: wf-fade-in .16s ease-out; }
+@keyframes wf-dialog-in { from { opacity: 0; transform: translateY(6px) scale(.985); } }
+@keyframes wf-fade-in { from { opacity: 0; } }
+.dialog-header h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
+.dialog-header .icon-button.small { margin-right: -6px; color: var(--secondary); }
+/* the title's × gets the focus when a dialog opens: a quiet filled square (no heavy ring around it at every opening) */
+.dialog-header .icon-button.small:focus-visible { outline: none; background: var(--hover); color: var(--text); }
+.dialog-content > .input + .field-label, .dialog-content > .input + .input, .dialog-content > textarea + .field-label { margin-top: 14px; }
+.dialog-content > .field-label:first-child { margin-top: 0; }
+.dialog-content > .dialog-text + .dialog-actions { margin-top: 20px; }
+.dialog-actions { flex-wrap: wrap; }
+/* one footer button size in every dialog (Cancel, Save, Done, Start …): a small row button keeps the footer's height */
+.dialog-actions > .button.small, .dialog-actions > span > .button.small { min-height: 36px; padding: 7px 14px; border-radius: var(--r-md); font-size: 13px; }
+/* confirm host: short title, one line of text, Cancel + one action */
+.dialog-text:empty { display: none; }
+/* B-044 visual pass, round 2 – a form taller than the window keeps its title and its buttons: the title row
+   and the footer (DialogActions, lib/dialog.tsx) are fixed parts of the dialog's column and only the content
+   between them scrolls – its scrollbar at the card's edge between the two (10 px, base.css ::-webkit-scrollbar)
+   and its room always reserved, so the fields keep one width whether the form scrolls or not. A hairline
+   under the title (content scrolled under it) and over the footer (more content below) comes and goes as a
+   colour only, driven by the content's scroll position – no script, no box changes; a form that fits has none.
+   Round 2: the footer is one line – the reserved message slot on the left of the buttons (an error or a test result
+   reads beside Save), not a blank line above them – so a form keeps ~30 px more of its content
+   at 640×480 and the footer has one height in every dialog. Fix round 2: the slot holds two lines (2 × 18 px = the
+   buttons' 36 px), centred beside them and cut with an ellipsis only after the second, so a narrow form (480 px, three
+   buttons) keeps the advice of 'Could not reach the provider. Check the connection…' and the footer never grows. */
+.dialog-body { timeline-scope: --dialog-scroll; }
+.dialog-header {
+  margin: calc(-1 * var(--dialog-pad-top)) calc(-1 * var(--dialog-pad-x)) 0;
+  padding: var(--dialog-pad-top) var(--dialog-pad-x) 13px; border-bottom: 1px solid transparent;
+  animation: wf-dialog-edge-top linear both; animation-timeline: --dialog-scroll; animation-range: 0 8px;
+}
+.dialog-content {
+  margin-inline: calc(-1 * var(--dialog-pad-x)); padding: 2px calc(var(--dialog-pad-x) - 10px) 2px var(--dialog-pad-x);
+  overflow: hidden auto; overscroll-behavior: contain; scrollbar-gutter: stable; scroll-timeline: --dialog-scroll block;
+}
+.dialog-footer {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 calc(-1 * var(--dialog-pad-x)) calc(-1 * var(--dialog-pad-bottom));
+  padding: 14px var(--dialog-pad-x) var(--dialog-pad-bottom); border-top: 1px solid transparent;
+  animation: wf-dialog-edge-bottom linear both; animation-timeline: --dialog-scroll; animation-range: calc(100% - 8px) 100%;
+}
+@keyframes wf-dialog-edge-top { to { border-bottom-color: var(--line); } }
+@keyframes wf-dialog-edge-bottom { from { border-top-color: var(--line); } }
+.dialog-footer > .dialog-message {
+  display: -webkit-box; flex: 1 1 0; min-width: 0; height: auto; max-height: 36px; margin: 0;
+  white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+}
+.dialog-footer > .dialog-actions { flex: 0 1 auto; min-width: 0; margin: 0 0 0 auto; }
+/* dialogs that lay out their own parts (the palette's search and list, a mini-app's frame): no content box */
+:is(.palette, .app-fullscreen) .dialog-content { display: contents; }
+/* a form whose content grows (a longer note, another field, a word list) opens at a fixed top and grows
+   downwards instead of re-centring – its title and fields never move (the phone's bottom sheet: mobile.css) */
+dialog.dialog.anchored { margin-block: var(--dialog-top) auto; max-height: calc(100vh - 2 * var(--dialog-top)); } /* the same room below as above (base.css) */
+
+/* ---------------------------------------------------------------- popovers and menus */
+.popover { animation: wf-fade-in .1s ease-out; overscroll-behavior: contain; }
+.popover.menu { padding: 6px; }
+.menu-item { min-height: 36px; line-height: 1.4; }
+.menu-item .menu-label small { margin-top: 1px; }
+.menu-item > .icon:last-child:not(.menu-check) { opacity: .5; }
+
+/* ---------------------------------------------------------------- toasts */
+.toast { animation: wf-toast-in .18s ease-out; }
+@keyframes wf-toast-in { from { opacity: 0; transform: translateY(8px); } }
+.toast .icon-button.small { margin: -4px -4px -4px 0; color: var(--secondary); }
+.toast-text strong { line-height: 1.4; }
+.toast.error .toast-text strong { color: var(--danger); }
+.toast-text:hover strong { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
+
+/* askText (lib/dialog.tsx): one full-width field above the buttons */
+.dialog-field.input { width: 100%; margin: 4px 0 4px; }

@@ -1,0 +1,24 @@
+/* The pane's file tab (workspace/FileView.tsx) and the memory tree and clickable rows of Settings › Skills & memory
+   (settings/SkillsPage.tsx, settings/MemoryTree.tsx). The field fills the page area; the dot has its own cell in the
+   fixed line under it, and only its colour changes.
+   Owns: `file-*`. Never: the pane's line (`pane-foot`, workspace-tabs.css) or a settings row's text (settings.css). */
+
+.file-field {
+  overflow: auto; white-space: pre; overflow-wrap: normal; font-family: var(--mono); font-size: 13px; line-height: 1.5; tab-size: 4;
+  scrollbar-gutter: stable;
+}
+.file-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: transparent; }
+.file-dot.is-dirty { background: var(--text); }
+.pane-file .pane-foot-action { height: 26px; } /* the Reload button's box, also while it is not there */
+
+/* a row that opens its file: the settings row's look on a button */
+.file-open-row { width: 100%; color: inherit; text-align: start; }
+.file-open-row:hover { background: var(--hover); }
+.file-open-row:active { background: var(--selected); }
+
+.file-tree { list-style: none; margin: 0; padding: 0; }
+.file-tree-row { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 30px; padding: 0 8px 0 calc(8px + var(--depth, 0) * 18px); border-radius: 6px; color: var(--text); font-size: 13px; text-align: start; }
+.file-tree-row:hover { background: var(--hover); }
+.file-tree-row:active { background: var(--selected); }
+.file-tree-icon { display: inline-grid; flex: none; place-items: center; width: 16px; height: 16px; color: var(--secondary); }
+.file-tree-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

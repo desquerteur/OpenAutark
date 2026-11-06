@@ -1,0 +1,19 @@
+{
+  "name": "workforce-remote-relay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hostable meeting server for Autark: linked PCs exchange where they are and then talk directly; a tunnel only as the last fallback. In-memory, end-to-end encrypted traffic only.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "test": "node --test \"test/*.test.ts\"",
+    "check": "node ../../apps/desktop/node_modules/typescript/bin/tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "ws": "8.22.0"
+  }
+}

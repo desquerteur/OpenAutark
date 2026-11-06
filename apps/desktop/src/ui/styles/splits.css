@@ -1,0 +1,125 @@
+/* B-057 Splits (S18): split rows (splits/SplitRows.tsx – the parent's "Split · 3 of 5 done" step, the chat's one live
+   block per running group, the working popover's group row, an open run in Team › agent › Runs), the team sidebar's
+   split rows, group goal lines and count cell (splits/SplitNav.tsx), a split's page (splits/SplitView.tsx) and the sent
+   message's Ultra marker. Every row has a fixed height and fixed slots (status icon 16 px, model · effort and
+   duration at the right), so a status, model or time arriving never moves or re-cuts a neighbour; states change
+   colour or background only (test/unit/styles/stable-states.test.ts).
+   Owns: these classes. Never: colours outside tokens.css. */
+
+/* ---------------------------------------------------------------- split rows */
+.split-rows { --split-model-w: 132px; --split-time-w: 64px; margin: 0; padding: 0; list-style: none; }
+.split-row { font-size: 13px; }
+.split-row-head {
+  display: grid; grid-template-columns: 16px minmax(0, 1fr) var(--split-model-w) var(--split-time-w); align-items: center; column-gap: 6px;
+  width: 100%; height: 24px; padding: 0 4px; border-radius: 6px; color: var(--text); line-height: 24px; text-align: left;
+}
+.split-row-head:hover, .split-row-head[aria-expanded=true] { background: var(--hover); }
+.split-icon { display: inline-grid; place-items: center; width: 16px; height: 16px; color: var(--secondary); }
+.split-icon > .icon { opacity: .7; }
+.split-icon > .spinner { opacity: .8; }
+.split-icon.done { color: var(--success); }
+.split-icon.failed { color: var(--danger); }
+.split-icon:is(.done, .failed) > .icon { opacity: 1; }
+.split-icon:is(.waiting, .stopped, .skipped) { color: var(--muted); }
+.split-row-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.split-row-model, .split-row-time { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; text-align: right; }
+.split-row.status-failed .split-row-title { color: var(--danger); }
+.split-row:is(.status-stopped, .status-skipped) .split-row-title { color: var(--secondary); }
+.split-row-body { padding: 2px 0 6px 22px; }
+.split-row-body > .run-items.split-steps { margin: 0 0 0 -4px; padding: 0; border: 0; }
+.split-row-note, .split-row-error { margin: 2px 0 4px; font-size: 12px; line-height: 1.5; }
+.split-row-note { color: var(--muted); }
+.split-row-error { color: var(--danger); overflow-wrap: anywhere; }
+.split-row-loading { display: flex; padding: 4px 0; }
+/* a narrow column (a phone, the 360 px popover): the slots get narrower and the model slot names the effort alone (the
+   model stays in its tooltip and on the split's page) – no word cut in half, the title keeps the most room */
+@media (max-width: 560px) {
+  .split-rows { --split-model-w: 72px; --split-time-w: 56px; }
+  .split-row-model:has(.split-model-effort) .split-model-name { display: none; }
+}
+.working-row-detail > .split-rows { --split-model-w: 72px; --split-time-w: 56px; }
+.working-row-detail .split-row-model:has(.split-model-effort) .split-model-name { display: none; }
+@media (pointer: coarse) { .split-row-head { height: 32px; } }
+
+/* the parent's step line: its rows open in the step's body */
+.run-item.split-step .run-item-body { padding-left: 22px; }
+.run-item.split-step .run-item-body > .split-rows { margin-left: -4px; }
+
+/* the chat's live block of a running group: the live block's frame and byline, its rows where the steps are */
+.working-message.split-live > .split-rows { margin: 0 0 0 -4px; }
+
+/* the working popover's group row, opened */
+.working-row-detail > .split-rows { margin-left: -4px; }
+
+/* Team › agent › Runs: an open run's splits below its steps (like its run items) */
+.run-splits { margin: -6px 0 12px 30px; padding-left: 12px; border-left: 1px solid var(--line); }
+.run-split-group + .run-split-group { margin-top: 6px; }
+.run-split-head { display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 4px; font-size: 13px; }
+.run-split-head .icon { opacity: .6; }
+
+/* ---------------------------------------------------------------- team sidebar */
+/* the agent row's split count: always there (the same box with or without a count) */
+.team-split-count {
+  display: inline-flex; align-items: center; justify-content: flex-end; gap: 2px; flex: none; min-width: 20px; height: 16px;
+  margin-left: -6px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums;
+}
+.team-split-count > .icon { opacity: .8; }
+.team-splits {
+  display: flex; flex-direction: column; max-height: 170px; overflow: hidden auto; overscroll-behavior: contain; scrollbar-gutter: stable;
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+.team-split-group { display: flex; flex-direction: column; flex: none; }
+.team-split-group + .team-split-group { border-top: 1px solid var(--line); }
+/* a group's goal: one static line over its rows, starting where their status icons start (never a button, never cut
+   to two lines); it sticks to the block's top while its group's rows scroll under it (the sidebar's background), and
+   only while it is stuck there a hairline under it says rows pass beneath */
+.team-split-goal { container-type: scroll-state; position: sticky; top: 0; z-index: 1; flex: none; height: 24px; background: var(--chrome); }
+.team-split-goal-text {
+  display: block; height: 100%; padding: 0 12px 0 calc(28px + var(--depth, 1) * 14px); overflow: hidden;
+  color: var(--muted); font-size: 11px; line-height: 26px; text-overflow: ellipsis; white-space: nowrap;
+}
+@container scroll-state(stuck: top) { .team-split-goal-text { box-shadow: 0 1px 0 var(--line); } }
+.team-split-row {
+  display: grid; grid-template-columns: 16px minmax(0, 1fr) 56px; align-items: center; column-gap: 8px; flex: none;
+  width: 100%; height: 34px; padding: 0 12px 0 calc(28px + var(--depth, 1) * 14px); color: var(--text); font-size: 13px; text-align: left;
+}
+.team-split-row:hover { background: var(--hover); }
+.team-split-row.active { background: var(--selected); }
+.team-split-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.team-split-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-split-time { overflow: hidden; white-space: nowrap; color: var(--muted); font-size: 11px; text-align: right; }
+/* touch: the caret is 36 px wide there (team.css) and can come at any time with an agent's first splits – its reserved
+   slot gets the same width, so the row's avatar and text never move when it comes or goes; split rows keep their indent */
+@media (pointer: coarse) {
+  .team-caret-space { width: 36px; }
+  .team-split-row { height: 40px; padding-left: calc(40px + var(--depth, 1) * 14px); }
+  .team-split-goal { height: 28px; }
+  .team-split-goal-text { padding-left: calc(40px + var(--depth, 1) * 14px); line-height: 30px; }
+}
+
+/* ---------------------------------------------------------------- a split's page */
+.split-page-title { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.split-page-title > .split-icon { flex: none; }
+.split-page-name { min-width: 0; margin: 0; color: var(--text); font-size: 18px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+/* why a part ended other than done: the last fact row (red for a failure, quiet for a stop or skip) */
+.split-facts dd.split-fact-why { color: var(--secondary); overflow-wrap: anywhere; }
+.split-facts dd.split-fact-why.status-failed { color: var(--danger); }
+/* the label column is wide enough for every label (Status … Goal, Reason), so the Error / Reason row a part gets when
+   it ends never widens it and moves the values */
+.split-facts { grid-template-columns: minmax(4em, max-content) minmax(0, 1fr); margin-top: 16px; }
+.split-fact-none { color: var(--muted); }
+.split-brief { margin-top: 18px; }
+.split-brief-toggle {
+  display: grid; grid-template-columns: 12px max-content minmax(0, 1fr); align-items: center; column-gap: 8px;
+  width: calc(100% + 12px); min-height: 28px; margin: 0 -6px; padding: 0 6px; border-radius: 6px; color: var(--text); font-size: 13px; text-align: left;
+}
+.split-brief-toggle:hover, .split-brief-toggle[aria-expanded=true] { background: var(--hover); }
+.split-brief-label { color: var(--secondary); font-weight: 500; }
+.split-brief-first { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.split-brief-body { padding: 6px 0 0 20px; }
+.split-brief-text { margin: 0 0 6px; color: var(--secondary); font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.split-page-steps { margin-top: 24px; }
+.split-page-steps > .run-items.split-page-items { margin: 0; padding: 0; border: 0; }
+
+/* a sent message that suggested Ultra (MessageItem.tsx, beside the level markers) */
+.ultra-marker { flex: none; color: var(--update); }

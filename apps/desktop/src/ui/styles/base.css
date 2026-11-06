@@ -1,0 +1,263 @@
+/* Base styles and shared primitives (buttons incl. their busy state, icons, chips, popovers,
+   menus, dialogs, avatars, rings, the inline toast look). Owns: element defaults + lib/ui primitives.
+   Never: area layout (shell.css, chat.css …). */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden; background: var(--chrome); color: var(--text);
+  font: 14px/1.5 var(--font); -webkit-font-smoothing: antialiased;
+}
+#app { height: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+/* B-044 (nothing moves): no text field is resized by hand – a dragged grip pushed every field below it; a field has
+   its fixed rows and scrolls inside (the composer grows by itself, chat.css/composer.css) */
+textarea { resize: none !important; }
+input[type=checkbox], input[type=radio] { accent-color: var(--text); } /* no system blue beside the neutral controls */
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+button:disabled { cursor: default; opacity: var(--disabled-opacity); } /* tokens.css: quieter in dark */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+/* a header's controls sit 4 px apart and over a two-line title: their ring lies inside the control's own
+   rounded box, so it never crosses the title, the sub line or a neighbouring cell (chat.css: the sub line's text buttons) */
+.frame-header :focus-visible { outline-offset: -2px; }
+:focus:not(:focus-visible) { outline: none; }
+/* no keyboard ring for focus the window's native focus traversal hands over (lib/theme.ts data-focus-quiet) */
+:root[data-focus-quiet] :focus-visible { outline: none; }
+[hidden] { display: none !important; }
+h1, h2, h3, h4, p { margin: 0; }
+h2 { font-size: 17px; font-weight: 600; }
+h3 { font-size: 14px; font-weight: 600; }
+a { color: inherit; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* a one-line text whose end is never cut (lib/kept-tail.ts): the start takes the ellipsis; where the line
+   wraps (an expanded to-do) it is plain text */
+.kept-tail { display: flex; min-width: 0; max-width: 100%; }
+.kept-tail-start { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.kept-tail-end { flex: none; white-space: pre; }
+.todo-item.expanded .kept-tail { display: block; }
+.tabular { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.danger { color: var(--danger); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 35%, transparent); border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-corner { background: transparent; } /* where a vertical and a horizontal bar meet: never the white default square (dark) */
+
+/* icon via mask so it follows currentColor */
+.icon {
+  display: inline-block; flex-shrink: 0; background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat;
+}
+
+/* inputs – one class, so an area's own `.x.input` rule wins again (B-044: `input[type=text].input`
+   outranked e.g. the sidebar search's compact rule, which stuck out of the column and let a focus
+   scroll the sidebar sideways) */
+.input {
+  display: block; width: 100%; border: 1px solid var(--field); border-radius: var(--r-md);
+  background: var(--surface); color: var(--text); padding: 9px 12px; font-size: 14px;
+}
+.input::placeholder { color: var(--muted); }
+/* a search field's clear button: the app's own quiet × (no system-blue one) */
+input[type=search]::-webkit-search-cancel-button {
+  -webkit-appearance: none; appearance: none; width: 14px; height: 14px; margin: 0 0 0 6px; cursor: pointer;
+  background-color: var(--muted); -webkit-mask: var(--clear-mask) center / contain no-repeat; mask: var(--clear-mask) center / contain no-repeat;
+}
+input[type=search]::-webkit-search-cancel-button:hover { background-color: var(--text); }
+.input:focus { outline: none; border-color: var(--focus); }
+.field-label { display: block; font-size: 13px; color: var(--secondary); margin: 0 0 6px; }
+/* native <select> (where a caller needs the browser's own list): the look of the Select button
+   (lib/select.tsx below) – 32 px, 13 px text in --text, its caret; only the opened list stays native */
+select.select, select.input {
+  appearance: none; padding-right: 30px; text-overflow: ellipsis;
+  background: var(--surface) var(--select-caret) no-repeat right 10px center / 12px 12px;
+}
+select.select {
+  min-height: 32px; max-width: 100%; padding: 6px 30px 6px 10px; border: 1px solid var(--field); border-radius: 8px;
+  color: var(--text); font-size: 13px; line-height: 18px;
+}
+select.select:hover:not(:disabled) { background-color: var(--hover); }
+:is(select.select, select.input):focus { outline: none; border-color: var(--focus); }
+select.select:disabled { opacity: var(--disabled-opacity); }
+:is(select.select, select.input) option { background: var(--surface); color: var(--text); }
+@media (pointer: coarse) { select.select { min-height: 40px; } }
+
+/* buttons */
+.button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px;
+  border: 1px solid var(--field); border-radius: var(--r-md); padding: 7px 14px; font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.button.primary { background: var(--text); border-color: var(--text); color: var(--surface); }
+.button.primary:hover:not(:disabled) { opacity: .86; }
+/* disabled: still the one filled button of its dialog (visual pass settings-2, round 2), filled with the quiet field
+   grey and muted text – never the outlined look of a secondary, and never a faded pill that read as enabled in dark */
+.button.primary:disabled { opacity: 1; background: var(--field); border-color: var(--field); color: var(--muted); }
+.button.secondary { background: var(--surface); color: var(--secondary); }
+.button.secondary:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.button.ghost { border-color: transparent; color: var(--secondary); }
+.button.ghost:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.button.danger { background: var(--surface); color: var(--danger); }
+.button.danger-fill { background: var(--danger-fill); border-color: var(--danger-fill); color: var(--danger-fill-fg); }
+/* busy (lib/ui.tsx Button): the box stays – icon and label turn transparent under a centred spinner */
+.button[aria-busy=true] { position: relative; color: transparent; }
+.button-spin { position: absolute; inset: 0; display: grid; place-items: center; color: var(--secondary); pointer-events: none; }
+.button.primary > .button-spin { color: var(--surface); }
+.button.danger > .button-spin { color: var(--danger); }
+.button.danger-fill > .button-spin { color: var(--badge-fg); }
+.text-button { color: var(--secondary); font-size: 13px; padding: 6px 0; }
+.text-button:hover { color: var(--text); }
+
+.icon-button { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-md); color: var(--text); flex-shrink: 0; }
+.icon-button .icon { opacity: .7; }
+.icon-button:hover:not(:disabled) { background: var(--hover); }
+.icon-button:hover .icon, .icon-button.selected .icon { opacity: 1; }
+.icon-button.selected { background: var(--selected); }
+.icon-button.small { width: 28px; height: 28px; border-radius: 6px; }
+
+/* chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 30px; max-width: 240px; min-width: 0; padding: 4px 9px;
+  border-radius: 8px; color: var(--secondary); font-size: 13px; white-space: nowrap;
+}
+.chip:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.chip.static, .chip.static:hover { background: none; color: var(--secondary); cursor: default; }
+.chip-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.chip-caret { opacity: .55; }
+.chip.tone-warn { color: var(--warn); }
+.chip.tone-accent { color: var(--text); font-weight: 500; }
+.chip .sub { color: var(--muted); }
+
+/* spinner + ring */
+.spinner { display: inline-block; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor 22%, transparent); border-top-color: currentColor; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ring { position: relative; display: inline-grid; place-items: center; }
+.ring svg { position: absolute; inset: 0; }
+.ring-track { stroke: color-mix(in srgb, currentColor 20%, transparent); }
+.ring-value { stroke: currentColor; stroke-linecap: round; transition: stroke-dashoffset .3s; }
+.ring-content { position: relative; font-size: 10px; font-weight: 600; }
+
+/* popover + menu */
+.popover {
+  position: fixed; z-index: 50; min-width: 200px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow-y: auto;
+  padding: 6px; border: 1px solid var(--elevated-line); border-radius: var(--r-lg); background: var(--elevated); color: var(--text);
+  box-shadow: var(--shadow-popover); font-size: 13px;
+  --hover: var(--elevated-hover); --selected: var(--elevated-selected); /* rows keep their contrast on the lifted surface */
+}
+/* inside a dialog a popover or select list is shown in the top layer (lib/top-layer.ts): no user-agent
+   centring of [popover] – its left/top place it, any rule that sets an inset or margin still wins */
+:where(.popover[popover], .select-list[popover]) { inset: auto; margin: 0; }
+.menu-section + .menu-section { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; }
+.menu-title { padding: 6px 10px 4px; color: var(--muted); font-size: 12px; }
+.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 8px; text-align: left; color: var(--text); }
+.menu-item .icon { opacity: .64; }
+.menu-item:hover:not(:disabled), .menu-item:focus-visible { background: var(--hover); outline: none; }
+.menu-item.danger { color: var(--danger); }
+.menu-label { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.menu-label > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-label small { color: var(--muted); font-size: 12px; line-height: 1.35; white-space: normal; }
+.menu-hint { margin-left: auto; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.menu-check { opacity: .8; }
+
+/* select (lib/select.tsx): value button + caret, popover listbox with a check at the chosen option */
+.select-button {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; min-height: 32px; padding: 6px 10px;
+  border: 1px solid var(--field); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px; text-align: start;
+}
+.select-button:hover:not(:disabled) { background: var(--hover); }
+.select-button[aria-expanded=true] { border-color: var(--focus); }
+.select-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select-value.is-empty { color: var(--muted); }
+.select-caret { opacity: .55; }
+.select-list {
+  position: fixed; left: 0; top: 0; z-index: 55; min-width: 160px; max-width: calc(100vw - 16px); overflow-y: auto; overscroll-behavior: contain;
+  padding: 4px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); color: var(--text);
+  box-shadow: var(--shadow-popover); font-size: 13px; animation: wf-fade-in .1s ease-out;
+}
+.select-option { display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 6px 10px; border-radius: 8px; cursor: default; user-select: none; }
+.select-option.active { background: var(--hover); }
+.select-option-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.select-option-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select-option-text small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.select-check { margin-left: auto; opacity: .8; }
+@media (pointer: coarse) {
+  .select-button { min-height: 40px; }
+  .select-option { min-height: 44px; }
+}
+
+/* dialog */
+dialog.dialog {
+  width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--surface); color: var(--text); box-shadow: var(--shadow-popover);
+}
+/* every dialog opens at one top edge (tokens.css --dialog-top) and keeps as much room below it – a confirm and a form
+   alike (visual pass, round 3: confirms were centred, forms pinned at the top), so no dialog re-centres when its content
+   grows; the palette and a mini-app's full view place themselves (shell.css, blocks.css), the phone's sheets too (mobile.css) */
+dialog.dialog:not(.palette, .app-fullscreen) { margin-block: var(--dialog-top) auto; max-height: calc(100vh - 2 * var(--dialog-top)); }
+/* open: one column – the title row, the content (the one part that scrolls) and the footer (lib/dialog.tsx);
+   a closed dialog keeps the user agent's display: none */
+dialog.dialog[open] { display: flex; flex-direction: column; }
+/* A modal's backdrop dims the whole window, the header row included (B-044 visual pass: a bright row
+   over a dimmed body read as a rendering glitch); only the native caption buttons (Windows/Linux,
+   drawn by the system) stay as they are, as in every desktop app. It is no drag area, so a click on
+   it reaches the dialog's own backdrop handling instead of moving the window. */
+dialog.dialog::backdrop { background: var(--backdrop); -webkit-app-region: no-drag; app-region: no-drag; }
+.dialog-body {
+  --dialog-pad-top: 20px; --dialog-pad-x: 22px; --dialog-pad-bottom: 22px;
+  display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; padding: var(--dialog-pad-top) var(--dialog-pad-x) var(--dialog-pad-bottom);
+}
+.dialog-header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.dialog-content { flex: 1 1 auto; min-height: 0; } /* fills a dialog of fixed height, so its footer stays at the foot */
+.dialog-footer { flex: none; }
+.dialog-footer:empty { display: none; } /* a dialog without DialogActions */
+.dialog-text { color: var(--secondary); line-height: 1.55; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+/* lib/dialog.tsx DialogActions: the reserved slot for an error, a test result or a note – one line here; in a
+   dialog's footer two lines beside the buttons (overlays.css) – so the buttons never move when a message comes or goes */
+.dialog-message { height: 18px; margin: 14px 0 0; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.dialog-message.error { color: var(--danger); }
+.dialog-message.ok { color: var(--success); }
+.dialog-message + .dialog-actions { margin-top: 12px; }
+
+/* avatars */
+.avatar {
+  position: relative; display: inline-grid; place-items: center; flex-shrink: 0; border-radius: 50%;
+  background: var(--av-0-bg); color: var(--av-0-fg); font-weight: 600; line-height: 1; user-select: none; overflow: visible;
+}
+.avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.avatar-emoji { font-size: 1.25em; font-weight: 400; }
+.avatar[data-color="1"] { background: var(--av-1-bg); color: var(--av-1-fg); }
+.avatar[data-color="2"] { background: var(--av-2-bg); color: var(--av-2-fg); }
+.avatar[data-color="3"] { background: var(--av-3-bg); color: var(--av-3-fg); }
+.avatar[data-color="4"] { background: var(--av-4-bg); color: var(--av-4-fg); }
+.avatar[data-color="5"] { background: var(--av-5-bg); color: var(--av-5-fg); }
+.avatar.human { background: var(--human-bg); color: var(--human-fg); }
+/* B-041: people round, AI agents a rounded square – images and emoji included (lib/avatar.tsx AGENT_RADIUS) */
+.avatar.agent, .avatar.agent img { border-radius: 30%; }
+button.avatar:hover { box-shadow: 0 0 0 2px var(--field); }
+/* working (visual pass, round 3): one calm ring inside the avatar's own box and in its shape (round for
+   people and chats, the rounded square of an agent – border-radius: inherit), breathing in the avatar's
+   own colour; never a moving arc (round a square it read as a stray bracket) and never past the box, so
+   an avatar at a column's edge stays inside the column. Reduced motion: the ring stands still. */
+.avatar.working::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: inset 0 0 0 2px currentColor; opacity: .7;
+  animation: avatar-working 1.6s ease-in-out infinite alternate;
+}
+@keyframes avatar-working { from { opacity: .2; } to { opacity: .8; } }
+
+/* search hits (lib/mark.tsx): colour only, so a marked text keeps its width */
+mark.search-mark { border-radius: 2px; background: color-mix(in srgb, var(--update) 22%, transparent); color: inherit; }
+
+.empty-state { color: var(--muted); font-size: 13px; padding: 12px 0; }
+
+/* the toast look of an inline line (tasks/CaptureToast.tsx). Toasts themselves are lines of the status line
+   (shell/StatusLine.tsx, header.css) */
+.toast { display: flex; gap: 10px; align-items: flex-start; padding: 12px 12px 12px 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-popover); font-size: 13px; }
+.toast.error { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
+.toast-text { flex: 1; min-width: 0; cursor: default; text-align: left; }
+.toast-text strong { display: block; font-weight: 600; }
+.toast-text span { display: block; color: var(--secondary); overflow-wrap: anywhere; }
+
+/* reduced motion: the OS setting (B-044: no app setting of its own) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+}

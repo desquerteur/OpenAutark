@@ -1,0 +1,72 @@
+/* Task center (Work, 17:37): the quick task composer (the chat composer's look – composer.css), the
+   posts on their way, Work's two regions (B-078: the For-you cards and the report – WorkRegions.tsx), the
+   questions/reply parts of the task detail and the compact task reference in chats.
+   Owns: these selectors. Never: colors or sizes outside tokens.css. */
+
+/* ---------------------------------------------------------------- composer */
+.task-composer { margin-bottom: 16px; }
+.task-composer.compact { margin-bottom: 10px; padding: 10px; border-radius: var(--r-xl); }
+.task-composer.loading { display: grid; place-items: center; min-height: 92px; color: var(--muted); }
+.task-composer.compact.loading { min-height: 76px; }
+.task-composer .composer-input { min-height: 24px; }
+.task-composer .composer-actions { flex-wrap: nowrap; }
+.task-composer .recipient-chip { min-width: 0; max-width: 220px; flex-shrink: 1; }
+.recipient-chip .chip-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.popover.recipient-list { max-height: min(420px, 60vh); }
+
+/* ---------------------------------------------------------------- posts */
+.quick-posts { margin: -6px 0 16px; }
+.quick-post { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 8px; border-radius: var(--r-md); }
+.quick-post-mark { display: grid; place-items: center; flex: none; width: 18px; color: var(--muted); }
+.quick-post.failed .quick-post-mark, .quick-post-error { color: var(--danger); }
+.quick-post-actions { display: flex; align-items: center; gap: 2px 10px; flex: none; }
+.task-row-line.blocked { color: var(--danger); }
+
+/* ---------------------------------------------------------------- quick-task panel */ /* focused itself only so Escape reaches it (QuickTaskPanel.tsx) */
+
+/* ---------------------------------------------------------------- Work: For you + report (B-078 D10) */
+/* told apart by shape: big cards with a warm edge for what needs the person, a quiet paragraph for the report */
+.foryou { margin: 4px 0 24px; }
+.foryou-cards { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.foryou-card {
+  padding: 14px 16px; border: 1.5px solid var(--warn); border-radius: var(--r-xl);
+  background: color-mix(in srgb, var(--warn) 5%, var(--surface));
+}
+.foryou-card.selected { background: color-mix(in srgb, var(--warn) 11%, var(--surface)); }
+.foryou-card-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 0; color: var(--text); text-align: left; }
+.foryou-card-text { display: flex; flex-direction: column; min-width: 0; }
+.foryou-card-title { font-size: 15px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.foryou-card-meta { color: var(--secondary); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.foryou-card-ask { margin-top: 12px; }
+.foryou-card-ask .ask-block { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.work-report { margin: 8px 6px 24px; }
+.work-report-text { margin: 0; color: var(--secondary); font-size: 14px; line-height: 1.75; }
+.work-report-line { display: inline; margin: 0 .35em 0 0; padding: 0; border-radius: var(--r-xs); color: inherit; font: inherit; text-align: left; }
+.work-report-line:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.task-rows.slim .task-row { min-height: 40px; }
+.task-rows.slim .task-row-title { color: var(--secondary); font-weight: 400; }
+.task-rows.slim { margin-bottom: 20px; }
+
+/* ---------------------------------------------------------------- task detail */
+.task-questions { margin: 4px 0 8px; }
+.task-reply { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; }
+.task-reply-input.input { flex: 1 1 220px; min-width: 0; }
+.task-reply > .button { align-self: stretch; } /* Send as tall as the field beside it: tops and bottoms in line */
+.task-reply-sent { flex: 1 1 100%; font-size: 12px; }
+
+/* ---------------------------------------------------------------- chat */
+.task-live { margin-top: 6px; color: var(--secondary); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.task-bubble.task-reference { padding: 8px 12px; }
+.task-reference .task-bubble-title { font-weight: 400; }
+.task-reference-state { flex: none; max-width: 45%; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------------------------------------------------------------- phone */
+/* The quick-task panel renders beside .mobile-shell (Shell.tsx Overlays), so it is selected like mobile.css does. 16px fields: no iOS zoom on focus. */
+.mobile-shell .task-composer .composer-input,
+.mobile-shell .task-reply-input { font-size: 16px; }
+/* Windows/Linux desktop: below the native caption buttons – the header row, or a compact window's
+   top bar of the same height (mobile.css) – with the backdrop leaving that row undimmed like a dialog's (base.css). */
+@container tasks-view (max-width: 460px) {
+  .task-composer .recipient-chip { max-width: 140px; }
+  .quick-post-actions .text-button { font-size: 12px; }
+}

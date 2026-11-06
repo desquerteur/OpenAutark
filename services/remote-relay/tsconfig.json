@@ -1,0 +1,38 @@
+{
+  "//": "Strict typecheck of the relay (npm run check). In this repository the compiler and the node/ws type packages come from apps/desktop, so the relay itself needs no dev install.",
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": [
+      "ES2024"
+    ],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "types": [
+      "node",
+      "ws"
+    ],
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../apps/desktop/node_modules/@types"
+    ],
+    "paths": {
+      "ws": [
+        "./node_modules/@types/ws/index.d.ts",
+        "../../apps/desktop/node_modules/@types/ws/index.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ]
+}

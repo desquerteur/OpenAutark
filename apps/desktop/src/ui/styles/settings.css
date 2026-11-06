@@ -1,0 +1,257 @@
+/* Settings: the pages' frame, the nav, groups and functional rows (label left, control right), controls (switch, select,
+   inputs, segmented, small buttons, the reserved hint line), account state chips, masks, QR and pairing codes and
+   device dots. The same grammar is reused by the agent view and dialogs elsewhere.
+   Owns: these looks. Never: other areas, colors outside tokens.css. */
+/* ---------------------------------------------------------------- page frame (header look: app.css) */
+.settings-view { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; }
+.settings-body { flex: 1 1 auto; min-height: 0; padding: 28px clamp(20px, 4vw, 56px) 48px; overflow: hidden auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.settings-content { max-width: 680px; margin-inline: auto; } /* centred in the content pane, as in Codex's settings */
+/* ---------------------------------------------------------------- the pages' nav: flat full-width rows like every sidebar list */
+.settings-nav-list { margin: 0; padding: 0; list-style: none; }
+.settings-nav-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 9px 16px 9px 20px;
+  color: var(--secondary); font-size: 14px; text-align: left;
+}
+.settings-nav-item .icon { opacity: .64; }
+.settings-nav-item > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-nav-item:hover { background: var(--hover); color: var(--text); }
+.settings-nav-item.selected { background: var(--selected); color: var(--text); }
+.settings-nav-item.selected .icon { opacity: 1; }
+.settings-nav-empty { padding: 10px 20px; color: var(--muted); font-size: 13px; }
+.set-search-hit { background: var(--selected); }
+/* ---------------------------------------------------------------- groups and rows */
+.set-group { max-width: 680px; margin: 0 0 32px; container-type: inline-size; }
+.set-group:last-child { margin-bottom: 0; }
+.set-group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; margin-bottom: 4px; }
+.set-group-head h3 { min-width: 0; color: var(--text); font-size: 15px; font-weight: 600; }
+.set-group-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; margin-left: auto; }
+/* round 3: a head with text actions is as high as one without – in the phone layout too, where a button's touch target
+   is 40 px (mobile.css): it keeps that target, but lies 4 px over and under the head's 32 px line */
+.mobile-shell .set-group-actions > .button { margin-block: -4px; }
+/* a quiet text action's text ends on the column's edge, where switches, values and outlined buttons end – in a group
+   head and at the end of a row (its last ghost button; .button.small's 11 px padding and 1 px border) */
+.set-group-actions .button.ghost:last-of-type, .set-row > .set-row-control > .button.ghost:last-child, .set-row > :is(.set-row-control, .set-inline) > .set-inline > .button.ghost:last-child, .set-row > .set-inline > .button.ghost:last-child { margin-right: -12px; }
+.set-group-hint { margin: 0 0 8px; color: var(--muted); font-size: 12px; line-height: 1.5; text-wrap: pretty; }
+.set-rows { border-top: 1px solid var(--line); }
+.set-group > .set-rows:first-child { border-top: 0; } /* a group without title or hint: no stray line above its first row */
+.set-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px;
+  min-height: var(--set-row-h); padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--text); font-size: 13px;
+}
+.set-row-text { display: flex; flex-direction: column; gap: 3px; flex: 1 1 220px; min-width: 0; }
+.set-row-label { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-height: calc(14px * 1.4); color: var(--text); font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; } /* one line high even when it holds a smaller note */
+.set-row-label:empty { display: none; }
+/* a wrapped hint fills its column: plain wrapping (round 3: 'pretty' balanced a two-line hint and broke it at half the
+   column's width – "Always asks you" at 640, a secret's line at 1280) */
+.set-row-hint { color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; text-wrap: wrap; }
+.set-row-hint a { color: var(--secondary); text-decoration: underline; text-underline-offset: 2px; }
+.set-row-hint small { font-size: 11px; }
+/* B-044: a hint that loads or changes later keeps exactly one line (Row reserve; full text as tooltip) – or two
+   (Row reserve={2}: a hint whose meaning must not be cut, e.g. what a backup leaves out) */
+.set-row-hint.reserved { min-height: 1.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
+.set-row-hint.reserved.two {
+  display: -webkit-box; height: 3em; min-height: 3em; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-wrap: pretty;
+}
+.set-row-control { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; flex: 0 1 auto; min-width: 0; max-width: 100%; }
+/* a row with a reserved hint line (Row reserve) centres its control like every other row (round 2: one vertical
+   alignment for every switch and row action – the reserved line keeps the text block's height fixed, so nothing moves) */
+.set-row.reserve:not(.stack) > .set-row-control { flex-wrap: nowrap; }
+/* a row whose control is off for now (Row disabled): its label turns quiet with the control */
+.set-row.disabled .set-row-label { color: var(--muted); }
+/* a control that does not fit beside its text drops under it and stays at the column's end, like every other
+   row's control (round 3: at 640 px a wrapped field and button sat at the start) */
+.set-row:not(.stack) > :is(.set-row-control, .set-inline) { margin-left: auto; }
+.set-row.stack { flex-direction: column; align-items: stretch; }
+.set-row.stack > .set-row-text { flex: none; }
+/* a stacked row without a label or hint (the knowledge filters): no empty text block and no gap above its control, so it
+   starts as far under the divider as every other row's first line (C3: 20.7 against the references' 12.7 px) */
+.set-row.stack > .set-row-text:has(> .set-row-label:empty:only-child) { display: none; }
+.set-row.stack .set-row-control { justify-content: flex-start; }
+.set-row.stack .set-input, .set-row.stack .set-textarea { width: 100%; }
+.set-inline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.set-row-control > .set-inline, .set-row > .set-inline { flex-wrap: wrap; justify-content: flex-end; }
+.set-inline > .set-input { flex: 0 1 auto; min-width: 0; }
+.set-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+/* ---------------------------------------------------------------- controls */
+.button.small { min-height: 30px; padding: 4px 11px; border-radius: 8px; font-size: 12px; }
+.button.ghost.danger { border-color: transparent; background: transparent; color: var(--danger); }
+.button.ghost.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
+.button.ghost.selected { background: var(--selected); color: var(--text); }
+.switch {
+  position: relative; flex: none; width: 36px; height: 20px; border-radius: 10px;
+  background: var(--field); transition: background-color .15s;
+}
+.switch-knob {
+  position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--switch-knob); box-shadow: var(--shadow-raised); transition: transform .15s ease-out;
+}
+.switch.on { background: var(--text); }
+.switch.on .switch-knob { background: var(--surface); transform: translateX(16px); }
+.switch:hover:not(:disabled):not(.on) { background: color-mix(in srgb, var(--field) 80%, var(--text)); }
+/* off: a light knob on the grey track in both themes (round 2: the dark surface-coloured knob read as a hollow pill);
+   disabled: an outlined, empty track with a quiet knob (off) – never like an enabled off switch – or the on-track faded */
+.switch:disabled { opacity: 1; }
+.switch:disabled:not(.on) { background: transparent; box-shadow: inset 0 0 0 1px var(--field-disabled); }
+.switch:disabled:not(.on) .switch-knob { background: var(--field-disabled); box-shadow: none; }
+.switch.on:disabled { opacity: calc(var(--disabled-opacity) - .1); } /* tokens.css: quieter in dark, where it read as enabled */
+/* one width for every settings select, whatever option is chosen (a longer value never moves the control) */
+.set-select {
+  width: 240px; max-width: 100%; padding: 6px 10px; border: 1px solid var(--field); border-radius: 8px;
+  background: var(--surface); color: var(--text); font-size: 13px; text-overflow: ellipsis;
+}
+.set-input {
+  width: 220px; max-width: 100%; padding: 7px 10px; border: 1px solid var(--field); border-radius: 8px;
+  background: var(--surface); color: var(--text); font-size: 13px;
+}
+.set-input.wide { width: 320px; }
+/* C3: one control height for every settings field and select – a row's, a filter's, a form dialog's (Add reference, the
+   add-account forms beside their .input fields) – the buttons' 36 px (40 px under a touch pointer: the select's coarse
+   minimum, base.css); the text centres in the box (selects came 33 px beside 35 px fields) */
+input.set-input, .set-select, .add-account input.input { height: 36px; padding-block: 0; }
+/* a native <select> in a row (Devices' "Join as"): the Select button's caret, not the browser's own arrow */
+select.set-input {
+  height: 36px; padding: 0 30px 0 10px; appearance: none; text-overflow: ellipsis;
+  background: var(--surface) var(--select-caret) no-repeat right 10px center / 12px 12px;
+}
+select.set-input:focus { outline: none; border-color: var(--focus); }
+@media (pointer: coarse) {
+  input.set-input, .set-select, .add-account input.input, select.set-input { height: 40px; }
+}
+/* a field with a mistake in it (Connect a PC): its edge says so, the message stays in the row's slot */
+.set-input[aria-invalid=true] { border-color: var(--danger); }
+/* a button on one line with a field takes the field's height (Pair, Connect, Restore …) – in the desktop and the phone
+   layout alike (round 2: 29 px beside 35 px fields, 40 px in the phone layout) */
+.set-inline > .set-input ~ .button.small { align-self: stretch; min-height: 0; }
+.set-input::placeholder, .set-textarea::placeholder { color: var(--muted); }
+:is(.set-input, .set-textarea):focus { outline: none; border-color: var(--focus); }
+/* a select (a button) shows its focus edge only from the keyboard – after a pick with the mouse it looks as before */
+.set-select:focus { outline: none; }
+.set-select:focus-visible { border-color: var(--focus); }
+.set-input:disabled, .set-select:disabled { opacity: var(--disabled-opacity); }
+.set-textarea {
+  display: block; width: 100%; min-height: 80px; padding: 9px 12px; border: 1px solid var(--field); border-radius: var(--r-md);
+  background: var(--surface); color: var(--text); font-size: 13px; line-height: 1.5;
+}
+.set-textarea.mono, .mono { font-family: var(--mono); }
+.set-textarea.mono { font-size: 12px; line-height: 1.6; tab-size: 2; }
+.segmented { display: inline-flex; gap: 2px; max-width: 100%; padding: 3px; overflow-x: auto; border-radius: 9px; background: var(--hover); scrollbar-width: none; }
+.segmented button { flex: none; min-height: 28px; padding: 4px 12px; border-radius: var(--r-sm); color: var(--secondary); font-size: 13px; white-space: nowrap; }
+.segmented button:hover { color: var(--text); }
+.segmented button.selected { background: var(--surface); color: var(--text); box-shadow: var(--shadow-raised); }
+.set-note { font-size: 12px; line-height: 1.5; }
+.set-note.muted { color: var(--muted); }
+.set-note.error { color: var(--danger); }
+.set-note.ok { color: var(--success); }
+/* ---------------------------------------------------------------- accounts and secrets */
+.state-chip { display: inline-flex; align-items: center; gap: 5px; color: var(--secondary); font-size: 12px; font-weight: 400; }
+.state-chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.state-chip.ok { color: var(--success); }
+.state-chip.needs_login, .state-chip.cooling { color: var(--warn); }
+.state-chip.error { color: var(--danger); }
+.state-chip.disabled, .state-chip.unknown { color: var(--muted); }
+.masked {
+  display: inline-block; min-width: 8ch; color: var(--secondary); font-family: var(--mono); font-size: 13px;
+  letter-spacing: 1px; white-space: nowrap; user-select: none;
+}
+/* a selected filter chip is filled (the text colour), so the choice reads at a glance in light and dark */
+.chip.selected, .chip.selected:hover:not(:disabled) { border-color: var(--text); background: var(--text); color: var(--surface); }
+.pair-code { color: var(--text); font: 600 20px/1.3 var(--mono); letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+.qr { display: block; flex: none; padding: 6px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--qr-bg); image-rendering: pixelated; }
+.dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); vertical-align: middle; }
+.dot.online { background: var(--success); }
+.dot.pairing { background: var(--warn); }
+.dot.connecting { background: var(--connecting); }
+.dot.revoked { background: var(--danger); }
+.dot.offline { background: var(--muted); } /* round 2: --field was 1.5:1 on white, 1.9:1 in dark */
+/* narrow settings column: controls drop under their label, full width */
+@container (max-width: 460px) {
+  .set-row-control { justify-content: flex-start; flex-basis: 100%; }
+  .set-row-control > .set-inline, .set-row > .set-inline { justify-content: flex-start; }
+  .set-input, .set-input.wide { width: 100%; }
+  .set-select { width: 100%; }
+  .set-row:not(.stack) > :is(.set-row-control, .set-inline) { margin-left: 0; }
+  /* a field with its button (Connect a PC, Restore): one line over the column's width, the field filling it */
+  .set-row:not(.stack) > .set-row-control > .set-inline:has(> .set-input:first-child) { flex: 1 1 100%; flex-wrap: nowrap; }
+  .set-row:not(.stack) > .set-row-control > .set-inline > .set-input:first-child { flex: 1 1 auto; width: auto; }
+}
+/* ---------------------------------------------------------------- the quota badges in the phone profile menu */
+.profile-quota:empty { display: none; }
+.profile-quota { margin: 0 0 4px; padding: 0 6px 6px; border-bottom: 1px solid var(--line); }
+.profile-quota .usage-stack { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; max-height: none; overflow: visible; }
+
+/* ---------------------------------------------------------------- number field, the learned words (voice-words.tsx) */
+.set-number { display: inline-flex; align-items: center; gap: 6px; }
+.set-input.narrow { width: 80px; }
+.set-suffix { color: var(--muted); font-size: 12px; }
+/* The dialog has one fixed height; the form stays on top and the list fills the rest as the one part that scrolls. */
+dialog.dialog.voice-words-dialog { height: min(560px, calc(100vh - 2 * var(--dialog-top))); }
+.voice-words-dialog .dialog-content { display: flex; flex-direction: column; padding-right: var(--dialog-pad-x); overflow: hidden; scrollbar-gutter: auto; scroll-timeline: none; }
+.voice-words-hint { flex: none; margin: 0 0 14px; font-size: 13px; }
+.voice-word-add { display: grid; flex: none; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-bottom: 12px; }
+.voice-word-add .set-input { width: auto; min-width: 0; }
+.voice-words-dialog .voice-word-add > .button.small { align-self: stretch; min-height: 0; }
+.voice-words {
+  flex: 1 1 auto; min-height: 88px; margin: 0 calc(-1 * var(--dialog-pad-x)) 0 0; padding: 0 calc(var(--dialog-pad-x) - 10px) 0 0;
+  overflow-y: auto; overscroll-behavior: contain; list-style: none; scrollbar-gutter: stable; scroll-timeline: --dialog-scroll block;
+}
+.voice-words > li:first-child { border-top: 1px solid var(--line); }
+.voice-word { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; border-bottom: 1px solid var(--line); }
+.voice-word-term { flex: 1 1 auto; min-width: 0; overflow: hidden; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.voice-word > .button { flex: none; margin-right: -12px; }
+.voice-words-empty { padding: 12px 0; color: var(--muted); font-size: 13px; }
+
+/* ---------------------------------------------------------------- the secrets catalog (SecretsPage.tsx): a quiet heading above each route */
+.secret-route { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 16px 0 6px; border-bottom: 1px solid var(--line); color: var(--secondary); font-size: 12px; font-weight: 600; }
+.secret-route-notice { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; color: var(--warn); }
+.secret-entry .set-row-control { flex: 0 0 auto; }
+.secret-entry .set-inline { flex-wrap: nowrap; }
+/* owner 04.11.2026: a box in front of each name selects it (inside the label: the row keeps its width); the head's count
+   keeps one width whatever it says; a login's username stands where the mask is, clipped (whole as its tooltip) */
+.secret-pick { display: inline-flex; align-items: center; gap: 8px; min-width: 0; cursor: pointer; }
+.secret-pick > input { flex: none; width: 16px; height: 16px; margin: 0; }
+.secret-selected { min-width: 13ch; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.secret-entry .masked { max-width: 28ch; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.secret-edit :is(.input, .set-select) + .field-label { display: block; margin-top: 14px; }
+.secret-edit .set-select { width: 100%; }
+.secret-purpose-field { width: 100%; height: calc(3 * 1.5em + 16px); line-height: 1.5; overflow-y: auto; resize: none; font: inherit; }
+.secret-edit .segmented + .field-label, .secret-edit .secret-field, .secret-edit .apps-mail-servers { margin-top: 14px; }
+/* owner 04.11.2026 (SecretRows.tsx): the band above the catalog – one fixed height whether it shows the Name | Value rows
+   or the form (its body scrolls inside), so the catalog never moves; a file dragged over the band or the list tints them
+   (colour only). The chat's secret mode uses the same rows (composer.css: its own heights). */
+.secret-drop { border-radius: var(--r-md); outline: 1px dashed transparent; outline-offset: 2px; transition: background-color .12s, outline-color .12s; }
+.secret-drop.drop-over { outline-color: var(--focus); background: color-mix(in srgb, var(--hover) 45%, transparent); }
+.secret-band { display: flex; flex-direction: column; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.secret-band-body { flex: none; height: 196px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; } /* five rows */
+.secret-kv-rows { display: grid; gap: 6px; }
+.secret-kv-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 28px; align-items: center; gap: 8px; }
+.secret-kv-row > .input { height: 34px; padding: 6px 10px; font: inherit; font-size: 13px; line-height: 20px; }
+.secret-kv-value { overflow: hidden; resize: none; -webkit-text-security: disc; }
+.secret-kv-gap { width: 28px; height: 28px; }
+.secret-band-foot { display: grid; gap: 6px; flex: none; margin-top: 10px; }
+.secret-band-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.secret-band-actions > .button { flex: none; }
+.secret-band-actions > .secret-band-more { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.secret-band-close { flex: none; margin-left: auto; }
+.secret-band-line {
+  display: -webkit-box; height: 36px; margin: 0; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 18px;
+  overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+}
+.secret-band-line.error { color: var(--danger); }
+.secret-band-line.ok { color: var(--success); }
+.secret-field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; margin-bottom: 4px; }
+.secret-field-head > .input { flex: 1 1 auto; min-width: 0; }
+.secret-field-head > .set-select { flex: 0 0 160px; width: 160px; }
+.secret-field-head > .field-label { margin: 0; }
+.secret-field-hint { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.secret-field > .input { width: 100%; min-width: 0; }
+.secret-add-field { margin-top: 10px; }
+
+/* ---------------------------------------------------------------- Apps (AppsPage.tsx, apps-add.tsx): the catalog's list box has one height, typing moves nothing below it */
+.apps-search { width: 100%; min-width: 0; margin: 10px 0; }
+.apps-list { height: 294px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; border-bottom: 1px solid var(--line); }
+.apps-tools { display: grid; gap: 2px; max-height: 320px; margin: 0; padding: 0; overflow-y: auto; font-family: var(--mono); font-size: 12px; list-style: none; }
+.apps-tools li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.apps-tools-more { color: var(--muted); font-family: inherit; }
+.apps-mail-servers { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 10px; }
+.apps-mail-servers .input { width: 100%; min-width: 0; }
+.feedback-review-text { max-height: 50vh; overflow-y: auto; white-space: pre-wrap; user-select: text; }

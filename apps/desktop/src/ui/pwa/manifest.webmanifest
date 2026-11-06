@@ -1,0 +1,15 @@
+{
+  "name": "Autark",
+  "short_name": "Autark",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#f3f3f3",
+  "icons": [
+    { "src": "/icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable.png", "sizes": "1024x1024", "type": "image/png", "purpose": "maskable" }
+  ]
+}

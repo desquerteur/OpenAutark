@@ -1,0 +1,70 @@
+/* The composer's schedule mode (chat/composer/ScheduleBar.tsx): one settings block above the text inside the composer
+   frame – four rows of fixed height (type, fields, one-tap times or start/end, one line of words), the same in every
+   choice, so nothing moves on a click. The composer itself grows from the bottom up (composer.css: taller field).
+   Also the chat's quiet "Scheduled · <when>" line (chat/ScheduledLine.tsx) and the rule line of a row in Chat details ›
+   Scheduled (chat/details/Schedules.tsx; the rest of that list: details.css).
+   Owns: these rules. Never: the dialog chrome (base.css, overlays.css), colors outside tokens.css. */
+
+.schedule-bar { display: grid; gap: 8px; margin: 0 0 10px; padding: 0 0 10px; border-bottom: 1px solid var(--line); }
+.schedule-row { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 34px; }
+.schedule-row > .segmented { flex: 0 1 auto; min-width: 0; }
+.schedule-bar .segmented button { padding: 4px 10px; }
+.schedule-close { flex: none; margin-left: auto; }
+.schedule-label { flex: none; color: var(--secondary); font-size: 13px; }
+
+.schedule-bar .input { flex: none; width: auto; height: 34px; padding: 0 10px; border-radius: var(--r-md); font-size: 13px; }
+/* the fields have their width in a wide composer and give way (never the row) in a narrow one */
+.schedule-bar :is(.schedule-date, .schedule-time, .schedule-start, .schedule-end) { flex: 1 1 0; min-width: 0; }
+.schedule-bar .schedule-date { max-width: 156px; }
+.schedule-bar .schedule-time { max-width: 116px; }
+.schedule-bar .schedule-start { max-width: 206px; }
+.schedule-bar .schedule-end { max-width: 156px; }
+.schedule-bar .schedule-number { width: 76px; }
+.schedule-bar .schedule-cron { flex: 1 1 auto; min-width: 0; font-family: var(--mono); }
+.schedule-bar select.schedule-unit { flex: none; height: 34px; min-height: 34px; }
+/* Starts and Ends sit side by side at their own width (Clear at the row's end, no gap between them) and give way in a
+   narrow composer */
+.schedule-field { display: flex; flex: 0 1 auto; align-items: center; gap: 8px; min-width: 0; margin: 0; }
+.schedule-bar :is(.schedule-start, .schedule-end) { flex: 0 1 auto; }
+.schedule-bar .schedule-start { width: 206px; }
+.schedule-bar .schedule-end { width: 156px; }
+
+/* weekdays: seven round toggles, the chosen ones filled */
+.schedule-days { display: flex; flex: 1 1 auto; gap: 4px; min-width: 0; max-width: 234px; }
+.schedule-day {
+  display: grid; place-items: center; flex: 1 1 0; min-width: 0; max-width: 30px; aspect-ratio: 1; border: 1px solid var(--field); border-radius: 50%;
+  color: var(--secondary); font-size: 12px;
+}
+.schedule-day:hover { background: var(--hover); color: var(--text); }
+.schedule-day[aria-pressed=true] { border-color: var(--text); background: var(--text); color: var(--surface); }
+
+/* one-tap times (Once) and Clear (Repeat); a Clear with nothing to clear keeps its place */
+.schedule-extra { flex-wrap: nowrap; }
+.schedule-pick, .schedule-clear { flex: none; border: 1px solid var(--field); }
+.schedule-clear { margin-left: auto; }
+.schedule-clear.idle { visibility: hidden; }
+.schedule-pick:disabled { opacity: var(--disabled-opacity); }
+
+.schedule-line { min-height: 18px; margin: 0; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.schedule-line.warn { color: var(--warn); }
+.schedule-line.error { color: var(--danger); }
+
+/* a narrower composer: the third row may take two lines in both choices (a click still moves nothing), the days a
+   closer */
+@container composer (max-width: 560px) {
+  .schedule-extra { flex-wrap: wrap; align-content: flex-start; min-height: 72px; }
+  .schedule-clear { margin-left: 0; }
+}
+@container composer (max-width: 420px) {
+  .schedule-bar .segmented button { padding: 4px 7px; }
+  .schedule-days { gap: 3px; }
+}
+
+/* the chat's "Scheduled · <when>" line */
+.scheduled-line .scheduled-link {
+  min-width: 0; overflow: hidden; color: inherit; font: inherit; text-align: left; text-overflow: ellipsis; white-space: nowrap;
+}
+.scheduled-line .scheduled-link:hover { color: var(--text); text-decoration: underline; }
+
+/* Chat details › Scheduled: a repeating rule in words under the message (details.css has the row) */
+.details-schedule-rule { overflow: hidden; color: var(--secondary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }

@@ -1,0 +1,98 @@
+/* Feedback (B-055 Q4): the header cell's button (feedback/FeedbackButton.tsx – where the cell sits:
+   shell.css, mobile.css), the talk pill right under it (TalkPill.tsx: a narrow live waveform), the
+   form in the menu popover and in Settings' "New report" (FeedbackPanel.tsx: the field with the mic
+   inside it, the screenshot row – thumbnail, checkbox, one muted line –, the message slot reserved
+   beside the one action) and "Paint over"
+   (PaintEditor.tsx: a fixed stage the shot is fitted into, the tool row). Every box has a fixed
+   size, so a shot arriving, an error or a running dictation moves nothing; state selectors change
+   only colour or opacity.
+   Owns: these looks. Never: the popover/dialog primitives (base.css, overlays.css), where the cell
+   sits, the phone sheet (mobile.css) or colours outside tokens.css. */
+
+/* ---------------------------------------------------------------- the cell and the talk pill */
+/* a long press is talk: no text selection, callout or scrolling starts on the button */
+.feedback-toggle { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.feedback-talk {
+  position: fixed; z-index: 60; display: grid; place-items: center; height: 30px; padding: 0 12px;
+  border: 1px solid var(--elevated-line); border-radius: 999px; background: var(--elevated); color: var(--text);
+  box-shadow: var(--shadow-popover); pointer-events: none; animation: wf-fade-in .1s ease-out;
+}
+.feedback-talk canvas { display: block; width: 46px; height: 18px; }
+.feedback-talk.starting canvas { animation: wf-wave-pulse 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .feedback-talk.starting canvas { animation: none; } }
+
+/* ---------------------------------------------------------------- the form */
+.popover.feedback-menu { padding: 12px; overflow: visible auto; }
+/* the phone's sheet (mobile.css): the form keeps the sheet's usual 16 px sides */
+body:has(.mobile-shell) .popover.feedback-menu { padding: 6px 16px calc(16px + env(safe-area-inset-bottom)); }
+.feedback-panel { display: grid; gap: 12px; min-width: 0; }
+.feedback-input { position: relative; }
+.feedback-input .set-textarea { height: 104px; min-height: 104px; padding-right: 44px; resize: none; }
+.feedback-input .mic { position: absolute; right: 4px; bottom: 4px; }
+.feedback-input .mic.active { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+.feedback-input .mic.active .icon { opacity: 1; }
+
+/* the screenshot row: thumbnail (opens "Paint over") | checkbox over one muted line */
+.feedback-shot { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; column-gap: 12px; height: 52px; }
+.feedback-thumb {
+  display: grid; place-items: center; width: 80px; height: 52px; padding: 0; overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--sidebar); color: var(--muted); cursor: pointer;
+}
+.feedback-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+.feedback-thumb:hover:not(:disabled) { border-color: var(--focus); }
+.feedback-thumb:disabled { cursor: default; }
+.feedback-shot.off .feedback-thumb img { opacity: .4; }
+.feedback-shot-text { display: grid; grid-template-rows: 20px 16px; row-gap: 2px; min-width: 0; }
+.feedback-shot-hint { min-width: 0; margin: 0; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.feedback-check { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--secondary); font-size: 13px; cursor: pointer; }
+.feedback-check input[type=checkbox] { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--text); }
+.feedback-check:has(input:disabled) { cursor: default; opacity: var(--disabled-opacity); }
+
+/* the one action with the message slot beside it (two lines at most, always there) */
+.feedback-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 36px; }
+.feedback-actions > .button { flex: none; }
+.feedback-actions > .button.feedback-again { min-width: 104px; } /* "Send again" and "Sending…" take the same cell */
+.feedback-message {
+  flex: 1 1 auto; display: -webkit-box; min-width: 0; max-height: 32px; margin: 0; overflow: hidden;
+  -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--danger); font-size: 12px; line-height: 16px;
+}
+.feedback-done { margin: 0; color: var(--text); line-height: 1.6; }
+.feedback-privacy-note { height: 48px; margin: 0; color: var(--muted); font-size: 11px; line-height: 16px; }
+.feedback-privacy-note button { margin: 0 0 0 4px; padding: 0; border: 0; background: none; color: var(--secondary); font: inherit; text-decoration: underline; cursor: pointer; }
+.feedback-privacy-details p { margin: 0 0 14px; }
+
+/* ---------------------------------------------------------------- the team's inbox */
+.feedback-inbox-entry { display: flex; align-items: center; justify-content: flex-end; height: 32px; }
+.feedback-inbox-entry .button { height: 28px; min-height: 28px; }
+.feedback-inbox-content { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; height: min(60vh, 540px); min-height: 180px; }
+.feedback-inbox-list, .feedback-inbox-report { min-width: 0; min-height: 0; overflow: auto; scrollbar-gutter: stable; }
+.feedback-inbox-list { border-right: 1px solid var(--line); padding-right: 8px; }
+.feedback-inbox-row { display: grid; gap: 4px; width: 100%; height: 80px; padding: 10px; border: 0; border-radius: var(--r-sm); background: none; color: var(--text); text-align: left; cursor: pointer; }
+.feedback-inbox-row:hover, .feedback-inbox-row.selected { background: var(--hover); }
+.feedback-inbox-row span { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 13px; line-height: 18px; overflow-wrap: anywhere; }
+.feedback-inbox-row small, .feedback-inbox-meta, .feedback-inbox-empty { margin: 0; color: var(--muted); font-size: 12px; line-height: 18px; }
+.feedback-inbox-text { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0; }
+.feedback-inbox-image { display: grid; place-items: center; min-height: 160px; border-radius: var(--r-sm); background: var(--sidebar); }
+.feedback-inbox-image img { display: block; max-width: 100%; height: auto; }
+.feedback-inbox-image p { color: var(--muted); font-size: 12px; }
+.feedback-inbox-report details { margin-top: 12px; }
+.feedback-inbox-report pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.feedback-inbox-refresh { min-width: 90px; }
+@media (max-width: 600px) {
+  .feedback-inbox-content { grid-template-columns: minmax(0, 1fr); grid-template-rows: 96px minmax(0, 1fr); gap: 12px; height: 58vh; }
+  .feedback-inbox-list { border-right: 0; border-bottom: 1px solid var(--line); padding-right: 0; }
+  .feedback-inbox-row { height: 76px; }
+}
+
+/* ---------------------------------------------------------------- "Paint over" */
+dialog.paint-dialog .dialog-content { display: grid; gap: 12px; }
+/* one definite track, so the canvas's max-width/max-height (100 %) fit the whole shot into the stage */
+.paint-stage {
+  display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; height: min(62vh, 640px); min-height: 160px;
+  overflow: hidden; border-radius: var(--r-md); background: var(--sidebar);
+}
+.paint-canvas { display: block; max-width: 100%; max-height: 100%; cursor: crosshair; touch-action: none; }
+.paint-wait { width: 100%; height: 100%; }
+.paint-tools { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.paint-tools .segmented { flex: none; }
+.paint-message { flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; color: var(--danger); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }

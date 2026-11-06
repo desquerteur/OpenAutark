@@ -1,0 +1,309 @@
+/* Desktop frame (shell/Shell.tsx, the route table shell/views.ts): rail 56 px | zones whose
+   header rows start at the window's top edge:
+       [ side 200–420 (default 288) + grip | main ]   + the pane 280–800 (+ grip), its tab strip in the row where it has room
+   One continuous header row (--header-h = the native caption controls' height on Windows/Linux) in
+   the chrome color across rail and zones: each zone draws its row with lib/header.tsx (the grid:
+   header.css) at its top and its body below it. A zone clips (overflow: clip); only its body
+   scrolls, so a focus, a scroll or a search field can never shift a header row. B-044 decision 3:
+   the main zone's row runs on over the workspace pane's room (--pane-reserve), so opening or closing
+   the pane moves no header cell. The pane lies below the row with its tab strip as its first line; where
+   the row leaves the strip room for three titled tabs (.pane-row-room, Shell.tsx `strip-in-row`) the pane
+   starts at the window's top and its strip is the row's part above it, like Chrome's (B-072,
+   workspace-browser.css; the main views keep their cells left of it); in a narrow window it floats below
+   the row. The caption controls' room is assigned once: the main zone is `.rightmost` (Shell.tsx), which becomes
+   --caption-space (the header grid's caption track) – the controls plus the frame's workspace cell
+   (WindowBar.tsx), one element at the far right of the row in both states; the status line
+   (StatusLine.tsx) lies over the main zone's top.
+   Rail + side form the chrome left zone; below the row, main + pane are one surface sheet with a
+   rounded top-left corner, drawn once by the frame (::before/::after), with 1 px dividers inside
+   it; plus the rail parts (badge, update ring, quotas, profile), sidebar rows shared by the navs,
+   boot state, command palette and profile menu.
+   Owns: frame geometry, the caption assignment and these components. Never: the header grid
+   (header.css), view content (chat.css, settings.css …), colors outside tokens.css, phone layout
+   (mobile.css).
+   Note: blocks/AppFrame.tsx also uses the class `app-frame` (mini-app root), so every shell
+   frame rule is scoped to `.shell > .app-frame`. */
+
+/* ---------------------------------------------------------------- frame */
+.app { position: relative; display: grid; grid-template-rows: minmax(0, 1fr); height: 100%; background: var(--chrome); }
+.shell { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); min-height: 0; }
+
+.shell > .app-frame {
+  /* The sidebar keeps the chat ≥ 340 px beside an open global pane. An open chat panel reserves
+     nothing here: the sidebar never narrows when it opens, which would move the chat header's title
+     (B-044 decision 3) – without room for both, the panel lies over the messages (chat.css). */
+  --sidebar-size: clamp(200px, var(--sidebar-width, var(--sidebar-default)),
+    min(420px, calc(100% - 340px - var(--pane-reserve, 0px))));
+  --sheet-left: var(--sidebar-size);
+  position: relative; display: grid; grid-template-columns: var(--sidebar-size) minmax(0, 1fr);
+  min-width: 0; min-height: 0; overflow: hidden;
+  border: 0;
+  background: var(--chrome);
+}
+.shell > .app-frame.sidebar-closed { --sheet-left: 0px; grid-template-columns: minmax(0, 1fr); }
+/* The pane's width in viewport terms (the frame is 100vw minus the rail): one length wherever it
+   is used – the pane's own width, the main zone's reserve (a percentage would resolve against a
+   different box in each place) and a chat's side panel (chat.css), so every right pane is one width
+   and the chat column ends at the same x whichever is open. */
+.shell > .app-frame { --pane-size: clamp(280px, var(--pane-width, 400px), min(800px, calc(100vw - var(--rail-w) - 540px))); }
+.shell > .app-frame.sidebar-closed { --pane-size: clamp(280px, var(--pane-width, 400px), min(800px, calc(100vw - var(--rail-w) - 340px))); }
+.shell > .app-frame.with-pane { --pane-reserve: var(--pane-size); }
+
+/* The caption controls' room at either edge and the frame's own cells before the right controls:
+   only the rightmost zone's
+   header grid reserves them (--zone-room → --caption-space). Each cell is one element of the
+   frame at the far right of the row, at the same place whether the pane is open or closed: right before
+   the controls the feedback cell (WindowBar.tsx FeedbackCell, the owner: "ganz rechts … wo es nicht
+   stört"), left of it the workspace cell, their room reserved here once, so no view's header moves for them. */
+.app { --native-caption-space: var(--caption-reserve); }
+/* Only the first zone's header yields to left controls and the rail's toggle. Its body stays put. */
+.shell > .app-frame > .sidebar,
+.shell > .app-frame.sidebar-closed > .main-slot { --caption-start-space: var(--caption-left); }
+.shell > .app-frame { --workspace-cell: 36px; --feedback-cell: 36px; } /* 32 px cell + 4 px gap each */
+.shell > .app-frame > .rightmost { --zone-room: calc(var(--native-caption-space, 0px) + var(--workspace-cell) + var(--feedback-cell)); }
+.shell > .app-frame > .frame-workspace-cell {
+  --header-bg: var(--chrome);
+  position: absolute; z-index: 13; top: calc((var(--header-h) - 32px) / 2); right: calc(12px + var(--native-caption-space, 0px) + var(--feedback-cell));
+}
+.shell > .app-frame > .frame-feedback-cell {
+  --header-bg: var(--chrome);
+  position: absolute; z-index: 13; top: calc((var(--header-h) - 32px) / 2); right: calc(12px + var(--native-caption-space, 0px));
+}
+/* The tab room the pane's strip has in the title row: the pane less its 1 px padding, the strip's 6 px and 12 px, the
+   caption controls and the frame's two cells (workspace-browser.css), at the pane's width beside the open sidebar, so the
+   sidebar's toggle never moves the strip; none in a narrow window. Shell.tsx measures it: three titled tabs fit
+   (strip-slots.ts ROW_ROOM) → `strip-in-row`. Open or closed alike, so opening the pane moves nothing. */
+.shell > .app-frame > .pane-row-room {
+  position: absolute; top: 0; left: 0; height: 0; pointer-events: none;
+  width: max(0px, clamp(280px, var(--pane-width, 400px), min(800px, 100vw - var(--rail-w) - 540px)) - 19px - var(--native-caption-space, 0px) - var(--workspace-cell) - var(--feedback-cell));
+}
+
+/* The sheet's edge, drawn once above all columns (pointer-events: none): a 1 px line under the
+   header row and along the sheet's left side, rounded at the top-left (::after), and a chrome
+   ring that covers the content outside that arc (::before, clipped to the sheet), so no view's
+   own background can leave a wedge in the corner. With the sidebar closed the sheet starts
+   after the rail. The line is the sheet's first pixel row: below the native caption overlay,
+   which covers the header row's full height. */
+.shell > .app-frame::before, .shell > .app-frame::after { content: ''; position: absolute; z-index: 11; pointer-events: none; }
+.shell > .app-frame::before {
+  --cover: 8px;
+  top: calc(var(--header-h) - var(--cover)); left: calc(var(--sheet-left) - var(--cover));
+  width: calc(var(--r-sheet) + var(--cover)); height: calc(var(--r-sheet) + var(--cover));
+  border: solid var(--chrome); border-width: var(--cover) 0 0 var(--cover); border-top-left-radius: calc(var(--r-sheet) + var(--cover));
+  clip-path: inset(var(--cover) 0 0 var(--cover));
+}
+.shell > .app-frame::after {
+  top: var(--header-h); left: var(--sheet-left); right: 0; bottom: 0;
+  border: solid var(--line); border-width: 1px 0 0 1px; border-top-left-radius: var(--r-sheet);
+}
+
+/* invisible 8 px grip on the divider with a subtle line on hover/focus/drag */
+.column-resize {
+  position: absolute; z-index: 12; top: 0; bottom: 0; width: 8px;
+  cursor: col-resize; touch-action: none; outline: none;
+}
+.sidebar-resize { left: calc(var(--sidebar-size) - 4px); }
+.workspace-resize { left: -4px; }
+.column-resize::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px; border-radius: 1px;
+  background: transparent; transition: background-color .12s .08s;
+}
+.column-resize:hover::after, :root.column-resizing .column-resize::after { background: var(--field); }
+.column-resize:focus-visible::after { background: var(--focus); }
+:root.column-resizing, :root.column-resizing * { cursor: col-resize !important; user-select: none !important; }
+
+/* side zone: the chrome left zone with the rail – its header row (Sidebar.tsx), then the body,
+   which alone scrolls and keeps its scrollbar's room, so a growing list never moves the row */
+.sidebar { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: clip; background: var(--chrome); }
+.sidebar-body { flex: 1 1 auto; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+/* its thumb lies right at the sheet's edge: shown only while the pointer is over the list (the
+   gutter stays reserved), so it never reads as a second divider */
+.sidebar-body:not(:hover, :focus-within)::-webkit-scrollbar-thumb { background-color: transparent; }
+
+/* main zone: the sheet's left part. Its header row is the view's top (views.ts data or the view's
+   own lib/header.tsx row); the view scrolls itself. With the pane open the zone keeps its width:
+   its body leaves the pane's room free (padding) and its header row reaches over that room (a
+   negative margin into the padding, inside the zone's clip box), so the row and its cells stay
+   where they are. No stacking context of its own: the status line (z-index 10) stays above a pane
+   lying over the zone (narrow windows and full view: z-index 9). The body and a chat's side panel
+   start right under the header row. */
+.main-slot {
+  --zone-room: 0px; --caption-space: var(--zone-room);
+  position: relative;
+  display: flex; flex-direction: column; min-width: 0; min-height: 0; padding-right: var(--pane-reserve, 0px);
+  overflow: clip; background: var(--surface);
+}
+.main-slot > .frame-header, .main-slot > * > .frame-header.zone-main { margin-right: calc(-1 * var(--pane-reserve, 0px)); }
+.main-slot > .chat-view { flex: 1 1 0; min-height: 0; }
+.main-empty { display: flex; flex-direction: column; flex: 1 1 auto; }
+
+.app .rail-header { -webkit-app-region: drag; app-region: drag; }
+.app :is(button, a, input, select, textarea, [role=separator], [role=tablist]) { -webkit-app-region: no-drag; app-region: no-drag; }
+
+/* pane zone (the browser, right): the sheet's right part in the room the main zone keeps free, below the
+   row (content, like the chat panels; z 9, under the status line) with its divider from its own top. With
+   `strip-in-row` it starts at the window's top – its tab strip is the header row's part above it (z 12: over
+   the sheet's edge, which the strip draws on at its foot, under the frame's cells) – and its divider under
+   the row. The pane's 1 px padding (unpainted) keeps a native website view (workspace-browser) off the divider –
+   padding, not a border: a border snaps to whole device pixels (0.67 px at 150 %), so the strip in flow and
+   the full view's strip at the pane's width less 1 px would differ. */
+.global-pane {
+  --zone-room: 0px; --caption-space: var(--zone-room);
+  position: absolute; z-index: 9; top: var(--header-h); right: 0; bottom: 0; width: var(--pane-size);
+  display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  overflow: clip; overflow-clip-margin: 4px; /* the resize grip straddles the divider */
+  background: var(--surface); background-clip: content-box; padding-left: 1px;
+}
+.global-pane::before {
+  content: ''; position: absolute; z-index: 1; top: 0; bottom: 0; left: 0; width: 1px;
+  background: var(--line); pointer-events: none;
+}
+.shell > .app-frame.strip-in-row > .global-pane { z-index: 12; top: 0; }
+.shell > .app-frame.strip-in-row > .global-pane::before { top: var(--header-h); }
+.global-pane > .workspace-pane { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+/* full view (workspace/full-view.ts): the pane lies over the main zone's body from the sheet's left edge; the main zone
+   keeps its size and state underneath, and the sheet's edge and the header cells stay where they are. A strip in the
+   row stays there at the pane's width on the right, so the main zone's row beside it shows and works as before (the
+   pane under the sheet's edge, z 9; its own surface only below the row). */
+.shell > .app-frame.pane-full > .global-pane { left: var(--sheet-left); width: auto; box-shadow: none; }
+.shell > .app-frame.pane-full .workspace-resize { display: none; }
+.shell > .app-frame.strip-in-row.pane-full > .global-pane { z-index: 9; background: none; pointer-events: none; }
+.shell > .app-frame.strip-in-row.pane-full > .global-pane > .workspace-pane { padding-top: calc(var(--header-h) + 1px); background-clip: content-box; pointer-events: none; }
+.shell > .app-frame.strip-in-row.pane-full > .global-pane > .workspace-pane > * { pointer-events: auto; }
+.shell > .app-frame.strip-in-row.pane-full > .global-pane .browser-strip { position: absolute; top: 0; right: 0; width: calc(var(--pane-size) - 1px); } /* in flow it is the pane less its 1 px padding */
+/* Narrow windows: the pane floats over the content below the row instead of squeezing the chat (under the status
+   line), its strip never in the row. */
+@media (max-width: 875px) {
+  .shell > .app-frame.with-pane, .shell > .app-frame.sidebar-closed.with-pane { --pane-reserve: 0px; }
+  .shell > .app-frame > .pane-row-room { width: 0; }
+  .global-pane { width: min(var(--pane-width, 400px), 100%); box-shadow: var(--shadow-panel); }
+}
+.boot { display: grid; place-items: center; height: 100%; background: var(--chrome); color: var(--muted); }
+
+/* ---------------------------------------------------------------- rail */
+/* no overflow clipping here: the update tooltip extends to the right of the rail */
+.rail { display: flex; flex-direction: column; align-items: center; min-height: 0; padding: 0 0 14px; }
+.rail-header {
+  position: relative; z-index: 13; display: grid; place-items: center; flex: none;
+  width: 100%; height: var(--header-h); margin-bottom: 6px; transform: translateX(var(--caption-left));
+}
+.rail-top { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none; }
+.rail-item { position: relative; display: grid; }
+.rail-badge {
+  position: absolute; top: 1px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+  background: var(--badge-bg); color: var(--badge-fg); box-shadow: 0 0 0 2px var(--chrome);
+  font-size: 10px; font-weight: 600; line-height: 16px; text-align: center; pointer-events: none;
+}
+.rail-bottom { display: flex; flex-direction: column; align-items: center; gap: 12px; min-height: 0; margin-top: auto; padding-top: 12px; }
+
+/* update control: blue circle, value-bound ring with the real %, black pill tooltip */
+.update-control { position: relative; display: grid; flex: none; }
+.update-button {
+  position: relative; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--update); color: var(--badge-fg); transition: background-color .15s, transform .15s;
+}
+.update-button:hover:not(:disabled) { background: var(--update-hover); }
+.update-button:active:not(:disabled) { transform: scale(.96); }
+.update-button:disabled { opacity: 1; cursor: default; }
+.update-button .ring { color: var(--badge-fg); }
+.update-button .ring-track { stroke: color-mix(in srgb, var(--badge-fg) 30%, transparent); }
+.update-button .ring-content { font-size: 9px; letter-spacing: -.2px; }
+.update-button .spinner { border-color: color-mix(in srgb, var(--badge-fg) 30%, transparent); border-top-color: var(--badge-fg); }
+.rail-tooltip {
+  position: absolute; z-index: 40; left: calc(100% + 12px); top: 50%; transform: translateY(-50%);
+  padding: 8px 14px; border-radius: 20px; background: var(--tooltip-bg); color: var(--tooltip-fg);
+  font-size: 12px; font-weight: 500; white-space: nowrap; pointer-events: none;
+}
+.update-popover { padding: 14px 16px; font-size: 13px; }
+.update-title { font-weight: 600; }
+.update-popover .muted { margin-top: 2px; font-size: 12px; }
+.update-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+/* plan quotas (B-078, shell/QuotaRail.tsx): one compact badge per plan, every part in a fixed slot – the 5-hour ring
+   (only for a plan with a 5-hour window) with the weekly % in its middle, both in the provider's colour (no provider
+   name in text), the minutes to the 5-hour reset, the plan's name; 10 px is the rail's smallest text; details on hover */
+.usage-stack {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 1 auto; min-height: 0;
+  max-height: min(45vh, 300px); overflow: hidden auto; scrollbar-width: none;
+}
+.usage-badge {
+  --plan: var(--provider-codex); --plan-bar: var(--provider-codex-bar);
+  display: flex; flex-direction: column; align-items: center; flex: none;
+  width: 46px; height: 50px; padding: 0 1px; border-radius: var(--r-sm); color: var(--text); /* 28 + 11 + 11: every slot whole */
+}
+.usage-badge.provider-claude, .usage-card.provider-claude { --plan: var(--provider-claude); --plan-bar: var(--provider-claude-bar); }
+.usage-badge.other-0, .usage-card.other-0 { --plan: var(--provider-other-0); --plan-bar: var(--provider-other-0); }
+.usage-badge.other-1, .usage-card.other-1 { --plan: var(--provider-other-1); --plan-bar: var(--provider-other-1); }
+.usage-badge.other-2, .usage-card.other-2 { --plan: var(--provider-other-2); --plan-bar: var(--provider-other-2); }
+.usage-badge.other-3, .usage-card.other-3 { --plan: var(--provider-other-3); --plan-bar: var(--provider-other-3); }
+.usage-badge:hover, .usage-badge[aria-expanded=true] { background: var(--hover); }
+.usage-badge.stale > * { opacity: .55; }
+.usage-dial { position: relative; display: grid; place-items: center; width: 28px; height: 28px; flex: none; }
+.usage-ring { position: absolute; inset: 0; }
+.usage-ring circle { fill: none; stroke-width: 2.5; }
+.usage-ring-track { stroke: var(--line); }
+.usage-ring-arc { stroke: var(--plan-bar); stroke-linecap: round; }
+.usage-value { position: relative; color: var(--plan); font-size: 9.5px; font-weight: 600; line-height: 11px; letter-spacing: -.2px; }
+.usage-wait, .usage-name { display: block; flex: none; align-self: stretch; height: 11px; overflow: hidden; font-size: 10px; line-height: 11px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.usage-wait { color: var(--secondary); }
+.usage-name { color: var(--muted); }
+.usage-more { flex: none; color: var(--muted); font-size: 11px; line-height: 16px; cursor: default; }
+.popover.usage-popover { padding: 14px 16px; font-size: 12px; }
+.usage-card { --plan: var(--provider-codex); --plan-bar: var(--provider-codex-bar); }
+.usage-card h4 { margin: 0 0 8px; color: var(--plan); font-size: 13px; font-weight: 600; }
+.usage-window + .usage-window { margin-top: 10px; }
+.usage-row { display: flex; justify-content: space-between; gap: 12px; color: var(--text); }
+.usage-bar { height: 6px; margin-top: 6px; border-radius: 6px; background: var(--hover); overflow: hidden; }
+.usage-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--plan-bar, var(--provider-codex-bar)); }
+.usage-reset { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+/* profile bubble and menu (no gear, no divider chrome in the rail) */
+.profile-button { display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 4px; border-radius: 50%; }
+.profile-button:hover, .profile-button[aria-expanded=true] { background: var(--hover); }
+.profile-menu { padding: 6px; }
+.profile-head {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; min-width: 0;
+  margin-bottom: 4px; padding: 12px 12px 12px; border-bottom: 1px solid var(--line); border-radius: 9px 9px 0 0; text-align: left;
+}
+.profile-head:hover, .profile-head:focus-visible { background: var(--hover); }
+/* the head with the fixed '+' slot (add a company) beside it */
+.profile-head-row { display: flex; align-items: flex-start; gap: 2px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
+.profile-head-row .profile-head { flex: 1 1 auto; margin-bottom: 0; border-bottom: 0; }
+.profile-add { flex: none; margin: 6px 4px 0 0; }
+.profile-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
+.profile-company { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+.profile-menu .menu-item { padding: 10px 12px; }
+
+/* ---------------------------------------------------------------- sidebar rows */
+.chat-list, .sidebar-section { padding: 12px 0 18px; }
+.sidebar :is(.chat-list, .sidebar-section, .team-nav, .settings-nav) { padding-top: 8px; } /* under the side header row */
+.sidebar-action {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 44px; padding: 0 20px;
+  color: var(--secondary); font-size: 14px; text-align: left;
+}
+.sidebar-action:hover { background: var(--hover); color: var(--text); }
+.sidebar-action .icon { opacity: .7; }
+.nav-list { display: flex; flex-direction: column; }
+.nav-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 16px 0 20px;
+  color: var(--secondary); font-size: 14px; text-align: left;
+}
+.nav-row:hover { background: var(--hover); color: var(--text); }
+.nav-row[aria-current=page] { background: var(--selected); color: var(--text); }
+.nav-row > span:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-count { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- command palette */
+dialog.dialog.palette { margin-top: 12vh; margin-bottom: auto; }
+.palette .dialog-body { padding: 0; }
+.palette-search { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.palette-input { flex: 1 1 auto; min-width: 0; border: 0; outline: none; background: transparent; color: var(--text); font-size: 15px; }
+.palette-input:focus-visible { outline: none; }
+.palette-input::placeholder { color: var(--muted); }
+/* one height and the scrollbar's room always: typing never resizes the dialog or narrows a row */
+.palette-list { height: min(420px, 60vh); padding: 6px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.palette-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 8px; color: var(--text); font-size: 13px; text-align: left; }
+.palette-row .icon { opacity: .64; }
+.palette-row[aria-selected=true] { background: var(--hover); }
+.palette-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette-empty { padding: 18px 10px; text-align: center; }

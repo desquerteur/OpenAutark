@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Owns: light navigation controls on Android 8.1+. Never: applies newer style IDs on Android 8.0. -->
+<resources>
+    <style name="AppTheme" parent="AppThemeBase">
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

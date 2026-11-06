@@ -1,0 +1,45 @@
+/* App-level states and the settings main view frame (R3-U1): boot notes (pairing failed,
+   unpaired device, crash fallback), the offline "For you" snapshot of the PWA (its top row is a
+   lib/header.tsx row), the settings main view (its top row is settings/Settings.tsx's
+   lib/header.tsx row) and search highlights.
+   Owns: classes from App.tsx and settings/Settings.tsx. Never: settings rows/controls
+   (settings.css) or shell layout (shell.css). */
+
+/* ---------------------------------------------------------------- boot notes */
+.boot.boot-note { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; }
+.boot-note p { max-width: 420px; color: var(--secondary); font-size: 14px; line-height: 1.5; }
+.boot-note p.muted { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------- offline snapshot (PWA) */
+.offline-view { display: flex; flex-direction: column; height: 100%; padding-top: env(safe-area-inset-top); background: var(--surface); color: var(--text); }
+.offline-header { border-bottom: 1px solid var(--line); } /* lib/header.tsx row; the sub line says why it is read-only */
+/* One scroll container for what is due now and the collapsed "Later (n)" below it (F04). */
+.offline-body { flex: 1 1 auto; min-height: 0; padding-bottom: max(16px, env(safe-area-inset-bottom)); overflow-y: auto; scrollbar-gutter: stable; }
+.offline-list { margin: 0; padding: 8px 0 0; list-style: none; }
+.offline-row { display: flex; align-items: flex-start; gap: 12px; min-height: 56px; padding: 10px 18px; border-bottom: 1px solid var(--line); }
+.offline-row > .icon { flex: none; margin-top: 2px; color: var(--muted); }
+.offline-row-text { display: flex; flex-direction: column; min-width: 0; }
+.offline-row-title { font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.offline-row-meta { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.offline-empty { padding: 20px 18px; }
+.offline-note { margin: 0; padding: 4px 18px 8px; color: var(--muted); font-size: 13px; }
+/* The iPhone app's way out when its PCs never answer (removed there): a fixed row under the list. */
+.offline-actions { flex: none; display: flex; padding: 10px 18px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.offline-actions > .button { min-height: 44px; }
+.offline-later { display: flex; flex-direction: column; min-width: 0; padding-top: 4px; }
+.offline-later-toggle {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; min-height: 44px; margin: 0 12px; padding: 4px 8px 4px 6px;
+  border-radius: var(--r-md); color: var(--muted); font-size: 13px;
+}
+.offline-later-toggle:hover { background: var(--hover); color: var(--text); }
+.offline-later > .offline-list { padding-top: 0; border-top: 1px solid var(--line); }
+.offline-later .offline-row-title { color: var(--secondary); }
+
+/* ---------------------------------------------------------------- settings main view */
+.settings-view { background: var(--surface); }
+/* The scroll container is .settings-body; the content column inside it does not scroll again. */
+.settings-body > .settings-content { flex: none; min-height: auto; max-width: 680px; padding: 0; overflow: visible; }
+
+@media (max-width: 719px) {
+  .settings-body { padding: 20px 16px max(32px, env(safe-area-inset-bottom)); }
+}

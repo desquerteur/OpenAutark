@@ -1,0 +1,124 @@
+/* Composer (reference: Codex/ChatGPT desktop composer): compact auto-growing field on a 20 px rounded
+   surface and one action row of fixed cells – [+] [spacer: the dictation waveform] [Ultra] [model chip]
+   [mic] [send] –, the model menu (Auto, a searchable list, effort row), @/slash suggestions and the
+   attachment chips. Nothing in the row changes size on a click (schedule mode: the Send cell stays round, a clock).
+   Owns: these components. Never: message rendering (chat.css), generic menu/popover chrome
+   (base.css), colors outside tokens.css. */
+
+.composer-area { /* the message column's axis and width (chat.css .message-column, .composer-area) */
+  position: relative; flex: none; margin-bottom: 18px; container: composer / inline-size;
+}
+.composer {
+  position: relative; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-composer);
+  background: var(--surface); box-shadow: var(--shadow-composer); transition: border-color .12s;
+}
+.composer:focus-within { border-color: color-mix(in srgb, var(--focus) 55%, var(--line)); }
+.composer.drag-over { border-color: var(--focus); border-style: dashed; background: color-mix(in srgb, var(--hover) 45%, var(--surface)); }
+.composer.important { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+
+.composer-input {
+  display: block; width: 100%; min-height: 24px; padding: 0 2px; overflow-y: auto; resize: none;
+  border: 0; outline: none; background: transparent; color: var(--text); font: inherit; line-height: 24px;
+  white-space: pre-wrap; overflow-wrap: break-word; /* the textarea defaults, stated: the mirror wraps the same */
+}
+
+.composer-field { position: relative; }
+/* schedule mode (schedule.css has the settings block above the field): the field starts taller, the composer grows upwards */
+.composer.scheduling .composer-input { min-height: min(120px, 22vh); }
+
+/* D13: the level waveform – a canvas of fixed size at the spacer's right edge (the reserved slot
+   next to the mic): absolutely placed and clipped by the spacer, so nothing in the row moves */
+.dictation-wave {
+  position: absolute; top: 50%; right: 2px; width: 56px; height: 24px; transform: translateY(-50%);
+  color: var(--secondary); pointer-events: none;
+}
+.dictation-wave.starting { animation: wf-wave-pulse 1.2s ease-in-out infinite; }
+@keyframes wf-wave-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .dictation-wave.starting { animation: none; } }
+.composer-input:focus-visible { outline: none; } /* focus shows on the composer border */
+.composer-input::placeholder { color: var(--muted); }
+
+.composer-actions { display: flex; align-items: center; gap: 4px; min-width: 0; margin-top: 8px; }
+.composer-actions > * { flex-shrink: 0; }
+.composer-spacer { position: relative; flex: 1 1 auto; align-self: stretch; min-width: 4px; overflow: hidden; } /* also the waveform's slot */
+.composer-actions .icon-button { width: 36px; height: 36px; border-radius: var(--r-md); }
+.composer-actions .icon-button.selected { border-radius: 50%; background: var(--hover); } /* mic → stop while dictating */
+.composer-actions .icon-button.selected .icon { opacity: 1; }
+.composer-actions .chip { min-height: 32px; }
+.composer-actions .chip[aria-expanded=true] { background: var(--hover); color: var(--text); }
+
+/* Plus (D13: also while dictating – its menu then starts with "Discard dictation") */
+.composer-plus .icon { opacity: .85; }
+.composer-plus[aria-expanded=true] { background: var(--hover); }
+
+/* Ultra: a small labelled switch of one fixed width right beside the model chip; on = the accent colour only */
+.ultra-switch {
+  display: inline-grid; place-items: center; flex: none; width: 52px; height: 28px; border: 1px solid var(--line); border-radius: 14px;
+  color: var(--secondary); font-size: 12px; font-weight: 500;
+}
+.ultra-switch:hover:not(.placeholder) { background: var(--hover); color: var(--text); }
+.ultra-switch.on { border-color: color-mix(in srgb, var(--update) 55%, var(--line)); background: color-mix(in srgb, var(--update) 12%, transparent); color: var(--update); }
+.ultra-switch.placeholder { border-color: transparent; pointer-events: none; }
+
+/* model chip: one fixed width (the name ends in an ellipsis), the model name in text colour, effort or the
+   last model muted */
+.model-chip { width: 148px; justify-content: space-between; color: var(--text); }
+/* in a column too narrow for the whole row the chip gives way (by the column's width, never by what it shows), so Send
+   stays inside the composer */
+.composer-actions > .model-chip { flex: 0 1 148px; min-width: 56px; }
+.model-chip .sub { color: var(--muted); }
+.model-chip .chip-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-chip.placeholder { border-color: transparent; background: transparent; pointer-events: none; }
+.popover.model-menu { padding: 6px; }
+.menu-item.unavailable { color: var(--muted); }
+.menu-search.input { width: calc(100% - 8px); margin: 2px 4px 6px; padding: 7px 10px; border-radius: 8px; font-size: 13px; }
+.model-list { max-height: min(300px, 45vh); overflow-y: auto; overscroll-behavior: contain; }
+.effort-row { display: flex; gap: 4px; margin-top: 4px; padding: 6px 4px 2px; border-top: 1px solid var(--line); }
+.effort {
+  flex: 1 1 0; min-width: 0; min-height: 30px; padding: 4px 6px; border-radius: 8px;
+  color: var(--secondary); font-size: 12px; text-align: center; white-space: nowrap;
+}
+.effort:hover { background: var(--hover); color: var(--text); }
+.effort.on { background: var(--selected); color: var(--text); } /* B-044 §2: selection = colour only, never weight */
+
+/* Primary round button: Send; empty or busy drafts are visibly disabled. */
+.send-button {
+  display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--text); color: var(--surface); transition: opacity .12s;
+}
+.send-button:hover:not(:disabled) { opacity: .86; }
+.send-button:disabled { opacity: .3; }
+@keyframes wf-live { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--text) 8%, transparent); } }
+
+/* attachments being added (chips above the field) */
+.composer-attachments { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.composer-attachments .file-chip-name { max-width: 180px; }
+
+/* inline @mention / slash suggestions: a small list right above the composer */
+.suggestions.popover-inline {
+  position: absolute; z-index: 20; left: 6px; right: 6px; bottom: calc(100% + 8px);
+  max-height: min(264px, 40vh); padding: 6px; overflow-y: auto; overscroll-behavior: contain;
+  border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-popover);
+}
+.suggestion-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 6px 10px; border-radius: 8px; color: var(--text); font-size: 13px; text-align: left; }
+.suggestion-row[aria-selected=true] { background: var(--hover); }
+.suggestion-row > .icon { opacity: .6; }
+.suggestion-label { flex: none; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggestion-row .menu-hint { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+dialog textarea.input { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+/* a narrow composer (phone, very small column): the model chip a little narrower, the cells closer */
+@container composer (max-width: 360px) {
+  .model-chip { width: 120px; }
+  .composer-actions > .model-chip { flex-basis: 120px; }
+  .composer-actions { gap: 2px; }
+}
+.model-menu .menu-item .menu-hint { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+
+/* the secret chip; the secret mode (Plus › Secret, settings/SecretRows.tsx ChatSecretBar) sits above the text like the
+   schedule block – the rows and foot of the Secrets page's band (settings.css), two rows high and one line of words */
+.secret-chip-label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; }
+.secret-band.chat { margin: 0 0 10px; padding: 0 0 10px; }
+.secret-band.chat .secret-band-body { height: 74px; }
+.secret-band.chat .secret-band-line { height: 18px; -webkit-line-clamp: 1; line-clamp: 1; }

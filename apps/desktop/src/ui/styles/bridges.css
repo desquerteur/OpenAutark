@@ -1,0 +1,24 @@
+/* Chat bridges (Telegram …): connect form, bridge list and status rows in chat details
+   (chat/details/Bridges.tsx) – same quiet rows as the schedules above them.
+   Owns: `bridge-*` classes. Never: the chat details frame (details.css) or literal colors
+   (tokens only). */
+
+.bridge-list { margin: 0 0 4px; padding: 0; list-style: none; }
+.bridge-row { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 0; }
+.bridge-row > .icon { flex: none; color: var(--secondary); opacity: .8; }
+.bridge-text { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; }
+.bridge-title { overflow: hidden; color: var(--text); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.bridge-status { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.bridge-row.is-error .bridge-status { color: var(--danger); }
+.bridge-row.is-stopped .bridge-title { color: var(--secondary); }
+.bridge-disconnect.button { flex: none; min-height: 30px; padding: 4px 10px; font-size: 12px; }
+
+/* connect form: label, field, one muted hint line each */
+.bridge-form { display: grid; gap: 14px; padding: 6px 0 2px; }
+.bridge-field { display: grid; gap: 6px; }
+.bridge-field > span { color: var(--secondary); font-size: 13px; }
+.bridge-field .input { padding: 7px 10px; font-size: 13px; }
+.bridge-field small { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.bridge-problem { color: var(--danger); font-size: 13px; overflow-wrap: anywhere; }
+.bridge-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.bridge-actions .button { min-height: 32px; padding: 5px 12px; }

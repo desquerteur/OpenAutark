@@ -1,0 +1,191 @@
+/* Phone layout (MobileShell: PWA on touch devices, windows < 720 px wide): the desktop frame as a
+   stack – one top row, the body (the status line lies over its top), the bottom tabs –,
+   full-width composer, bottom sheets instead of popovers and centred dialogs, ≥ 44 px touch
+   targets and safe-area insets. Same components and meanings as the desktop shell – only
+   geometry changes here.
+   Owns: everything under .mobile-shell and the phone variants of portalled overlays
+   (selected with body:has(.mobile-shell)). Never: desktop geometry, colors outside tokens.css. */
+
+/* ---------------------------------------------------------------- frame */
+.mobile-shell {
+  position: relative; display: flex; flex-direction: column; height: 100%; height: 100dvh; min-height: 0; overflow: hidden;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  background: var(--surface); color: var(--text);
+}
+/* A narrow desktop window uses the same 48 px row, with space at either native caption edge.
+   Only its top header reserves it; sheets and dialogs below that row keep their full width. */
+:root[data-platform=desktop] :is(.mobile-shell > .mobile-top, .mobile-shell.own-header > .mobile-main > * > .frame-header, .mobile-shell > .phone-pane > .frame-header) {
+  --caption-start-space: var(--caption-left); --caption-space: var(--caption-reserve);
+}
+/* a pushed screen's own row names it in the phone title style, as the settings sections' rows do */
+.mobile-shell.own-header > .mobile-main > * > .frame-header:not(.two-line) .frame-header-text { font-size: 20px; font-weight: 600; line-height: 26px; letter-spacing: -.3px; }
+/* the update item takes no room while it shows nothing; it is the row's first cell (MobileShell.tsx), so an
+   update that comes shortens only the title track – search and the profile stay at the caption controls */
+.mobile-shell > .mobile-top [data-cell=update]:empty { display: none; }
+:root[data-platform=desktop] .mobile-shell :is(button, a, input, select, textarea, [role=separator], [role=tablist]) { -webkit-app-region: no-drag; app-region: no-drag; }
+/* the frame's top row (lib/header.tsx zone 'phone', class mobile-top) and every header row in the
+   stack: 40 px cells 4 px apart (a badge or a tone's tint never touches the neighbour), their
+   button 36 px (a tint leaves the 48 px row its air; the hit ring grows to 44 px below), the slot
+   controls fitted in */
+.mobile-shell > .mobile-top { border-bottom: 1px solid var(--line); }
+.mobile-shell .frame-header.has-lead { grid-template-columns: 40px minmax(0, 1fr) auto var(--caption-space, 0px); }
+.mobile-shell .frame-header-cells { grid-auto-columns: 40px; column-gap: 4px; }
+.mobile-shell .frame-header-cell { width: 40px; height: 40px; }
+.mobile-shell .frame-header-cell > .icon-button:not(.small) { width: 36px; height: 36px; }
+.mobile-shell .frame-header-badge:not(.dot) { top: 0; right: 0; } /* on the 36 px button's corner, clear of the neighbour */
+.mobile-shell .frame-header-cell.slot > .profile-button { width: 40px; height: 40px; padding: 5px; }
+.mobile-shell .frame-header-cell.slot > .update-control.compact .update-button { width: 32px; height: 32px; }
+/* Desktop caption buttons also need room at phone widths. Use desktop-sized cells and truncate
+   the title in place; a second title row would take height from the conversation. */
+@media (max-width: 519px) {
+  :root[data-platform=desktop] .mobile-shell .frame-header.has-lead { grid-template-columns: 32px minmax(0, 1fr) auto var(--caption-space, 0px); }
+  :root[data-platform=desktop] .mobile-shell .frame-header-cells { grid-auto-columns: 32px; }
+  :root[data-platform=desktop] .mobile-shell .frame-header-cell,
+  :root[data-platform=desktop] .mobile-shell .frame-header-cell > .icon-button:not(.small),
+  :root[data-platform=desktop] .mobile-shell .frame-header-cell.slot > .profile-button { width: 32px; height: 32px; }
+}
+/* the status line: over the body's top, under the top row (a pushed screen's own row too) */
+.mobile-shell > .status-host { top: calc(env(safe-area-inset-top) + var(--header-h) + 8px); left: 12px; right: 12px; width: auto; }
+/* A bottom sheet and its scrim start at the top row's lower edge. */
+.mobile-shell { --band-end: calc(env(safe-area-inset-top) + var(--header-h)); }
+.mobile-main { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.mobile-main > .chat-view { flex: 1 1 0; min-height: 0; height: auto; }
+.mobile-shell.pushed .mobile-main:not(:has(> .chat-view)) { padding-bottom: env(safe-area-inset-bottom); }
+
+/* bottom tabs: Home · My day · Work · Chats · Team – one column per shown tab (MobileShell sets --tabs) */
+.tab-bar {
+  --tabs: 5;
+  display: grid; grid-template-columns: repeat(var(--tabs), minmax(0, 1fr)); flex: none;
+  padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--line); background: var(--sidebar);
+}
+.tab-bar > .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 56px; color: var(--muted); font-size: 11px; }
+.tab-bar > .tab.active { color: var(--text); }
+.tab-bar > .tab:active { background: var(--hover); }
+.tab-icon { position: relative; display: grid; }
+.tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-badge {
+  position: absolute; top: -4px; left: calc(100% - 8px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+  background: var(--badge-bg); color: var(--badge-fg); box-shadow: 0 0 0 2px var(--sidebar);
+  font-size: 10px; font-weight: 600; line-height: 16px; text-align: center;
+}
+
+/* ---------------------------------------------------------------- views inside the stack */
+/* one small top inset for every body in the stack (Home, My day, Work, Team, an agent, a person, Settings, the
+   first run, the navs) */
+.mobile-shell { --stack-body-top: 4px; }
+.mobile-shell > .mobile-main :is(.tasks-column, .day-listpane, .team-column, .agent-column, .first-run-column) { padding-top: var(--stack-body-top); }
+.mobile-shell > .mobile-main .settings-body { padding-top: var(--stack-body-top); }
+.mobile-main > .settings-nav { padding: 0 0 calc(16px + env(safe-area-inset-bottom)); } /* the reserved notice line above is its top air */
+.mobile-main .settings-nav-item { min-height: 48px; }
+.mobile-shell .day-toolbar-row { padding-top: var(--stack-body-top); } /* My day's first row: the same inset, not 8 px more */
+.mobile-shell .tour-top { height: 40px; } /* the tour's title row holds its 40 px phone buttons (Connect, Skip) inside it */
+/* a flat row first (the chat list's New chat): its own air above the label is the inset */
+.mobile-shell .team-column > .team-top-row { margin-top: calc(-1 * var(--stack-body-top)); }
+.mobile-main > .chat-list, .mobile-main > .sidebar-section { padding-top: 0; }
+.mobile-main .chat-row { min-height: calc(var(--row-h) + 6px); padding-inline: 16px; }
+.mobile-main .search-hits > .search-hit { padding-right: 16px; } /* a message hit's time ends where a chat row's does */
+.mobile-shell .chat-view { background: var(--surface); }
+.mobile-shell .message-scroller { padding: 12px 12px 16px; scrollbar-gutter: auto; }
+.mobile-shell .message-column { width: auto; max-width: var(--message-max); margin: 0 auto; } /* panels are sheets here: centred */
+.mobile-shell .message.human .message-content { max-width: 85%; }
+.mobile-shell .composer-area { width: auto; max-width: none; margin: 0 10px calc(10px + env(safe-area-inset-bottom)); } /* as far from the bottom as from the sides */
+.mobile-shell .composer { padding: 10px; border-radius: 18px; }
+.mobile-shell .composer-input { font-size: 16px; } /* ≥ 16 px: no zoom-on-focus on iOS */
+/* ≥ 16 px fields only where a phone browser would zoom on focus; the desktop window at phone width keeps the
+   13 px fields under 14 px labels (B-044 visual pass: no field heavier than its label) */
+:root:not([data-platform=desktop]) .mobile-shell :is(.input, .set-input, .set-textarea, .set-select, .palette-input) { font-size: 16px; }
+.mobile-shell .set-group { max-width: none; }
+
+/* a chat's area (chat-area.css): open, its tabs take the chat body above the composer – the message list stays
+   mounted under it, and the row's Chat tabs cell closes it again */
+.mobile-shell .chat-area { flex: 1 1 auto; height: auto; }
+.mobile-shell .chat-area ~ .message-scroller { display: none; }
+
+/* the global tabs (MobileShell.tsx PhonePane): a pushed screen over the whole stack – its own row with Back, the tabs
+   under it, no tab bar – and under the status line, whose lines lie over its first line as on every screen */
+.mobile-shell > .phone-pane {
+  position: absolute; z-index: 9; inset: 0; display: flex; flex-direction: column; min-height: 0; background: var(--surface);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.mobile-shell > .phone-pane > .workspace-pane { flex: 1 1 auto; height: auto; min-height: 0; overflow: hidden; }
+
+/* chat details panel becomes a bottom sheet over a scrim (ChatSidePanel.tsx; a tap on it closes the
+   sheet), so the chat behind steps back; the scrim starts below the chat's top row (--band-end), so the
+   row's pressed cell stays the sheet's toggle */
+.chat-panel.sheet {
+  position: fixed; z-index: 30; top: max(15dvh, var(--band-end)); left: 0; right: 0; bottom: 0; width: auto; height: auto; max-height: none;
+  padding-bottom: env(safe-area-inset-bottom); border: 1px solid var(--line); border-bottom: 0;
+  border-radius: 16px 16px 0 0; box-shadow: var(--shadow-sheet); animation: wf-sheet-in .2s ease-out;
+  /* its upward shadow ends at the top row's lower edge: a sheet right under the row never darkens it */
+  clip-path: inset(calc(var(--band-end) - max(15dvh, var(--band-end))) -100vmax -100vmax);
+}
+.chat-panel-scrim { position: fixed; z-index: 29; inset: var(--band-end) 0 0; background: var(--backdrop); animation: wf-fade-in .2s ease-out; }
+@keyframes wf-sheet-in { from { transform: translateY(32px); opacity: 0; } }
+
+/* ---------------------------------------------------------------- sheets instead of popovers */
+body:has(.mobile-shell) .popover {
+  left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; max-width: none;
+  max-height: min(75dvh, 560px); padding: 6px 8px calc(10px + env(safe-area-inset-bottom));
+  border-bottom: 0; border-radius: 16px 16px 0 0; animation: wf-sheet-in .2s ease-out;
+  box-shadow: var(--shadow-sheet), 0 0 0 100vmax var(--backdrop); /* the scrim: the page behind steps back (a tap outside still closes it) */
+}
+body:has(.mobile-shell) .popover::before { content: ''; display: block; width: 36px; height: 4px; margin: 2px auto 8px; border-radius: 2px; background: var(--field); }
+body:has(.mobile-shell) .popover :is(.menu-item, .suggestion-row, .effort) { min-height: 48px; }
+body:has(.mobile-shell) .model-list { max-height: 45dvh; }
+
+/* dialogs slide up from the bottom; the palette takes the whole screen */
+body:has(.mobile-shell) dialog.dialog {
+  width: 100% !important; max-width: 100%; max-height: 92dvh; margin: auto 0 0;
+  border-bottom: 0; border-radius: 16px 16px 0 0; animation: wf-sheet-in .2s ease-out;
+}
+body:has(.mobile-shell) dialog.dialog .dialog-body { --dialog-pad-bottom: calc(22px + env(safe-area-inset-bottom)); }
+/* a form sheet whose content differs (dialog.anchored: the add forms, Advanced, the word list, a secret) has one
+   height – as tall as the tallest add form, capped by max-height – so every such sheet's top edge is at one y
+   and a longer note or another form never moves it; the content fills it, the buttons stay at its foot */
+body:has(.mobile-shell) dialog.dialog.anchored { height: min(92dvh, 560px); }
+/* C3: a form sheet whose content keeps one height while it is open (.fit – Settings' add forms: one form per opening,
+   all of its fields always there, its message in reserved lines) is as tall as that form – one height per form kind,
+   never per state – instead of the tallest form's 560 px (a local server left ~200 px blank above its buttons) */
+body:has(.mobile-shell) dialog.dialog.anchored.fit { height: fit-content; } /* not auto: a modal's fixed insets would stretch it */
+/* C3: a narrow sheet's footer – the message of a form that can show one (lib/dialog.tsx DialogActions) gets two
+   reserved lines of its own over the sheet's width above the buttons, there before a result arrives, so a test result
+   reads whole beside no buttons and nothing moves when it comes (a 138 px cell beside three buttons cut it) */
+@media (max-width: 519px) {
+  body:has(.mobile-shell) dialog .dialog-footer { flex-wrap: wrap; row-gap: 8px; }
+  body:has(.mobile-shell) dialog .dialog-footer > .dialog-message:not(.unused) { flex: 1 0 100%; height: 36px; max-height: 36px; text-wrap: pretty; }
+}
+body:has(.mobile-shell) dialog.dialog.palette { height: 100dvh; max-height: 100dvh; margin: 0; border: 0; border-radius: 0; }
+body:has(.mobile-shell) .palette .dialog-body { display: flex; flex-direction: column; height: 100%; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+/* the search row keeps its 52 px (a long list never squeezes it) and starts with Back (CommandPalette.tsx) */
+body:has(.mobile-shell) .palette-search { flex: none; padding-left: 6px; }
+body:has(.mobile-shell) .palette-list { flex: 1 1 auto; height: auto; max-height: none; }
+body:has(.mobile-shell) .palette-row { min-height: 48px; }
+/* Desktop window: the full-screen palette stays below the top row that holds the caption controls,
+   without a shadow onto that bar (the native controls
+   beside it are never tinted); a bottom sheet never reaches under those controls */
+:root[data-platform=desktop] body:has(.mobile-shell) dialog.dialog.palette {
+  height: calc(100dvh - var(--header-h)); max-height: calc(100dvh - var(--header-h)); margin-top: var(--header-h); box-shadow: none;
+}
+:root[data-platform=desktop] body:has(.mobile-shell) dialog.dialog:not(.palette) { max-height: min(92dvh, calc(100dvh - var(--header-h) - 8px)); }
+
+/* ---------------------------------------------------------------- 44 px touch targets */
+.mobile-shell .icon-button:not(.small) { width: 40px; height: 40px; }
+.mobile-shell :is(.chip:not(.small), .button) { min-height: 40px; }
+.mobile-shell :is(.w-option, .nav-row, .segmented button, .b-segmented button) { min-height: 44px; }
+.mobile-shell .w-checklist li > button { min-height: 44px; }
+/* small controls keep their look; an invisible ring grows the hit area to 44 × 44 */
+:where(.mobile-shell, body:has(.mobile-shell) .popover, body:has(.mobile-shell) dialog) :where(.icon-button, .chip, .send-button, .ask-why-toggle, .status-action, .ultra-switch) { position: relative; }
+:is(.mobile-shell, body:has(.mobile-shell) .popover, body:has(.mobile-shell) dialog) :is(.icon-button, .chip, .send-button, .ask-why-toggle, .status-action, .ultra-switch)::after {
+  content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2));
+}
+/* the reply chip's cancel X sits at the chip's edge: a real 44 px square (as with a coarse
+   pointer, chat.css), so no hit ring sticks out past the chip */
+.mobile-shell .reply-quote .icon-button.small { width: 44px; height: 44px; }
+
+/* landscape phones / very short windows: give the content the height */
+@media (max-height: 500px) {
+  /* one gap for every tab, badge or not: the count lies over the icon's top-right corner and the room it
+     reaches into is reserved in the gap, so a badge that comes or goes never moves the icon or the label */
+  .tab-bar > .tab { min-height: 48px; flex-direction: row; gap: 12px; }
+  .tab-bar > .tab .tab-badge { left: auto; right: -9px; }
+}
