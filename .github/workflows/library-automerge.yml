@@ -1,0 +1,128 @@
+# Owns: merging pull requests that only add new entries of the public library (library/<kind>/<name>/SKILL.md in a
+# folder that does not exist on the base branch yet) once a secret scan of their text finds nothing (a pattern grep,
+# then gitleaks pinned by version and checksum). A change to an existing entry – anyone's, from any fork – waits for a
+# maintainer, so nobody rewrites what someone else published. Autark's
+# library.publish opens exactly such pull requests: branch library/<kind>/<name>-<stamp>, one file
+# library/<kind>/<name>/SKILL.md, title "library: <kind> <name>".
+# Never: checks out or runs anything from the pull request (pull_request_target runs with this repository's token, so
+# the changed files are read through the API as text only), merges a pull request that touches anything outside
+# library/, changes or deletes a file, or merges a head commit other than the one it scanned.
+name: Merge library pull requests
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths: ['library/**']
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: library-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - name: Only library entries change
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[] | [.status, .filename] | @tsv' > "$RUNNER_TEMP/files.tsv"
+          count=$(wc -l < "$RUNNER_TEMP/files.tsv")
+          if [ "$count" -lt 1 ] || [ "$count" -gt 20 ]; then echo "::error::Expected 1 to 20 changed files, found $count."; exit 1; fi
+          while IFS=$'\t' read -r status name; do
+            if [[ ! "$name" =~ ^library/(skill|note)/[a-z0-9][a-z0-9-]{0,63}/SKILL\.md$ ]]; then
+              echo "::error::Not a new library entry: $name"; exit 1
+            fi
+            if [ "$status" != "added" ]; then
+              echo "::error::$status files wait for a maintainer: $name"; exit 1
+            fi
+            # A new entry only: its folder must not exist on the base branch (an existing entry is changed by a maintainer).
+            folder="${name%/SKILL.md}"
+            if gh api "repos/$REPO/contents/$folder?ref=$BASE_SHA" < /dev/null > /dev/null 2>&1; then
+              echo "::error::$folder exists already; a change to it waits for a maintainer."; exit 1
+            fi
+          done < "$RUNNER_TEMP/files.tsv"
+          echo "$count library file(s) changed."
+
+      - name: Secret scan of the changed text
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/scan"
+          n=0
+          while IFS=$'\t' read -r status name; do
+            n=$((n + 1))
+            out="$RUNNER_TEMP/scan/$n.md"
+            gh api "repos/$HEAD_REPO/contents/$name?ref=$HEAD_SHA" -H 'Accept: application/vnd.github.raw' > "$out"
+            size=$(wc -c < "$out")
+            if [ "$size" -gt 100000 ]; then echo "::error::$name is larger than 100 kB."; exit 1; fi
+            if ! iconv -f UTF-8 -t UTF-8 "$out" > /dev/null 2>&1; then echo "::error::$name is not UTF-8 text."; exit 1; fi
+            printf '%s\t%s\n' "$out" "$name" >> "$RUNNER_TEMP/scanned.tsv"
+          done < "$RUNNER_TEMP/files.tsv"
+          # \b keeps a key prefix from matching inside a word: "risk-assessment-for-vendors" is a name, not an sk- key.
+          cat > "$RUNNER_TEMP/patterns.txt" <<'PATTERNS'
+          -----BEGIN [A-Z ]*PRIVATE KEY-----
+          \bAKIA[0-9A-Z]{16}
+          \bASIA[0-9A-Z]{16}
+          \bgh[pousr]_[A-Za-z0-9]{36,}
+          \bgithub_pat_[A-Za-z0-9_]{22,}
+          \bglpat-[A-Za-z0-9_-]{20,}
+          \bsk-[A-Za-z0-9_-]{20,}
+          \bsk-ant-[A-Za-z0-9_-]{20,}
+          \b[rs]k_live_[A-Za-z0-9]{16,}
+          \bxox[abprs]-[A-Za-z0-9-]{10,}
+          \bAIza[0-9A-Za-z_-]{35}
+          \bya29\.[0-9A-Za-z_-]{20,}
+          \beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}
+          \bhf_[A-Za-z0-9]{30,}
+          \bnpm_[A-Za-z0-9]{36}
+          https?://[^/[:space:]:@]+:[^/[:space:]:@]+@
+          (api[_-]?key|secret|passw(or)?d|token|bearer)["']?[[:space:]]*[:=][[:space:]]*["']?[A-Za-z0-9+/_=-]{16,}
+          PATTERNS
+          found=0
+          while IFS=$'\t' read -r out name; do
+            if grep -n -i -E -f "$RUNNER_TEMP/patterns.txt" "$out" > "$RUNNER_TEMP/hits.txt"; then
+              lines=$(cut -d: -f1 "$RUNNER_TEMP/hits.txt" | paste -sd, -)
+              echo "::error::Possible secret in $name (line $lines); this pull request waits for a maintainer."
+              found=1
+            fi
+          done < "$RUNNER_TEMP/scanned.tsv"
+          if [ "$found" -ne 0 ]; then exit 1; fi
+          echo "No secret pattern found."
+
+      - name: Gitleaks scan of the changed text
+        shell: bash
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$tarball" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tarball"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          if ! "$RUNNER_TEMP/gitleaks/gitleaks" dir "$RUNNER_TEMP/scan" --no-banner --redact --exit-code 1; then
+            echo "::error::Gitleaks found a possible secret; this pull request waits for a maintainer."
+            exit 1
+          fi
+          echo "Gitleaks found nothing."
+
+      - name: Merge the scanned head commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR" --repo "$REPO" --squash --match-head-commit "$HEAD_SHA"

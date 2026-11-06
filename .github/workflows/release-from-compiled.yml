@@ -1,0 +1,127 @@
+# Owns: building and natively checking the Windows, Linux and universal Mac packages of Autark from a compiled,
+# integrity-checked payload in an unpublished draft of this repository, and saving them into that draft.
+# Never: publishes a release, builds from raw product sources or touches a published release. The Android APK is built
+# and signed on the release PC (its key stays there) and uploaded into the same draft by the release scripts.
+# Taken unchanged from the former feed repo teydra/proactive-agent-workforce-releases; it reads only its own repository.
+name: Desktop release from a compiled snapshot
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing unpublished draft tag (vX.Y.Z)
+        type: string
+        required: true
+      payload:
+        description: Compiled ZIP asset in that draft; no raw product sources
+        type: string
+        required: true
+      sha256:
+        description: SHA256 of that exact compiled ZIP
+        type: string
+        required: true
+      platform:
+        description: Platform to build; the publisher retains other platform files
+        type: choice
+        options: [windows, linux, mac, all]
+        default: windows
+permissions:
+  contents: write
+env:
+  RELEASE_TAG: ${{ inputs.tag }}
+  RELEASE_PAYLOAD: ${{ inputs.payload }}
+  RELEASE_PAYLOAD_SHA256: ${{ inputs.sha256 }}
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.platform == 'windows' && '[{"os":"windows-2025","arguments":"--win --x64"}]' || inputs.platform == 'linux' && '[{"os":"ubuntu-24.04","arguments":"--linux --x64"}]' || inputs.platform == 'mac' && '[{"os":"macos-15","arguments":"--mac --universal"}]' || '[{"os":"windows-2025","arguments":"--win --x64"},{"os":"ubuntu-24.04","arguments":"--linux --x64"},{"os":"macos-15","arguments":"--mac --universal"}]') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.22.2'
+      - name: Read the compiled release payload from the private draft
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Use a vX.Y.Z draft tag' }
+          if ($env:RELEASE_PAYLOAD -notmatch '^compiled-[a-zA-Z0-9._-]+\.zip$') { throw 'Use a compiled payload filename' }
+          if ($env:RELEASE_PAYLOAD_SHA256 -notmatch '^[a-fA-F0-9]{64}$') { throw 'Use a SHA256 digest' }
+          $draft = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft | ConvertFrom-Json
+          if ($LASTEXITCODE -or -not $draft.isDraft) { throw 'Only unpublished drafts may be built or changed' }
+          gh release download $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --pattern $env:RELEASE_PAYLOAD --dir $env:RUNNER_TEMP
+          if ($LASTEXITCODE) { throw 'Draft download failed' }
+          $payload = Join-Path $env:RUNNER_TEMP $env:RELEASE_PAYLOAD
+          if ((Get-FileHash -LiteralPath $payload -Algorithm SHA256).Hash.ToLowerInvariant() -ne $env:RELEASE_PAYLOAD_SHA256) { throw 'Payload integrity mismatch' }
+          Expand-Archive -LiteralPath $payload -DestinationPath .
+          if ((Get-Content package.json -Raw | ConvertFrom-Json).version -ne $env:RELEASE_TAG.Substring(1)) { throw 'Package and draft versions differ' }
+      - name: Install the pinned package dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Prepare both macOS native architectures
+        if: runner.os == 'macOS'
+        run: node scripts/prepare-macos-addons.mjs
+      - name: Package the compiled application
+        run: npm run package -- ${{ matrix.arguments }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Install the desktop secret service on the disposable CI host
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gnome-keyring libsecret-1-0 libsecret-tools
+      - name: Configure the normal Chromium sandbox on the disposable Linux host
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo chown root:root dist/linux-unpacked/chrome-sandbox
+          sudo chmod 4755 dist/linux-unpacked/chrome-sandbox
+      - name: Verify packaged runtime and desktop on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          xvfb-run -a dbus-run-session -- bash -euo pipefail -c '
+            export XDG_CURRENT_DESKTOP=GNOME
+            export GNOME_KEYRING_CONTROL=$(mktemp -d)
+            task_ci_keyring_password=$(openssl rand -hex 32)
+            printf "%s" "$task_ci_keyring_password" | gnome-keyring-daemon --daemonize --unlock --components=secrets --control-directory="$GNOME_KEYRING_CONTROL"
+            unset task_ci_keyring_password
+            printf "%s" test-only-keyring-check | timeout 20 secret-tool store --label=Workforce-CI-Check app workforce-release-ci
+            node scripts/native-release-check.cjs
+          '
+      - name: Verify packaged runtime and desktop on Windows and macOS
+        if: runner.os != 'Linux'
+        run: node scripts/native-release-check.cjs
+      - name: Record Windows publisher signature status
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $signature = Get-AuthenticodeSignature -LiteralPath dist/autark-windows-x64.exe
+          @{ status = $signature.Status.ToString(); publisher = $signature.SignerCertificate.Subject } | ConvertTo-Json | Set-Content -LiteralPath test-results/native-windows-trust.json
+      - name: Save tested packages in the unpublished draft
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $draft = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft | ConvertFrom-Json
+          if ($LASTEXITCODE -or -not $draft.isDraft) { throw 'Refusing to overwrite a published release' }
+          $assets = @(Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Name -match '\.(exe|AppImage|dmg|zip)(\.blockmap)?$|^latest(-linux|-mac)?\.yml$' })
+          $assets += @(Get-ChildItem -Path test-results/native-* -File)
+          $uploadArgs = @('release', 'upload', $env:RELEASE_TAG, '--repo', $env:GITHUB_REPOSITORY, '--clobber') + @($assets.FullName)
+          & gh @uploadArgs
+          if ($LASTEXITCODE) { throw 'Draft upload failed' }
+      - name: Save isolated test diagnostics after a failure
+        if: failure()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = @(Get-ChildItem -Path test-results/native-*-failure.* -File -ErrorAction SilentlyContinue)
+          if ($files.Count) {
+            $uploadArgs = @('release', 'upload', $env:RELEASE_TAG, '--repo', $env:GITHUB_REPOSITORY, '--clobber') + @($files.FullName)
+            & gh @uploadArgs
+            if ($LASTEXITCODE) { throw 'Diagnostic upload failed' }
+          }

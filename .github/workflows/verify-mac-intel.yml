@@ -1,0 +1,100 @@
+# Owns: native Intel acceptance of an existing universal Mac ZIP from a release draft.
+# Never: builds packages, publishes releases, uses real profiles or disables the sandbox.
+# Taken unchanged from the former feed repo teydra/proactive-agent-workforce-releases; it reads only its own repository.
+name: Verify an existing universal Mac package on Intel
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing unpublished draft tag (vX.Y.Z)
+        type: string
+        required: true
+      payload:
+        description: Compiled ZIP asset in the same draft
+        type: string
+        required: true
+      sha256:
+        description: SHA256 of that exact compiled payload
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ inputs.tag }}
+  RELEASE_PAYLOAD: ${{ inputs.payload }}
+  RELEASE_PAYLOAD_SHA256: ${{ inputs.sha256 }}
+
+jobs:
+  verify-mac-intel:
+    runs-on: macos-15-intel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.22.2'
+      - name: Download and verify the compiled payload and existing universal ZIP
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Use a vX.Y.Z draft tag' }
+          if ($env:RELEASE_PAYLOAD -notmatch '^compiled-[a-zA-Z0-9._-]+\.zip$') { throw 'Use a compiled payload filename' }
+          if ($env:RELEASE_PAYLOAD_SHA256 -notmatch '^[a-fA-F0-9]{64}$') { throw 'Use a SHA256 digest' }
+          if ((node -p 'process.arch') -ne 'x64') { throw 'This acceptance requires a native Intel runner' }
+          $releaseRef = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json databaseId | ConvertFrom-Json
+          if ($LASTEXITCODE -or -not $releaseRef.databaseId) { throw 'The requested release draft was not found' }
+          $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/$($releaseRef.databaseId)" | ConvertFrom-Json
+          if ($LASTEXITCODE -or -not $release.draft -or $release.tag_name -cne $env:RELEASE_TAG) { throw 'Only the requested unpublished draft may be tested' }
+          $payloadAssets = @($release.assets | Where-Object { $_.name -ceq $env:RELEASE_PAYLOAD })
+          $macAssets = @($release.assets | Where-Object { $_.name -ceq 'autark-mac-universal.zip' })
+          if ($payloadAssets.Count -ne 1 -or $macAssets.Count -ne 1) { throw 'The draft must already contain the exact payload and Mac ZIP' }
+          $payloadAsset, $macAsset = $payloadAssets[0], $macAssets[0]
+          if ($payloadAsset.digest -cne "sha256:$($env:RELEASE_PAYLOAD_SHA256.ToLowerInvariant())") { throw 'Draft payload digest differs from the requested snapshot' }
+          if ($macAsset.digest -notmatch '^sha256:[a-f0-9]{64}$') { throw 'The Mac ZIP has no usable GitHub SHA256 digest' }
+          gh release download $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --pattern $env:RELEASE_PAYLOAD --pattern autark-mac-universal.zip --dir $env:RUNNER_TEMP
+          if ($LASTEXITCODE) { throw 'Draft download failed' }
+          foreach ($asset in @($payloadAsset, $macAsset)) {
+            $file = Join-Path $env:RUNNER_TEMP $asset.name
+            $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ("sha256:$hash" -cne $asset.digest -or (Get-Item -LiteralPath $file).Length -ne $asset.size) { throw "Downloaded asset integrity mismatch: $($asset.name)" }
+          }
+          Expand-Archive -LiteralPath (Join-Path $env:RUNNER_TEMP $env:RELEASE_PAYLOAD) -DestinationPath .
+          $package = Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json
+          if ($package.version -cne $env:RELEASE_TAG.Substring(1)) { throw 'Package and draft versions differ' }
+          if (Test-Path -LiteralPath src) { throw 'Expected a compiled payload without raw product sources' }
+          "RELEASE_DRAFT_ID=$($release.id)" | Add-Content -LiteralPath $env:GITHUB_ENV
+          "RELEASE_MAC_SHA256=$($macAsset.digest.Substring(7))" | Add-Content -LiteralPath $env:GITHUB_ENV
+      - name: Install the pinned checking dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Open the unchanged universal bundle on Intel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/mac-universal
+          ditto -x -k "$RUNNER_TEMP/autark-mac-universal.zip" dist/mac-universal
+          codesign --verify --deep --strict 'dist/mac-universal/Autark.app'
+          node scripts/native-release-check.cjs
+      - name: Preserve Intel acceptance evidence in the same unpublished draft
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $evidence = Get-Content -LiteralPath test-results/native-darwin.json -Raw | ConvertFrom-Json
+          if ($evidence.platform -cne 'darwin' -or $evidence.architecture -cne 'x64' -or $evidence.version -cne $env:RELEASE_TAG.Substring(1)) { throw 'The native evidence does not describe the requested Intel package' }
+          $evidence | Add-Member -NotePropertyName verifiedMacZipSha256 -NotePropertyValue $env:RELEASE_MAC_SHA256
+          $evidence | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath test-results/native-darwin-x64.json -Encoding utf8
+          Copy-Item -LiteralPath test-results/native-darwin.png -Destination test-results/native-darwin-x64.png
+          $releaseRef = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json databaseId | ConvertFrom-Json
+          if ($LASTEXITCODE -or -not $releaseRef.databaseId) { throw 'The requested release draft was not found' }
+          $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/$($releaseRef.databaseId)" | ConvertFrom-Json
+          if ($LASTEXITCODE -or -not $release.draft -or "$($release.id)" -cne $env:RELEASE_DRAFT_ID) { throw 'The unpublished draft changed during acceptance' }
+          $macAssets = @($release.assets | Where-Object { $_.name -ceq 'autark-mac-universal.zip' })
+          if ($macAssets.Count -ne 1 -or $macAssets[0].digest -cne "sha256:$env:RELEASE_MAC_SHA256") { throw 'The Mac ZIP changed during acceptance' }
+          gh release upload $env:RELEASE_TAG test-results/native-darwin-x64.json test-results/native-darwin-x64.png --repo $env:GITHUB_REPOSITORY --clobber
+          if ($LASTEXITCODE) { throw 'Intel evidence upload failed' }
+
