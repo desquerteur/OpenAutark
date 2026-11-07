@@ -1,9 +1,9 @@
-// The first run's Connect card (opened from the tour's top bar, FirstRun.tsx, or at once for a company started from the
+// The first run's Connect card (opened from the first step's action row, FirstRun.tsx, or at once for a company started from the
 // company menu's "+"): this PC's Remote ID, a PC asking here, the PCs on this network and the connect row by the other
 // PC's Remote ID – the rows of Settings › Devices (settings/connect-rows.tsx). `role` 'ceo' is my other device (a full
 // mirror, no role to pick), 'employee' joins someone else's company as one person's PC. Both screens show the same code;
 // the person accepts on the PC that was asked. Linked as my other device (either way round), or accepted as the employee
-// this card was opened for, this PC skips the rest of the first run (onboarding done). Back returns to the tour.
+// this card was opened for, this PC skips the rest of the first run (onboarding done). Back returns to the first step.
 // Owns: this card. Never: copies data from the other PC or says it will.
 
 import { useEffect, useState } from 'preact/hooks';
@@ -16,7 +16,7 @@ import { linkedAsCeo } from './first-run-model.ts';
 import { goStep } from './first-run.ts';
 import { Card, StatusLine } from './parts.tsx';
 
-/** `onClose`: back to the tour (Back), or after the first run ended here. */
+/** `onClose`: back to the first step (Back), or after the first run ended here. */
 export function ConnectCard(props: { role?: JoinRole; onClose: () => void }) {
   const role = props.role ?? 'ceo';
   const people = usePeople();

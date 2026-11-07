@@ -44,7 +44,7 @@ export interface HeaderButtonCell {
   controls?: string;
   /** Extra classes on the button (test hooks). */
   class?: string;
-  /** The box's `data-tour` name (AF-002: the spotlight tour finds the control by it, e.g. 'call-button'). */
+  /** AF-002: the box's `data-tour` name for the spotlight tour (tour/spotlight-steps.ts), e.g. 'call-button'. */
   tour?: string;
   placeholder?: false;
 }

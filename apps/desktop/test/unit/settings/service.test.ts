@@ -22,7 +22,8 @@ function setup() {
 test('defaults cover the full Settings shape with the confirmed values', () => {
   const s = setup().settings.get();
   assert.equal(s.voice.realtime, 'off');
-  assert.equal(s.onboarding.step, 'tour'); // B-055 Q5: a new install starts with the feedback tour
+  assert.equal(s.onboarding.step, 'profile'); // AF-002: a new install starts with the setup assistant
+  assert.deepEqual([s.onboarding.tour, s.onboarding.tourStep, s.onboarding.hints], ['new', '', []]); // AF-002: the tour not shown yet
   assert.equal(s.routing.work, 'auto');
   assert.equal(s.profile.timezone, 'Europe/Berlin');
   assert.equal(s.profile.language, 'de');
@@ -112,10 +113,10 @@ test('get returns copies; deepMerge ignores prototype keys', () => {
   assert.equal(({} as Record<string, unknown>).polluted, undefined);
 });
 
-test('a first run stopped on a card that became "About you" (team, voice) reads as about', () => {
-  for (const step of ['team', 'voice']) {
+test('a first run stopped on a card of an older first run (tour, about, team, voice) reads as profile (AF-002)', () => {
+  for (const step of ['tour', 'about', 'team', 'voice']) {
     const { db } = setup();
     db.run(`INSERT INTO settings (key, value, updated_at) VALUES ('onboarding', ?, 1)`, [JSON.stringify({ completed: false, step })]);
-    assert.equal(new SettingsStore({ db, bus: recordingBus().bus, clock: clock(), env }).get().onboarding.step, 'about', step);
+    assert.equal(new SettingsStore({ db, bus: recordingBus().bus, clock: clock(), env }).get().onboarding.step, 'profile', step);
   }
 });

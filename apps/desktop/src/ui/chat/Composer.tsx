@@ -250,9 +250,9 @@ export function Composer(props: { chat: ConversationSummary }) {
     onClick={() => void (scheduling ? scheduleNow() : send())}><Icon name={scheduling ? 'clock' : 'arrow-up'} size={19} /></button>;
 
   return (
-    <div class="composer-area" ref={areaRef} data-tour="composer">
+    <div class="composer-area" ref={areaRef}>
       <QueueList conversationId={chat.id} />
-      <div class={`composer${dragOver ? ' drag-over' : ''}${level === 'important' ? ' important' : ''}${scheduling ? ' scheduling' : ''}`}
+      <div data-tour="composer" class={`composer${dragOver ? ' drag-over' : ''}${level === 'important' ? ' important' : ''}${scheduling ? ' scheduling' : ''}`}
         onDragOver={(event) => { if (event.dataTransfer?.types.includes('Files')) { event.preventDefault(); setDragOver(true); } }}
         onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
         <SuggestionList items={visibleItems} active={suggest.active} onPick={accept} onHover={suggest.setActive} />

@@ -204,7 +204,7 @@ test('the old database rows move into the file once: the file wins, database-onl
   assert.equal(s.preferences.openAtLogin, true);
   assert.equal(s.routing.allowPaidFallback, true);
   assert.equal(s.routing.costMode, 'balanced', 'the file had no routing values');
-  assert.deepEqual(s.onboarding, { completed: true, step: 'done' });
+  assert.deepEqual([s.onboarding.completed, s.onboarding.step], [true, 'done']);
   assert.deepEqual(s.pwa, { enabled: true, bind: 'lan' });
   assert.deepEqual(h.json().pwa, { enabled: true, bind: 'lan' });
   assert.deepEqual(h.db.all('SELECT key FROM settings'), [], 'the table is emptied: the rows never come back');

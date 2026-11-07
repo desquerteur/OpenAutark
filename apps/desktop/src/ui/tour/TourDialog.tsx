@@ -1,6 +1,6 @@
 // B-055: the feedback tour as a dialog over the app (replay from Settings › Feedback "Watch how it
-// works", openTour() in open.ts). The first run shows the same player as its own first step
-// (ui/onboarding/FirstRun.tsx). A native modal dialog: Esc, the × and Continue close it (closeTour);
+// works", openTour() in open.ts; also the palette and the spotlight tour's feedback step). AF-002: the first run no
+// longer shows it; this dialog is its only place. A native modal dialog: Esc, the × and Continue close it (closeTour);
 // a click on the backdrop too. The player starts at its poster on every opening (it mounts afresh).
 // Owns: mounting the player while `tourOpen` is true. Never: the timeline or the scene.
 

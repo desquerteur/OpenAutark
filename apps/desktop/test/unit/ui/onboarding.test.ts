@@ -1,9 +1,9 @@
 // The first-run window side (src/ui/onboarding): which agent is the Manager and which chat is its first
 // chat (the chat the first run opens); first-run.ts – the layer shows only for the owner while its step is
 // not 'done' and a card change writes the step together with the card's own choice; the removed setup-chip
-// and setup-notice files stay removed. About you asks only the name and the company (kept in the card's draft over
-// a remount), there is no permission question, and Start calls onboarding.start without params. The AI card's
-// Continue waits until a model can answer: there is no Skip.
+// and setup-notice files stay removed. About you asks the language, the name and the company (kept in the card's draft
+// over a remount), there is no permission question, and Start (the last step) calls onboarding.start without params.
+// AF-002: the AI step's Continue waits until a model can answer; skipping it is possible only on purpose (one confirm).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -79,8 +79,8 @@ test('the layer is active for the owner while the step is not done; a card write
   assert.equal(firstRunActive(), false, 'a phone shows Home');
   session.value = { kind: 'owner', allowedMethods: [], capabilities: [] } as unknown as SessionInfo;
 
-  await goStep('about', { profile: { name: 'Ada' } });
-  assert.deepEqual(calls.at(-1), { method: 'settings.update', params: { profile: { name: 'Ada' }, onboarding: { step: 'about' } } });
+  await goStep('agent', { profile: { name: 'Ada' } });
+  assert.deepEqual(calls.at(-1), { method: 'settings.update', params: { profile: { name: 'Ada' }, onboarding: { step: 'agent' } } });
   settings.value = { ...settings.value!, onboarding: { completed: false, step: 'done' } };
   assert.equal(firstRunActive(), false, 'done: Home again');
 });
@@ -105,20 +105,21 @@ test('Start calls onboarding.start without params and opens the Manager\'s chat'
   assert.deepEqual(route.value, { view: 'chat', id: 'cv_first' }, "the Manager's chat opens");
 });
 
-test('About you asks only the name and the company – kept in the draft over a remount – and no permission question', () => {
-  const card = readFileSync(path.join(root, 'src/ui/onboarding/AboutCard.tsx'), 'utf8');
-  assert.deepEqual([...card.matchAll(/<span class="field-label">(.*?)<\/span>/g)].map((match) => match[1]), ['Your name', 'Company']);
+test('About you asks the language, the name and the company – kept in the draft over a remount – and no permission question', () => {
+  const card = readFileSync(path.join(root, 'src/ui/onboarding/ProfileCard.tsx'), 'utf8');
+  assert.deepEqual([...card.matchAll(/<span class="field-label">(.*?)<\/span>/g)].map((match) => match[1]), ['Language your agents speak with you', 'Your name', 'Company']);
   assert.doesNotMatch(card, /<textarea|firstTask/, 'no first-request field');
   assert.match(card, /useState\(draft\.name \?\? profile\?\.name \?\? ''\)/, 'a remount (desktop ↔ phone shell) starts from the draft');
   assert.match(card, /draft\.company = next/, 'every change is kept in the draft');
-  assert.match(card, /await finishFirstRun\(\)/, 'Start ends the first run');
-  assert.match(card, /delete draft\.name; delete draft\.company;/, 'gone once the first run started');
+  assert.match(readFileSync(path.join(root, 'src/ui/onboarding/AgentCard.tsx'), 'utf8'), /await finishFirstRun\(\)/, 'Start on the last step ends the first run');
+  assert.match(card, /delete draft\.name; delete draft\.company;/, 'gone once the step is saved');
   assert.doesNotMatch(card, /permissions|PC_USE|Who uses this PC/, 'no permission question on the card: the Manager asks in the chat');
 });
 
-test('the AI card has no Skip: Continue waits until a model can answer', () => {
+test('the AI step: Continue waits until a model can answer; Skip for now only while none does, after one confirm', () => {
   const card = readFileSync(path.join(root, 'src/ui/onboarding/AiCard.tsx'), 'utf8');
   assert.match(card, /const silent = noUsableModel\(models\.value, accounts\.value\)/);
-  assert.match(card, /disabled=\{silent\}/);
-  assert.doesNotMatch(card, /Skip/);
+  assert.match(card, /disabled=\{silent \|\| busy !== null\}/);
+  assert.match(card, /\{silent && <Button variant="ghost".*>Skip for now<\/Button>\}/);
+  assert.match(card, /const ok = await confirm\(/, 'skipping the AI asks once');
 });

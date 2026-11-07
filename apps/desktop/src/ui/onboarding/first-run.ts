@@ -1,9 +1,9 @@
-// The first-run layer's state and actions for FirstRun.tsx, its cards, shell/views.ts (which draws the
-// layer in Home's place) and the command palette: whether the layer shows now (first-run-model.ts
-// firstRunShown over the settings signal and the owner's window), moving to another card
+// The setup assistant's state and actions for FirstRun.tsx, its cards, shell/views.ts (which draws the
+// layer on My day) and the command palette: whether the layer shows now (first-run-model.ts
+// firstRunShown over the settings signal and the owner's window), moving to another step
 // (settings.onboarding.step), the end of the layer (onboarding.start: the Manager's first chat opens with the
 // app's start text as the person's own line, which the Manager answers)
-// and "Set up team again" (onboarding.reset: the layer again from its first card, on Home).
+// and "Set up again" (onboarding.reset: the assistant again from its first step, on Home).
 // Owns: these signals and calls. Never: decides what a card offers (first-run-model.ts) or renders.
 
 import type { OnboardingStep, SettingsPatch } from '../../shared/model/system.ts';

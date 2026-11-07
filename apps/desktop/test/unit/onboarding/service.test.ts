@@ -1,7 +1,7 @@
 // First run, runtime side (runtime/onboarding/service.ts, brief.ts): start() ends the layer – step 'done'
 // and completed, the Manager's first chat (made when there is none) and the app's start text there as the person's
 // line (the shipped resources/prompts/onboarding.md, or the fallback), which wakes the Manager as an ordinary
-// message; reset() opens the layer again at 'ai'. The line's own cases: start-line.test.ts.
+// message; reset() opens the setup assistant again at 'profile'. The line's own cases: start-line.test.ts.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,6 +28,9 @@ function setup(options: { prompts?: boolean } = {}) {
   return { ...h, services, settings, make };
 }
 
+/** The first-run part of the onboarding section (the tour's keys beside it have their own tests, AF-002). */
+const stepOf = (o: { completed: boolean; step: string }) => ({ completed: o.completed, step: o.step });
+
 /** Passive or holding-back wording the start text must never carry. */
 const PASSIVE = /facts only|no steps|not ahead of it|never change|approval|permission mode/i;
 /** The person's lines in a chat. */
@@ -36,7 +39,7 @@ const ownLines = (h: ReturnType<typeof setup>, conversationId: string) => h.chat
 test('start(): step done and completed, the Manager\'s first chat, the start text as the person\'s line and one message wake – also when asked twice', () => {
   const h = setup({ prompts: true });
   const onboarding = h.make();
-  assert.equal(h.settings.get().onboarding.step, 'tour', 'a new install starts with the feedback tour');
+  assert.equal(h.settings.get().onboarding.step, 'profile', 'a new install starts with the setup assistant (AF-002)');
   const manager = h.org.add(agent('ag_boss', 'Manager', { mode: 'manager', template: 'manager', createdAt: 1 }));
   h.settings.update({ profile: { name: 'Lena Hess', company: '' } });
 
@@ -44,7 +47,7 @@ test('start(): step done and completed, the Manager\'s first chat, the start tex
   const chat = h.chats.list().find((entry) => entry.id === conversationId);
   assert.ok(chat, 'a chat with the Manager was made (there was none)');
   assert.deepEqual(chat.members.filter((member) => member.kind === 'agent').map((member) => member.memberId), [manager.id]);
-  assert.deepEqual(h.settings.get().onboarding, { completed: true, step: 'done' }, 'the first run completes the onboarding itself');
+  assert.deepEqual(stepOf(h.settings.get().onboarding), { completed: true, step: 'done' }, 'the first run completes the onboarding itself');
 
   assert.equal(h.wakeRows().filter((row) => row.reason === 'setup').length, 0, 'no setup wake');
   const rows = h.wakeRows().filter((row) => row.reason === 'message');
@@ -80,14 +83,14 @@ test('start() uses the Manager\'s existing first chat and refuses without a Mana
   assert.equal(PASSIVE.test(line.body), false, line.body);
 });
 
-test('reset(): the layer is open again at the first card; start() closes it again', () => {
+test('reset(): the assistant is open again at its first step; start() closes it again', () => {
   const h = setup();
   const onboarding = h.make();
   h.org.add(agent('ag_boss', 'Manager', { mode: 'manager', createdAt: 1 }));
   onboarding.start();
-  assert.deepEqual(h.settings.get().onboarding, { completed: true, step: 'done' });
+  assert.deepEqual(stepOf(h.settings.get().onboarding), { completed: true, step: 'done' });
   onboarding.reset();
-  assert.deepEqual(h.settings.get().onboarding, { completed: false, step: 'ai' });
+  assert.deepEqual(stepOf(h.settings.get().onboarding), { completed: false, step: 'profile' });
   onboarding.start();
-  assert.deepEqual(h.settings.get().onboarding, { completed: true, step: 'done' });
+  assert.deepEqual(stepOf(h.settings.get().onboarding), { completed: true, step: 'done' });
 });

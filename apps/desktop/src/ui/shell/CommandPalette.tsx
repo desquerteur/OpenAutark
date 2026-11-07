@@ -26,6 +26,7 @@ import { paletteActions } from './gates.ts';
 import type { PaletteActionId } from './gates.ts';
 import { openFeedback } from './ProfileMenu.tsx';
 import { openTour } from '../tour/open.ts';
+import { startTour } from '../tour/spotlight.ts';
 import { toggleSidebar } from './WindowBar.tsx';
 import { resumeAllWork, stopAllWork, watchWorkStop, workStop } from './work-stop.ts';
 import { comboLabel } from '../lib/hotkeys.ts';
@@ -58,10 +59,13 @@ function buildEntries(): Entry[] {
     : [];
   // B-055: the feedback tour's replay (ui/tour/TourDialog.tsx), also on Settings › Feedback
   const tour: Entry = { id: 'a:tour', group: 'Actions', label: 'Watch how it works', icon: 'play', run: openTour };
+  // AF-002: the spotlight tour through the app (tour/spotlight.ts), also on Settings › General › Getting started
+  const appTour: Entry[] = can('onboarding.start') ? [{ id: 'a:app-tour', group: 'Actions', label: 'Show the app tour', icon: 'lightbulb', run: () => startTour() }] : [];
   const actions: Entry[] = [
     ...own.filter((entry) => allowed.has(entry.id)),
     ...setup,
     tour,
+    ...appTour,
   ];
   const chats: Entry[] = conversations.value
     .filter((chat) => !chat.archivedAt && chatSection(chat) !== 'system' && !chat.settings.anchorId) // threads open in their chat's side panel

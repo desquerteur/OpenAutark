@@ -30,6 +30,9 @@ const destinations: Destination[] = [
   { key: 'team', icon: 'users-three', views: ['team'], open: () => navigate({ view: 'team' }) },
 ];
 
+/** AF-002: the spotlight tour's names of the rail buttons (tour/spotlight-steps.ts). */
+const RAIL_TOUR: Partial<Record<NavKey, string>> = { day: 'my-day', tasks: 'tasks', chats: 'chats', team: 'team' };
+
 export function Rail() {
   const view = route.value.view;
   const badge = forYouCount.value;
@@ -38,7 +41,7 @@ export function Rail() {
       <div class="rail-header"><SidebarToggle /></div>
       <div class="rail-top">
         {destinations.map((destination) => (
-          <div class="rail-item" key={destination.key}>
+          <div class="rail-item" key={destination.key} data-tour={RAIL_TOUR[destination.key]}>
             <IconButton
               icon={destination.icon}
               label={DESTINATIONS[destination.key]}

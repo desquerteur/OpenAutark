@@ -17,7 +17,7 @@ export const SIDEBAR_DEFAULT = 288;
 export function Sidebar(props: { view: DesktopViews['side']; width: number; onLiveWidth: (width: number | null) => void }) {
   const { view } = props;
   return <>
-    <aside class="sidebar" aria-label="Sidebar">
+    <aside class="sidebar" aria-label="Sidebar" data-tour="sidebar">
       <ZoneHeader key={view.key} read={view.header} zone="side" />
       <div class="sidebar-body" key={view.key}>{view.body}</div>
     </aside>

@@ -123,7 +123,7 @@ export function MobileShell() {
           {shown.map((tab) => {
             const active = tab.match(current);
             return (
-              <button type="button" key={tab.key} class={`tab${active ? ' active' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => navigate(tab.route)}>
+              <button type="button" key={tab.key} class={`tab${active ? ' active' : ''}`} aria-current={active ? 'page' : undefined} data-tab={tab.key} onClick={() => navigate(tab.route)}>
                 <span class="tab-icon">
                   <Icon name={tab.icon} size={22} />
                   {tab.key === 'day' && badge > 0 && <span class="tab-badge tabular">{badge > 99 ? '99+' : badge}</span>}
