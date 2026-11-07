@@ -287,6 +287,9 @@ export async function runAttempt(services: RuntimeServices, plan: TurnPlan, turn
     watch.signal.removeEventListener('abort', releaseLease);
     lease?.release();
   }
+  // AF-012: the person's Stop wins – an engine that still answered 'done' after it (one that did not hear the signal) ends
+  // stopped like any other, with its text so far (turn-finish.ts keeps it as a 'stopped' answer); its late calls were refused above.
+  if (request.signal.aborted && request.control.stopKind === 'human' && result.stop === 'done') result = { ...result, stop: 'interrupted' };
   if (turn.trace && (!turn.engine.caps.trace || result.traceAsText)) {
     try { services.runs.item(request.runId, { kind: 'note', data: { traceAsText: result.traceAsText ?? turn.engine.id }, effectStatus: 'none' }); } catch { /* journal is best effort */ }
   }

@@ -1,6 +1,8 @@
 // The one composer: auto-growing field (to ~40 % of the window), Enter sends (setting), per-chat drafts,
 // attachments (Plus menu, drag/drop, paste), @mentions and /commands, dictation into the caret (the
 // waveform sits in the action row's spacer) and one primary button: Send, disabled without content.
+// AF-012: while an agent works in the chat and nothing is to be sent, that button is Stop (a square, data-tour="run-stop"),
+// and Esc stops too – in the field after its own uses, and in the chat column outside a field (composer/stop.ts).
 // Action row, fixed cells: [+] [spacer] [Ultra] [Model] [Mic] [Send] – nothing in it moves on a click.
 // How a message goes out: /important, /silent, or the Plus menu's and the Send button's right-click menu's "Send as important",
 // "Send silently" (with nothing to send yet: the draft's level) and "Schedule…": that switches the composer into schedule
@@ -42,12 +44,14 @@ import { MicButton, useDictationField, waveState } from './composer/MicButton.ts
 import { DictationWave } from './composer/DictationWave.tsx';
 import { mentionsIn, targetAgent } from './composer/target.ts';
 import { composerControls } from './composer/controls.ts';
+import { escapeStops, stopChat, useChatStop } from './composer/stop.ts';
 
 export function Composer(props: { chat: ConversationSummary }) {
   const { chat } = props;
   const draft = draftFor(chat.id);
   const { text, attachments, level, replyTo, secrets = [], ultra = false } = draft.value;
   const fieldRef = useRef<HTMLTextAreaElement>(null);
+  const areaRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const [caret, setCaret] = useState(0);
@@ -62,6 +66,8 @@ export function Composer(props: { chat: ConversationSummary }) {
   const isDictating = dictating.value === chat.id;
   const transcribingHere = transcribing.value.has(chat.id); // the stopped take's text is still on its way
   const hasContent = text.trim().length > 0 || attachments.length > 0 || secrets.length > 0;
+  // AF-012: runs at work here that the person has not asked to stop (schedule mode keeps its Schedule button); Esc stops them.
+  const working = useChatStop(chat, areaRef, !scheduling);
 
   const setText = (value: string) => updateDraft(chat.id, { text: value });
   useDictationField(chat.id, fieldRef, setCaret); // D13: the caret after a dictated take
@@ -181,6 +187,7 @@ export function Composer(props: { chat: ConversationSummary }) {
     if (suggest.onKeyDown(event, visibleItems, accept)) { event.preventDefault(); return; }
     if (event.key === 'Escape' && scheduling) { event.preventDefault(); leaveScheduleMode(chat.id); return; }
     if (event.key === 'Escape' && draft.peek().replyTo) { event.preventDefault(); setReply(chat.id, null); return; }
+    if (event.key === 'Escape' && working && escapeStops(event)) { event.preventDefault(); void stopChat(chat); return; } // AF-012
     if (event.key !== 'Enter' || event.isComposing) return;
     const mod = event.ctrlKey || event.metaKey;
     const enterSends = preferences.value.enterSends && !isMobile.value;
@@ -208,7 +215,7 @@ export function Composer(props: { chat: ConversationSummary }) {
   const partner = chatPartner(chat);
   const placeholder = `${scheduling ? 'Scheduled message for' : 'Message'} ${(partner && memberName(partner.memberId)) || chatTitle(chat)}`;
 
-  const controls = composerControls({ hasContent, transcribing: transcribingHere });
+  const controls = composerControls({ hasContent, transcribing: transcribingHere, working });
   // A scheduled message is text only: files and secrets in the draft would be left behind, so the mode says so (note)
   const heavy = [attachments.length ? 'files' : '', secrets.length ? 'secrets' : ''].filter(Boolean).join(' and ');
   const note = scheduling && heavy ? `A scheduled message is text only – remove the ${heavy} to schedule it.` : undefined;
@@ -223,12 +230,15 @@ export function Composer(props: { chat: ConversationSummary }) {
   };
   const sendMenu = useContextMenu(() => [{ items: sendMenuItems(sendActions) }]);
   // Schedule mode: the same round cell with a clock (a wider label would move Ultra, the model and the mic)
-  const primary = <button type="button" class="send-button" aria-label={scheduling ? 'Schedule' : 'Send'} title={scheduling ? 'Schedule' : undefined} {...sendMenu}
+  const primary = controls.primary === 'stop'
+    // AF-012: the same round cell, a square – Send comes back at once after the click (composer/stop.ts)
+    ? <button type="button" class="send-button stop-button" aria-label="Stop" title="Stop (Esc)" data-tour="run-stop" onClick={() => void stopChat(chat)}><span class="stop-square" aria-hidden="true" /></button>
+    : <button type="button" class="send-button" aria-label={scheduling ? 'Schedule' : 'Send'} title={scheduling ? 'Schedule' : undefined} data-tour="composer-send" {...sendMenu}
     disabled={(scheduling ? !scheduleReady || transcribingHere : controls.primary === 'send-disabled') || sending || uploading.length > 0}
     onClick={() => void (scheduling ? scheduleNow() : send())}><Icon name={scheduling ? 'clock' : 'arrow-up'} size={19} /></button>;
 
   return (
-    <div class="composer-area">
+    <div class="composer-area" ref={areaRef} data-tour="composer">
       <div class={`composer${dragOver ? ' drag-over' : ''}${level === 'important' ? ' important' : ''}${scheduling ? ' scheduling' : ''}`}
         onDragOver={(event) => { if (event.dataTransfer?.types.includes('Files')) { event.preventDefault(); setDragOver(true); } }}
         onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
