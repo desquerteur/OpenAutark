@@ -3,7 +3,7 @@
 // feed repo carries the bridge release 0.3.3 for installs up to 0.3.2.
 // Owns: stable asset names per platform. Never: network access.
 
-export const RELEASE_REPOSITORY = 'teydra/OpenAutark';
+export const RELEASE_REPOSITORY = 'desquerteur/OpenAutark';
 export const RELEASE_URL = `https://github.com/${RELEASE_REPOSITORY}/releases`;
 
 export function downloadName(platform: string, arch: string): string | null {

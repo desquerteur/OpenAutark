@@ -26,7 +26,7 @@ Die Zurück-Geste ruft per `evaluateJavascript` `window.autarkBack()` (`ui/pwa/b
 
 ## Updates
 
-`UpdateCheck` liest höchstens einmal am Tag (nur im Release-Build) `https://github.com/teydra/OpenAutark/releases/latest/download/latest-android.json` und bietet bei höherem `versionCode` **Update** an (öffnet die APK-Adresse im Browser).
+`UpdateCheck` liest höchstens einmal am Tag (nur im Release-Build) `https://github.com/desquerteur/OpenAutark/releases/latest/download/latest-android.json` und bietet bei höherem `versionCode` **Update** an (öffnet die APK-Adresse im Browser).
 
 ## Wie es funktioniert
 

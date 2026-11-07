@@ -9,7 +9,7 @@ import type { Host } from '../host.ts';
 import { KvRepo } from '../store/kv.ts';
 
 /** Contact for push services (RFC 8292 `sub`); the public project page, not personal data. */
-export const VAPID_SUBJECT = 'https://github.com/teydra/OpenAutark';
+export const VAPID_SUBJECT = 'https://github.com/desquerteur/OpenAutark';
 
 interface StoredVapid {
   publicKey: string; // base64url, 65-byte uncompressed point

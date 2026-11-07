@@ -41,7 +41,7 @@ const PHONE_DRAIN_MS = 2_000;
  * The answer to the old preview app's 'phone' op (0.2.x/0.3.2 APKs, package ….android.preview): the release is a new
  * app beside it (another package and key), so it says where that app is and that the preview goes afterwards.
  */
-export const PREVIEW_APP = 'This is the old preview app. Install Autark for Android from github.com/teydra/OpenAutark/releases (a new app), pair it with this PC\'s Remote ID, then remove the preview app.';
+export const PREVIEW_APP = 'This is the old preview app. Install Autark for Android from github.com/desquerteur/OpenAutark/releases (a new app), pair it with this PC\'s Remote ID, then remove the preview app.';
 
 export type PostOptions = { timeoutMs: number; signal?: AbortSignal };
 
