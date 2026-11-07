@@ -150,3 +150,12 @@
   .browser-strip-tab, .browser-strip-ghost { height: 38px; }
   .new-tab-row { height: 44px; }
 }
+
+/* AF-010: a tab dragged over a strip (TabStrip.tsx) – a 2 px line at the edge of the tab it would land beside; the tab
+   itself keeps its box */
+.browser-strip-tab[data-drop]::after {
+  content: ''; position: absolute; z-index: 2; top: 6px; bottom: 6px; width: 2px; border-radius: 1px;
+  background: var(--text); pointer-events: none;
+}
+.browser-strip-tab[data-drop=before]::after { left: -2px; }
+.browser-strip-tab[data-drop=after]::after { right: -2px; }

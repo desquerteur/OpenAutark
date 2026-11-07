@@ -29,7 +29,7 @@ const TODO = { capability: 'todo' } as const;
 const CHAT = { capability: 'chat' } as const;
 const SETTINGS = { capability: 'settings' } as const;
 /** Settings sections a phone/browser with the 'settings' capability may change. */
-const DEVICE_SETTINGS: ReadonlySet<string> = new Set(['preferences', 'notifications']);
+const DEVICE_SETTINGS: ReadonlySet<string> = new Set(['preferences', 'notifications', 'appearance']); // AF-008: a phone may change the look too
 /** Preferences that change the PC itself (window close, login item, updates): never from a device (settings audit 23.10.). */
 const PC_ONLY_PREFERENCES: ReadonlySet<string> = new Set(['closeToTray', 'openAtLogin', 'autoDownloadUpdates']);
 const MAX_TOPICS = 256;

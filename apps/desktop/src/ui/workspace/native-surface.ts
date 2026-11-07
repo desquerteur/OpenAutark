@@ -30,7 +30,8 @@ export function useNativeSurface(slot: RefObject<HTMLElement>, id: string, nativ
       frame = 0;
       const rect = element.getBoundingClientRect();
       const floating = document.querySelectorAll(over); // B-044: the status notes hide no page (they last)
-      const covered = document.querySelector('dialog[open]') !== null || [...floating].some((item) => {
+      // AF-010: while a dock or a tab is dragged (lib/appearance.ts) every page steps aside, so the pointer stays the app's
+      const covered = document.querySelector('dialog[open]') !== null || document.documentElement.classList.contains('dock-dragging') || [...floating].some((item) => {
         if (item.contains(element)) return false;
         const box = item.getBoundingClientRect(); // 1 px of slack: a pane or panel right beside the slot does not cover it
         return box.width > 0 && box.height > 0 && box.left < rect.right - 1 && box.right > rect.left + 1 && box.top < rect.bottom - 1 && box.bottom > rect.top + 1;
@@ -56,12 +57,14 @@ export function useNativeSurface(slot: RefObject<HTMLElement>, id: string, nativ
     document.addEventListener('visibilitychange', onResize);
     document.addEventListener('animationend', queue, true);
     document.addEventListener('transitionend', queue, true);
+    document.addEventListener('wf-surfaces-moved', queue); // AF-010: a floating window or a dock moved its slot without resizing it
     queue();
     return () => {
       if (frame) cancelAnimationFrame(frame);
       resize.disconnect(); mutations.disconnect();
       window.removeEventListener('resize', onResize); document.removeEventListener('visibilitychange', onResize);
       document.removeEventListener('animationend', queue, true); document.removeEventListener('transitionend', queue, true);
+      document.removeEventListener('wf-surfaces-moved', queue);
       void native.command({ action: 'hide', id }).catch(() => {});
     };
   }, [id, native, shown]);

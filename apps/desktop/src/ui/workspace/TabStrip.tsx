@@ -8,31 +8,47 @@
 // scroll by whole tabs. A tab with sound shows the speaker in its icon's cell, and a click there mutes it. An agent's
 // preview tab has its title in italics; a double-click keeps it. A tab of another PC (B-076: its website, its file)
 // carries a small blue dot on its icon. Right click: the tab's menu; middle click closes. Left and right move along
-// the tabs.
-// Owns: the strip's markup, its measuring and its scrolling. Never: which tabs exist (it draws what it is handed).
+// the tabs. AF-010: a tab drags to another place in its strip, or onto the strip of the other surface – a chat's tabs ↔
+// the person's pane (pages.ts moveTab); a line shows where it lands. Another PC's tabs only change their place.
+// Owns: the strip's markup, its measuring, its scrolling and its drops. Never: which tabs exist (it draws what it is handed).
 
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { GLOBAL_SPACE } from '../../shared/api/workspace-browser.ts';
 import { useContextMenu } from '../lib/context-menu.tsx';
 import { modKey } from '../lib/platform.ts';
 import { toastError } from '../lib/toasts.ts';
 import { Icon, IconButton } from '../lib/ui.tsx';
 import { tabName, type TabInfo } from './browser-model.ts';
-import { addPage, closePage, command, selectPage } from './pages.ts';
+import { addPage, closePage, command, moveTab, selectPage } from './pages.ts';
 import { useSpace } from './space.ts';
 import { cellFit, hasGhosts, placeSlots, revealTarget, type CellFit, type Slot } from './strip-slots.ts';
 import { keepTab, TabIcon, tabMenu, tabTitle } from './TabsMenu.tsx';
 
 const GAP = 2;
+/** AF-010: the drag's own type (a website under the pointer reads nothing it knows). */
+const TAB_TYPE = 'application/x-autark-tab';
 
 const closeTab = (id: string, space: string) => { void closePage(id, space).catch((error) => toastError(error)); };
 
-function Tab(props: { tab: TabInfo; count: number; selected: boolean }) {
+/** The tab being dragged, its space and whether it may leave that space (dataTransfer is unreadable during dragover). */
+let dragging: { id: string; space: string; stays: boolean } | null = null;
+/** The person's pane and chats' areas trade tabs; an agent's own area keeps its own. */
+const trades = (space: string) => space === GLOBAL_SPACE || space.startsWith('chat:');
+
+function Tab(props: { tab: TabInfo; count: number; selected: boolean; drop?: 'before' | 'after' }) {
   const { tab, selected } = props;
   const space = useSpace();
   const menu = useContextMenu(() => tabMenu(tab, props.count, space));
   const name = tabName(tab);
   return (
-    <div class={`browser-strip-tab${selected ? ' selected' : ''}${tab.transient ? ' transient' : ''}${tab.device ? ' remote' : ''}`} data-tab={tab.id} {...menu}
+    <div class={`browser-strip-tab${selected ? ' selected' : ''}${tab.transient ? ' transient' : ''}${tab.device ? ' remote' : ''}`} data-tab={tab.id} data-drop={props.drop} {...menu}
+      draggable onDragStart={(event) => {
+        if (!event.dataTransfer) return;
+        event.dataTransfer.setData(TAB_TYPE, tab.id);
+        event.dataTransfer.effectAllowed = 'move';
+        dragging = { id: tab.id, space, stays: tab.kind === 'remote' || !trades(space) };
+      }}
+      onDragEnd={() => { dragging = null; document.dispatchEvent(new Event('wf-tab-drag-end')); }}
       onAuxClick={(event) => { if (event.button === 1) { event.preventDefault(); closeTab(tab.id, space); } }} onDblClick={() => keepTab(tab)}>
       <button type="button" role="tab" class="browser-strip-choose" aria-selected={selected} tabIndex={selected ? 0 : -1} title={tabTitle(tab)} onClick={() => selectPage(tab.id, space)}>
         <span class="browser-tab-icon" aria-hidden="true"><TabIcon tab={tab} /></span>
@@ -102,8 +118,41 @@ export function TabStrip(props: { tabs: readonly TabInfo[]; shown: string | unde
   const hold = () => { held.current = true; };
   const release = () => { held.current = false; if (hasGhosts(slots.current) || missed.current || stale.current) setLetGo((n) => n + 1); };
   const byId = new Map(tabs.map((tab) => [tab.id, tab]));
+
+  // AF-010: where a dragged tab would land here – the index among the other tabs, drawn as a line at a tab's edge
+  const [drop, setDrop] = useState<{ index: number; key: string; side: 'before' | 'after' } | null>(null);
+  useEffect(() => {
+    const clear = () => setDrop(null);
+    document.addEventListener('wf-tab-drag-end', clear);
+    return () => document.removeEventListener('wf-tab-drag-end', clear);
+  }, []);
+  const accepts = () => dragging !== null && (dragging.space === space || (!dragging.stays && trades(space)));
+  const dropAt = (x: number) => {
+    const others = [...(scroller.current?.querySelectorAll<HTMLElement>('[data-tab]') ?? [])].filter((element) => element.dataset.tab !== dragging?.id);
+    const index = others.filter((element) => { const box = element.getBoundingClientRect(); return box.left + box.width / 2 < x; }).length;
+    const edge = others[index] ?? others[index - 1];
+    return { index, key: edge?.dataset.tab ?? '', side: others[index] ? 'before' as const : 'after' as const };
+  };
+  const onDragOver = (event: DragEvent) => {
+    if (!accepts()) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    const next = dropAt(event.clientX);
+    if (next.index !== drop?.index || next.key !== drop?.key) setDrop(next);
+  };
+  const onDrop = (event: DragEvent) => {
+    const from = dragging;
+    setDrop(null);
+    if (!from || !accepts()) return;
+    event.preventDefault();
+    const { index } = dropAt(event.clientX);
+    dragging = null;
+    moveTab(from.id, from.space, space, index);
+    release();
+  };
   return (
-    <div class="browser-strip" style={{ '--tab-width': `${fit.width}px` }}>
+    <div class="browser-strip" style={{ '--tab-width': `${fit.width}px` }} onDragOver={onDragOver} onDrop={onDrop}
+      onDragLeave={(event) => { if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) setDrop(null); }}>
       <div class="browser-strip-room" ref={room}>
         {/* the hold: the tabs and "+" together, so moving from a tab to "+" keeps everything in place */}
         <div class="browser-strip-hold" onPointerEnter={hold} onPointerLeave={release}>
@@ -111,7 +160,7 @@ export function TabStrip(props: { tabs: readonly TabInfo[]; shown: string | unde
             onPointerEnter={hold}>
             {places.map((slot) => {
               const tab = byId.get(slot.key);
-              return tab ? <Tab key={slot.key} tab={tab} count={tabs.length} selected={slot.key === shown} /> : <span key={slot.key} class="browser-strip-ghost" aria-hidden="true" />;
+              return tab ? <Tab key={slot.key} tab={tab} count={tabs.length} selected={slot.key === shown} drop={drop?.key === slot.key ? drop.side : undefined} /> : <span key={slot.key} class="browser-strip-ghost" aria-hidden="true" />;
             })}
           </div>
           {/* its click lays the strip out at once (the new tab shows); back on the tabs the hold starts again */}

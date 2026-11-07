@@ -108,6 +108,7 @@ its own company. The uninstaller removes the other companies' launcher tasks too
 | `settings.json` | **The only settings store**, written whole: JSON with comments (profile, preferences, notifications, voice, routing = "Models", onboarding, feedback, pwa, devices, day, calendar). Every key is present with its current value and a comment line above it naming its purpose, options or range and default; `null` means the default | `settings/schema.ts` (the one table), `read.ts`, `service.ts`, `validate.ts`, `defaults.ts` |
 | `settings.schema.json` | JSON Schema (draft-07) of the same table for editors and scripts: enums, ranges, patterns, defaults, descriptions; written by the app once per start – never edit | `settings/schema.ts` (`schemaText()`), `settings/service.ts` |
 | `theme.css` | The app's look: CSS applied live on top of the shipped styles (tokens such as `--surface`, `--text`; dark mode `:root[data-theme=dark]`). Delete it to go back | `root/theme.ts` |
+| `settings.json › appearance` | AF-010/AF-008: look and layout – where a chat's tabs dock and their sizes (`chatDock`); checked in `settings/appearance-schema.ts` | `shared/model/appearance.ts`, `ui/lib/appearance.ts` |
 | `agents/<id>/` | `SYSTEM.md` (the agent's instructions – authoritative), `skills/<name>/SKILL.md` (its Main Skills), `agent.json`, `avatar.png/jpg` copy; `agents/README.md` says who is who | `agent-core/*` |
 | `memory/` | **The memory tree** (§5.2): one Markdown file per entry in folders by who it is for – `company/`, `branches/<space>/`, `agents/<id>/`, `references/<person>/`, `chats/<chat>/` and any topic subfolder (`_folder.md` describes a folder). The files are the truth; anyone may edit them; writing or changing one makes it findable with `vector.search` | `knowledge/memory-*.ts`, `tools/builtin/memory.ts` |
 | `prompts/` | Own versions of the shipped prompts (`identity`, `rules`, `skills`, `compaction`, `onboarding`, `agent-default`, `subconscious`) – a file here replaces the shipped one | `context/templates.ts` |
@@ -1353,12 +1354,21 @@ row, menus, panels – read the space from `space.ts`, and every command in `pag
   the caption, workspace and feedback cells), one 40 px toolbar row follows, a page starts at 89 px. A drag of the pane
   or the window may move the strip between the two places; a click never does. In the phone layout it is a pushed full-screen sheet (`phone-pane.ts`, `MobileShell` `PhonePane`, its
   own row with Close), opened by a way in that lands in global or, in the desktop app, the Browser cell of the phone row.
-* **A chat's area** (`chat/ChatArea.tsx`, space `chat:<id>`, shared by everyone in the chat): a fold-out part of the
-  chat directly above its messages, the first child of the chat column under the chat header; a fixed clamp height, so
-  header cells and composer never move; the chat's own surface colour, pill tabs and one 1 px line
+* **A chat's area** (`chat/ChatArea.tsx`, space `chat:<id>`, shared by everyone in the chat): AF-010 – it docks where
+  `settings.json › appearance.chatDock` says (`shared/model/appearance.ts`, `lib/appearance.ts`): right of the messages
+  by default (a column of the chat body, like a side panel, `data-tour="side-panel"`), left, under the composer, at the
+  top of the chat column (the old place) or floating as a window of its own over the chat; the chat keeps 340 px beside
+  it and 240 px under it. A grip on its inner edge (`chat/DockResize.tsx`; the floating window: right and bottom edge)
+  sizes it; its grip cell at the strip's end – or the strip's empty room – drags it, a guide over the chat shows where
+  it lands (an edge docks there, the middle floats), a click on the cell opens the same choices. While a dock is
+  dragged every native page steps aside (`dock-dragging` on `<html>`, `native-surface.ts`), and a slot that moved without
+  resizing is measured again (`wf-surfaces-moved`). Place and sizes are the person's (settings.json, synced to their
+  linked PCs); full view and the phone dock it at the top. The chat's own surface colour, pill tabs and one 1 px line
   (`styles/chat-area.css`) – visibly part of the chat, not like the global pane. The chat header's "Chat tabs" cell
   toggles it (pressed state and a dot); open per chat (`lib/shell-state.ts` `wf.chatAreas`). On the phone it fills the
-  chat body above the composer. Chat details (`ChatPanel`) is details only.
+  chat body above the composer. Chat details (`ChatPanel`) is details only. Tabs drag to a new place in their strip or
+  onto the other surface's strip – a chat's area ↔ the global pane (`pages.ts` `moveTab`; a website keeps its page,
+  main moves it with the layout); the tab menu has "Move to the browser pane" / "Move to this chat's tabs".
 * **An agent's own area** (space `agent:<id>`, kept by the agent): the lower half of the agent page's Browser view
   (`team/AgentBrowser.tsx`, two fixed halves), under the live view of the agent's own browser.
 

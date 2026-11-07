@@ -21,7 +21,8 @@ export type IconName =
   | 'play' | 'hourglass-simple' // B-044: My day's focus timer Start and the estimate (not the same clock twice)
   | 'terminal-window' | 'brain' | 'file-text' | 'wrench' | 'eye-slash' // D5: run step lines (command, thought, read, tool, kept internal)
   | 'lock-simple' | 'speaker-slash' | 'dots-three-vertical' | 'clock-counter-clockwise' | 'browsers' // B-055: the browser's connection, a muted tab, its menu, history, the chat's browser
-  | 'sign-out'; // F-52: Leave chat (a person's app)
+  | 'sign-out' // F-52: Leave chat (a person's app)
+  | 'dots-six-vertical' | 'layout' | 'palette' | 'eye'; // AF-010/AF-008: the chat tabs' dock grip, the layout editor, Appearance, show a panel
 
 export function Icon(props: { name: IconName; size?: number; class?: string; title?: string }) {
   const size = props.size ?? 18;

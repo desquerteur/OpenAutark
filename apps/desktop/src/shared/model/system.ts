@@ -3,6 +3,7 @@
 // Never: secrets (they live in the secret store and are referenced by id).
 
 import type { ProviderEntry } from './provider-entries.ts';
+import type { AppearanceSettings } from './appearance.ts';
 
 export interface Profile {
   name: string; // the person (CEO)
@@ -102,6 +103,8 @@ export interface Settings {
   devices: DeviceSettings;
   /** B-078: the public skill library; absent in settings read before it existed (then publish counts as on). */
   library?: LibrarySettings;
+  /** AF-010/AF-008: look and layout (shared/model/appearance.ts); absent in settings read before it existed. */
+  appearance?: AppearanceSettings;
   /** The API connections, by id (shared/model/provider-entries.ts); absent while there are none. */
   providers?: Record<string, ProviderEntry>;
 }

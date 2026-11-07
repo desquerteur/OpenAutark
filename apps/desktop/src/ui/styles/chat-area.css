@@ -1,14 +1,20 @@
-/* A chat's area (chat/ChatArea.tsx): the first part of the chat column, right under the chat header row – one workspace
-   surface on the chat's space. Open it has one height, a share of the column (never of its content), so the header
-   cells and the composer never move and the message list keeps its newest line in view; in full view
-   (workspace/full-view.ts) – and on the phone (mobile.css) – it takes the column above the composer, the message list
-   stays mounted under it. Its look belongs to the chat, not to the frame: the chat's surface colour, no divider at its side, rounded
-   tabs, one 1 px line to the messages – the person's own pane at the frame's right keeps its Chrome look
-   (workspace-browser.css). Hover and the shown tab change colour only.
-   Owns: `chat-area`, `area-full`. Never: the strip's measuring (strip-slots.ts) or native geometry (native-surface.ts). */
+/* A chat's area (chat/ChatArea.tsx): one workspace surface on the chat's space. AF-010: it docks where
+   appearance.chatDock says – right of the messages by default (`dock-right`, a column of the chat body beside the chat
+   column, its width the saved one but the chat keeps 340 px), left (`dock-left`), at the top of the chat column right
+   under the chat header row (`dock-top`) or under the composer (`dock-bottom`), each at the saved height but the
+   messages and composer keep 240 px, or floating over the chat (`dock-float`, a rounded window at its saved box, never
+   outside the chat body). Opening it moves no header cell; docked at the top, right or left the composer never moves.
+   In full view (workspace/full-view.ts) – and on the phone (mobile.css) – it is docked at the top and takes the column
+   above the composer, the message list stays mounted under it. Its look belongs to the chat, not to the frame: the
+   chat's surface colour, rounded tabs, one 1 px line to the messages – the person's own pane at the frame's right keeps
+   its Chrome look (workspace-browser.css). Hover and the shown tab change colour only. The grip cell (`dock-grip`) sits
+   in room the strip keeps free at its end; the sizing grips (`dock-resize`) lie on the inner edge, half over the chat.
+   While a dock is dragged the guide (`dock-guide`) shows where it lands.
+   Owns: `chat-area`, `dock-*`, `area-full`, `dock-guide`. Never: the strip's measuring (strip-slots.ts) or native
+   geometry (native-surface.ts). */
 
 .chat-area {
-  position: relative; display: flex; flex: none; flex-direction: column; height: clamp(220px, 48%, 100% - 240px); min-height: 0;
+  position: relative; display: flex; flex: none; flex-direction: column; height: clamp(140px, var(--chat-dock-h, 48%), 100% - 240px); min-height: 0;
   border-bottom: 1px solid var(--line); background: var(--surface);
 }
 .chat-area > .workspace-pane { flex: 1 1 auto; height: auto; min-height: 0; }
@@ -17,10 +23,65 @@
 .chat-column.area-full > .chat-area { flex: 1 1 auto; height: auto; }
 .chat-column.area-full > .chat-area ~ .message-scroller { display: none; }
 
-/* the strip: the chat's colour and rounded tabs in the strip's middle (no Chrome tab growing into the row under it) */
+/* docked right or left: a column of the chat body (100cqi is the chat view), the chat keeps 340 px */
+.chat-area.dock-right, .chat-area.dock-left {
+  height: auto; width: clamp(240px, var(--chat-dock-w, 480px), 100cqi - 340px); border-bottom: 0;
+}
+.chat-area.dock-right { border-left: 1px solid var(--line); }
+.chat-area.dock-left { border-right: 1px solid var(--line); }
+/* under the composer: one line to it above */
+.chat-area.dock-bottom { border-bottom: 0; border-top: 1px solid var(--line); }
+/* floating: a window over the chat at its saved box (inline left/top/width/height, clamped into the chat body) */
+.chat-area.dock-float {
+  position: absolute; z-index: 9; height: auto;
+  border: 1px solid var(--elevated-line); border-radius: var(--r-lg); box-shadow: var(--shadow-popover); overflow: hidden;
+}
+
+/* the strip: the chat's colour and rounded tabs in the strip's middle (no Chrome tab growing into the row under it);
+   its end keeps 36 px free for the grip cell, so the tabs never run under it */
 .chat-area .browser-strip, .chat-area .browser-strip-tabs { align-items: center; }
-.chat-area .browser-strip { background: var(--surface); box-shadow: none; }
+.chat-area .browser-strip { background: var(--surface); box-shadow: none; padding-right: 40px; }
+.chat-area.dock-float .browser-strip { cursor: grab; }
 .chat-area .browser-strip-tab { border-radius: 16px; }
 .chat-area .browser-strip-choose { border-radius: 16px 0 0 16px; }
 .chat-area .browser-strip-tab:hover { background: var(--tab-hover); }
 .chat-area .browser-strip-tab.selected { background: var(--selected); box-shadow: none; }
+
+/* the grip cell: drag to dock elsewhere, click for the choices */
+.chat-area > .dock-grip { position: absolute; z-index: 3; top: 5px; right: 6px; cursor: grab; }
+
+/* the sizing grips: 8 px, invisible until hovered, focused or dragged (like the frame's column grips, shell.css) */
+.dock-resize { position: absolute; z-index: 4; touch-action: none; outline: none; }
+.dock-resize::after { content: ''; position: absolute; border-radius: 1px; background: transparent; transition: background-color .12s .08s; }
+.dock-resize:hover::after, .dock-resize:focus-visible::after { background: var(--field); }
+.dock-right > .dock-resize { top: 0; bottom: 0; left: -4px; width: 8px; }
+.dock-left > .dock-resize { top: 0; bottom: 0; right: -4px; width: 8px; }
+.dock-top > .dock-resize { left: 0; right: 0; bottom: -4px; height: 8px; }
+.dock-bottom > .dock-resize { left: 0; right: 0; top: -4px; height: 8px; }
+.dock-right > .dock-resize::after, .dock-left > .dock-resize::after { top: 0; bottom: 0; left: 3px; width: 2px; }
+.dock-top > .dock-resize::after, .dock-bottom > .dock-resize::after { left: 0; right: 0; top: 3px; height: 2px; }
+.dock-float > .float-edge-x { top: 0; bottom: 0; right: 0; width: 6px; }
+.dock-float > .float-edge-y { left: 0; right: 0; bottom: 0; height: 6px; }
+.dock-float > .float-edge-x::after { top: 12px; bottom: 12px; right: 2px; width: 2px; }
+.dock-float > .float-edge-y::after { left: 12px; right: 12px; bottom: 2px; height: 2px; }
+:root.dock-resizing, :root.dock-resizing * { cursor: col-resize !important; user-select: none !important; }
+:root.dock-resizing-y, :root.dock-resizing-y * { cursor: row-resize !important; user-select: none !important; }
+:root.dock-dragging, :root.dock-dragging * { cursor: grabbing !important; user-select: none !important; }
+
+/* the drop guide over the chat body while the tabs are dragged: where they would land, named */
+.dock-guide { position: absolute; z-index: 20; inset: 0; pointer-events: none; }
+.dock-guide-box {
+  position: absolute; display: grid; place-items: center; box-sizing: border-box;
+  border: 2px solid var(--focus); border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--focus) 14%, transparent);
+  transition: left .12s, top .12s, width .12s, height .12s;
+}
+.dock-guide-box > span {
+  padding: 4px 10px; border-radius: var(--r-sm); background: var(--elevated); box-shadow: var(--shadow-raised);
+  color: var(--text); font-size: 12px; font-weight: 500;
+}
+@media (prefers-reduced-motion: reduce) { .dock-guide-box { transition: none; } }
+
+/* the phone keeps its tabs above the composer (mobile.css): no grips there; in full view nothing to size */
+.mobile-shell .chat-area > .dock-grip, .mobile-shell .chat-area > .dock-resize, .chat-column.area-full > .chat-area > .dock-resize { display: none; }
+.mobile-shell .chat-area .browser-strip { padding-right: 6px; }

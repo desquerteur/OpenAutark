@@ -69,11 +69,19 @@ function AppTabView(props: { entry: AppEntry }) {
   return <ScreenView />;
 }
 
+/** How many surfaces show each space now (AF-010: a chat's tabs moving to another dock unmount and mount again). */
+const mountedSpaces = new Map<string, number>();
+
 export function WorkspacePane(props: { space: string }) {
   const { space } = props;
   useEffect(() => {
     watchPersonalBrowser(); watchBrowserKeys(); watchUserPages();
-    return () => { if (fullView.peek() === space) fullView.value = null; }; // the surface closed: its full view ends with it
+    mountedSpaces.set(space, (mountedSpaces.get(space) ?? 0) + 1);
+    return () => {
+      mountedSpaces.set(space, (mountedSpaces.get(space) ?? 1) - 1);
+      // the surface closed: its full view ends with it – unless the same space came back at once in another place
+      setTimeout(() => { if (!mountedSpaces.get(space) && fullView.peek() === space) fullView.value = null; }, 0);
+    };
   }, [space]);
   const entries = tabsOf(space);
   const ids = entries.map((page) => page.id);

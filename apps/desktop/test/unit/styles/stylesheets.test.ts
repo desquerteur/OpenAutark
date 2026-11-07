@@ -15,7 +15,7 @@ const STYLES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..
 const ALL_FILES = readdirSync(STYLES).filter((name) => name.endsWith('.css')).sort();
 const AREA_FILES = ALL_FILES.filter((name) => name !== 'index.css' && name !== 'tokens.css');
 /** Custom properties set inline by components (style={{ '--x': … }}), not by tokens.css. */
-const INLINE_VARS = new Set(['--sidebar-width', '--pane-width', '--icon', '--depth', '--tab-width']);
+const INLINE_VARS = new Set(['--sidebar-width', '--pane-width', '--icon', '--depth', '--tab-width', '--chat-dock-w', '--chat-dock-h']); // AF-010: the chat's tabs' saved size (chat/ChatArea.tsx)
 /** Literal colors left in area files, whole rules (open point for the CSS owner: a token for them). B-044 visual
  *  pass: the filled danger button got its tokens (--danger-fill, --danger-fill-fg), none is left. */
 const KNOWN_LITERALS: Record<string, string[]> = {};

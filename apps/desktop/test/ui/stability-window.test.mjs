@@ -63,6 +63,8 @@ test('nothing moves: searches, rail, workspace cell, details panel, chat area, c
   const info = JSON.parse(await readFile(path.join(profile, 'runtime.json'), 'utf8'));
   rpc = await connect(info.port, info.token, 'cli');
 
+  // AF-010: this test measures the chat's tabs docked above the messages (their place since B-072); right is the default now
+  await rpc.call('settings.update', { appearance: { chatDock: { place: 'top' } } });
   const agents = await rpc.call('agents.list');
   const manager = agents.find((agent) => agent.template === 'manager');
   const other = agents.find((agent) => agent.id !== manager.id) ?? (await rpc.call('agents.create', { name: 'Ava' }));
