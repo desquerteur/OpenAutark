@@ -1,5 +1,5 @@
 // Owns: the app's own update check (B-078, D18) – at most once a day, in the release build only, it reads
-// latest-android.json of the newest public release (github.com/teydra/OpenAutark: {versionCode, versionName, url,
+// latest-android.json of the newest public release (github.com/desquerteur/OpenAutark: {versionCode, versionName, url,
 // sha256, bytes, signer}) and, when its versionCode is newer than the installed one, offers "Update", which opens the
 // APK's address in the browser (Android installs it over this app – same signature). Later remembers that version.
 // Never: downloads or installs by itself, or nags twice for the same version.
