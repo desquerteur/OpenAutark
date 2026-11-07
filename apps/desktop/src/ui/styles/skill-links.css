@@ -1,0 +1,27 @@
+/* Settings › Skills › "Add from link" and the update preview (AF-007, ui/settings/skill-links.tsx): the source line, one
+   card per skill (name, folder, description, its files folded, the scripts warning, notes), the change list of an update.
+   States change colour only (stable-states rule, §11): a chosen card gets a coloured edge of the same width.
+   Owns: `skill-link*` classes. Never: the dialog chrome (overlays.css) or the settings grammar (settings.css). */
+
+.skill-link-source { margin: 0 0 6px; color: var(--secondary); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skill-link-help { margin: 4px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.skill-link .input + .skill-link-help { margin-top: 8px; }
+.skill-link-list { display: grid; gap: 8px; margin-bottom: 12px; }
+.skill-link-skill { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; }
+.skill-link-skill.chosen { border-color: var(--focus); }
+.skill-link-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.skill-link-head input { flex: none; margin: 0; align-self: center; }
+.skill-link-name { font-weight: 600; font-size: 14px; }
+.skill-link-route { min-width: 0; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skill-link-description { margin: 4px 0 6px; color: var(--secondary); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.skill-link-files { font-size: 12px; color: var(--muted); }
+.skill-link-files summary { cursor: pointer; width: fit-content; }
+.skill-link-files ul { margin: 6px 0 0; padding: 0 0 0 16px; max-height: 160px; overflow: auto; scrollbar-gutter: stable; }
+.skill-link-files li { display: flex; gap: 6px; line-height: 1.6; overflow-wrap: anywhere; }
+.skill-link-tag { flex: none; color: var(--warn); }
+.skill-link-warn { margin: 8px 0 0; color: var(--warn); font-size: 12px; line-height: 1.5; }
+.skill-link-notes { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.skill-link-list + .skill-link-notes { margin: -4px 0 12px; }
+.skill-link-changes { margin: 0 0 8px; padding: 0 0 0 16px; color: var(--secondary); font-size: 12px; line-height: 1.6; max-height: 240px; overflow: auto; scrollbar-gutter: stable; }
+.skill-link-changes li { overflow-wrap: anywhere; }
+.skill-link-changes li.local { color: var(--warn); }

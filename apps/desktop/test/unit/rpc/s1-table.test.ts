@@ -14,6 +14,7 @@ import { register as agentCore } from '../../../src/runtime/rpc/handlers/agent-c
 import { register as providers } from '../../../src/runtime/rpc/handlers/providers.ts';
 import { register as chatFiles } from '../../../src/runtime/rpc/handlers/chat-files.ts';
 import { register as filesPath } from '../../../src/runtime/rpc/handlers/files-path.ts';
+import { register as skillLinks } from '../../../src/runtime/rpc/handlers/skill-links.ts';
 import type { ClientScope, DeviceCapability } from '../../../src/shared/api/protocol.ts';
 import { s1Table } from './s1-helpers.ts';
 
@@ -44,6 +45,7 @@ function portabilityMethods(): Set<string> {
   providers(table);
   chatFiles(table); // chats.direct/export live with the default 1:1 and the chat folders
   filesPath(table); // files.readPath/writePath/listPath live with the pane's file tab
+  skillLinks(table); // AF-007: skills.previewLink/installLink/linked/checkUpdate/applyUpdate/linkTargets live with the links
   return new Set(table.methods());
 }
 

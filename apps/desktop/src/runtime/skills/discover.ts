@@ -78,6 +78,9 @@ const TRUSTED: ReadonlySet<SkillAuthority> = new Set(['builtin', 'library', 'age
 
 export const isTrusted = (authority: SkillAuthority): boolean => TRUSTED.has(authority);
 
+/** A folder no walk goes into: hidden (except SKILL_HOMES) or a dependency/build folder – also the rule for skills from a link (links/candidates.ts). */
+export const skippedFolder = (name: string): boolean => skipped(name, true) && !SKILL_HOMES.has(name);
+
 function entries(dir: string): Dirent[] {
   try {
     return readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));

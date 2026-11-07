@@ -41,5 +41,7 @@ declare module './models.ts' {
     alwaysFor?(agent: Agent, mode: ModeInfo): SkillInfo[];
     /** B-066, optional so simple fakes stay valid: every copy of every skill, also those another copy of the name hides. */
     every?(): SkillInfo[];
+    /** AF-007, optional so simple fakes stay valid: the folder a new skill of this name gets (an agent's own skills, else the shared library). */
+    folderFor?(name: string, ownerAgentId?: string): string;
   }
 }

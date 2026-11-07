@@ -1002,6 +1002,17 @@ secretary modes list none of them (`telegram-setup`: browser mode only). Shipped
 app works"), `org-setup-onboarding` (hiring and shaping a team, tool facts only), `task-ownership`, `human-minimal-handoff`, `representation`, `reference-curator` and work skills (video, web, research,
 writing, social, bookkeeping …).
 
+**Skills from a link** (AF-007, `skills/links/*`, RPC `skills.previewLink/linkTargets/installLink/linked/checkUpdate/applyUpdate`,
+UI `settings/skill-links.tsx`): a GitHub repository or folder (also `/tree/<ref>/<path>`, every ref split tried; read as
+`github.com/<o>/<r>/archive/<ref>.zip`), a SKILL.md address, a ZIP address or an uploaded ZIP. A preview lists every skill
+(name, description, files, scripts) and holds the bytes the person saw; the install writes exactly those into one place – the
+shared library, an agent's own skills (`SkillService.folderFor`) or an agent's home project's `.claude/skills` – staged in a
+hidden `.installing/` folder and renamed into place. ZIP entries are checked (no `..`, absolute paths, drive letters, links,
+device names, same-name entries; `LINK_LIMITS`: 64 MB archive, 10 MB per file, 30 MB and 500 files per skill); scripts are
+only saved (no executable bit), never run; Markdown loses invisible characters. `.autark-source.json` beside the skill keeps
+the source and every file's hash; Update reads the source again and shows changed/added/removed files (the person's own
+edits marked, their added files kept) before one swap.
+
 ### 7.4 The secrets catalog
 
 * Values live encrypted in the vault (`secrets/service.ts`, OS keychain via `Host`); agents only ever see handles
