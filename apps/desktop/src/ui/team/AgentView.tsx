@@ -18,6 +18,7 @@ import { RpcError, rpc } from '../lib/rpc.ts';
 import { back, go } from '../lib/router.ts';
 import { AgentProfile } from './AgentProfile.tsx';
 import { AgentDetails } from './AgentDetails.tsx';
+import { AgentPersonality } from './AgentPersonality.tsx'; // AF-006
 import { AgentRuns } from './AgentRuns.tsx';
 import { AgentBrowser } from './AgentBrowser.tsx';
 import { TitleMenu } from './TitleMenu.tsx';
@@ -71,6 +72,7 @@ export function AgentView(props: { agentId: string }) {
           <AgentProfile agent={agent} readOnly={archived} />
           <button type="button" class="text-button agent-work-link" onClick={() => go.tasks(undefined, agent.id)}>Show work</button>
           <AgentDetails agent={agent} />
+          <AgentPersonality agent={agent} />{/* AF-006: its own personality and its role part of SYSTEM.md */}
           <section class="agent-runs" aria-label="Runs">
             <h3 class="agent-section-title">Runs</h3>
             <AgentRuns agentId={agent.id} />

@@ -19,6 +19,12 @@ One page with five groups: **Models** (the plans found on this PC, plus four fix
 
 Codex and Claude Code use their installed official CLIs: sign-in goes through `codex login` / `claude auth login`, and the app never reads or copies their tokens. Missing CLIs are installed by the first-run flow or by the AI.
 
+## Feedback
+
+The header's feedback cell sends a Bug or an Idea, sealed on this PC for the team's key, to the team's write-only Firestore mailbox. A build can only send when it ships `resources/feedback/receiver.json` (team public key, Firebase project, web API key – written on the team PC by `wf feedback setup`); without it every report is only saved on the PC, the form says "sending is not set up", `npm run package` warns, and `<data>/logs/runtime.log` has `feedback sending is not set up` at start. A delivered report shows "Report no. …" (the same number appears in the team's inbox); a failed send says "Not sent." with the reason and logs `feedback send failed` with `reason` (`offline`, `timeout`, `server`, `refused`, `not_set_up`).
+
+Test without the real mailbox: in an unpackaged app `WORKFORCE_FEEDBACK_RECEIVER=<file>` names another receiver file, whose `endpoint` may be a loopback origin; `test/e2e/lib/feedback-submit.mjs` is such a local fake (`node --test test/ui/af003-feedback-send-window.test.mjs`). `services/feedback` is a retired prototype and is not used.
+
 ## Run and verify
 
 Requires Node.js 24.

@@ -6,7 +6,7 @@
 // Owns: these lists and the review dialog. Never: sends without the person's click, or claims more than the mailbox confirmed.
 
 import { useEffect, useState } from 'preact/hooks';
-import type { FeedbackStatus } from '../../shared/model/feedback-delivery.ts';
+import { reportNumber, type FeedbackStatus } from '../../shared/model/feedback-delivery.ts';
 import type { FeedbackReport } from '../../shared/model/system.ts';
 import { FeedbackInbox } from '../feedback/FeedbackInbox.tsx';
 import { openFeedback } from '../feedback/popover-state.ts';
@@ -40,7 +40,8 @@ function ReviewDialog(props: { report: FeedbackReport | undefined; sending: bool
   const [busy, run] = useBusy();
   const done = report?.status === 'sent';
   const canSend = report !== undefined && sendable(report, props.sending) && can('feedback.send');
-  const message = done ? (report?.deliveryWarning ? `Sent to the team. ${report.deliveryWarning}` : 'Sent to the team.') : canSend ? `Encrypted on ${pc()} before it leaves. Only the Teydra team can read it.` : '';
+  const number = done && report?.receiptId ? ` Report no. ${reportNumber(report.receiptId)}.` : ''; // AF-003
+  const message = done ? (report?.deliveryWarning ? `Sent to the team.${number} ${report.deliveryWarning}` : `Sent to the team.${number}`) : canSend ? `Encrypted on ${pc()} before it leaves. Only the Teydra team can read it.` : '';
   return (
     <Dialog open={report !== undefined} onClose={props.onClose} title="Report" width={520} class="anchored">
       {report && (

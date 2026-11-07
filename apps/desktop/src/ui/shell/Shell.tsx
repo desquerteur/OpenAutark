@@ -24,6 +24,8 @@ import { bridge } from '../lib/platform.ts';
 import { hotkey } from '../lib/hotkeys.ts';
 import { toggleSettings } from '../lib/router.ts';
 import { ConfirmHost } from '../lib/dialog.tsx';
+import { AccessRequestHost } from './AccessRequestDialog.tsx'; // AF-013: approval requests
+import { FolderAgentHost } from '../team/FolderAgentDialog.tsx'; // AF-014: agent from folder
 import { RememberWhyHost } from '../chat/RememberWhy.tsx';
 import { Spinner } from '../lib/ui.tsx';
 import { newChatOpen, paletteOpen } from '../lib/shell-state.ts';
@@ -44,6 +46,8 @@ import { RegionDialog } from '../workspace/RegionDialog.tsx'; // once for both s
 import { FeedbackMenu } from '../feedback/FeedbackMenu.tsx'; // B-055 Q4: the menu under the feedback cell, "Paint over"
 import { ColumnResize } from './ColumnResize.tsx';
 import { TourDialog } from '../tour/TourDialog.tsx'; // B-055: the feedback tour (replay)
+import { CallOverlay } from '../chat/call/CallOverlay.tsx'; // AF-015: the call view (its own layer, not a panel)
+import { SpotlightHost } from '../tour/Spotlight.tsx'; // AF-002: the spotlight tour and first-visit hints
 
 function useGlobalHotkeys(): void {
   useEffect(() => {
@@ -69,9 +73,13 @@ function Overlays() {
       <NewChatDialog />
       <FeedbackMenu />
       <ConfirmHost />
+      <AccessRequestHost />
+      <FolderAgentHost />
       <RememberWhyHost />
       <TourDialog />
+      <SpotlightHost />
       <RegionDialog />
+      <CallOverlay />
     </>
   );
 }

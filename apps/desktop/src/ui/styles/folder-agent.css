@@ -1,0 +1,18 @@
+/* AF-014: the "Agent from folder" dialog and the Team list's folder groups.
+   Owns: these components. Never: the Team list's rows (team.css). */
+
+.folder-agent { display: grid; gap: 10px; }
+.folder-agent.drag-over { outline: 2px dashed color-mix(in srgb, var(--update) 60%, transparent); outline-offset: 4px; border-radius: 8px; }
+.folder-agent-field { display: grid; gap: 4px; }
+.folder-agent-label { font-size: 12px; font-weight: 500; color: var(--secondary); }
+.folder-agent-label small { font-weight: 400; color: var(--muted); }
+.folder-agent-row { display: flex; gap: 8px; align-items: center; }
+.folder-agent-row .input { flex: 1; min-width: 0; font-family: var(--mono); font-size: 12px; }
+.folder-agent-found { display: grid; grid-template-columns: 120px 1fr; gap: 8px; font-size: 12px; }
+.folder-agent-found-title { color: var(--secondary); }
+.folder-agent-found-items { overflow-wrap: anywhere; font-family: var(--mono); }
+.folder-agent-found-none { color: var(--muted); }
+@media (max-width: 520px) { .folder-agent-found { grid-template-columns: 1fr; gap: 2px; } }
+
+.team-folder .team-space-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-agent-explorer { margin: 4px 0 0; color: var(--muted); font-size: 12px; }

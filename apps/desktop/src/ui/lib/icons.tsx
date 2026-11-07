@@ -22,7 +22,9 @@ export type IconName =
   | 'terminal-window' | 'brain' | 'file-text' | 'wrench' | 'eye-slash' // D5: run step lines (command, thought, read, tool, kept internal)
   | 'lock-simple' | 'speaker-slash' | 'dots-three-vertical' | 'clock-counter-clockwise' | 'browsers' // B-055: the browser's connection, a muted tab, its menu, history, the chat's browser
   | 'sign-out' // F-52: Leave chat (a person's app)
-  | 'dots-six-vertical' | 'layout' | 'palette' | 'eye'; // AF-010/AF-008: the chat tabs' dock grip, the layout editor, Appearance, show a panel
+  | 'microphone-slash' | 'subtitles' | 'subtitles-slash' | 'picture-in-picture' // AF-015: the call view's Mute, Live captions, Minimize
+  | 'queue' | 'dots-six-vertical' | 'pause' // AF-016: the composer's prompt queue, a row's drag grip, Pause (AF-010: also the chat tabs' dock grip)
+  | 'layout' | 'palette' | 'eye'; // AF-008: the layout editor, Appearance, show a panel
 
 export function Icon(props: { name: IconName; size?: number; class?: string; title?: string }) {
   const size = props.size ?? 18;

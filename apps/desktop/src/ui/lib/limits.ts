@@ -1,6 +1,6 @@
 // Plan limit texts shared by the quota rail (shell/QuotaRail.tsx) and the account rows
 // (settings/AccountRow.tsx, B-044): humanized window names, the share left, the reset countdown
-// with its clock time ("resets in 2 h 14 min (14:27)"), the rail's 5-hour ring and short wait ("42m", B-078), the two fixed slots of a plan row
+// with its clock time ("resets in 2 h 14 min (14:27)"), the rail's 5-hour ring and short wait ("42m", B-078; "2d 5h", AF-009), the two fixed slots of a plan row
 // (5-hour limit, Weekly – '–' while a reading is missing, so the row never changes height) and the
 // banked Codex resets (count, the credit a reset uses and when it expires, the confirm and outcome texts).
 // Owns: these display rules. Never: fetches, estimates or changes a limit – every number comes from
@@ -53,6 +53,21 @@ export function shortWait(resetsAt: number, now: number): string | undefined {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   return rest ? `${hours}h ${rest}m` : `${hours}h`;
+}
+
+/** AF-009: shortWait beyond a day too – "2d 5h", "5d"; a weekly reset in the rail's wait line. */
+export function shortReset(resetsAt: number, now: number): string | undefined {
+  const ms = resetsAt - now;
+  if (ms < DAY) return shortWait(resetsAt, now);
+  const days = Math.floor(ms / DAY);
+  const hours = Math.round((ms - days * DAY) / HOUR);
+  return hours >= 24 ? `${days + 1}d` : hours ? `${days}d ${hours}h` : `${days}d`;
+}
+
+/** AF-009: the rail's wait line – the 5-hour reset while it counts down, else the weekly reset; undefined with neither. */
+export function railWait(fiveResetsAt: number | undefined, weeklyResetsAt: number | undefined, now: number): string | undefined {
+  if (fiveResetsAt !== undefined && fiveResetsAt > now) return shortWait(fiveResetsAt, now);
+  return weeklyResetsAt !== undefined ? shortReset(weeklyResetsAt, now) : undefined;
 }
 
 /**

@@ -3,8 +3,8 @@
 // (accounts, settings). start() ends the layer: step 'done' and completed, the Manager's first chat
 // (shared/text/manager-chat.ts; when there is none, the owner's default 1:1 with it, chat/direct.ts) and the
 // app's start text (brief.ts) posted there as the person's own line, addressed to the Manager: from there on it is
-// an ordinary message (one 'message' wake, one turn, the route of a person's request). reset() ("Set up team again",
-// owner): not completed, step 'ai' – the layer returns until the next start().
+// an ordinary message (one 'message' wake, one turn, the route of a person's request). reset() ("Set up again",
+// owner): not completed, step 'profile' – the setup assistant returns until the next start().
 // Owns: these state changes and posting that line. Never: writes as the person anything but the start text,
 // invents profile facts, or changes accounts.
 
@@ -27,9 +27,9 @@ export class Onboarding {
     this.deps = deps;
   }
 
-  /** "Set up team again": the first-run layer from its first card. */
+  /** "Set up again" (Settings › General, Team › Add, the palette): the setup assistant from its first step. */
   reset(): void {
-    this.deps.services().settings.update({ onboarding: { completed: false, step: 'ai' } });
+    this.deps.services().settings.update({ onboarding: { completed: false, step: 'profile' } });
   }
 
   /** The layer is through: onboarding done, the Manager's first chat and the start text as the person's line (once, also when asked twice). */

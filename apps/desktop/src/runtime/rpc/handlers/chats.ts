@@ -296,6 +296,7 @@ export function register(table: HandlerTable): void {
     const conversationId = id(o, 'conversationId');
     chatOrThrow(ctx.services, conversationId);
     const only = optId(o, 'agentId');
+    ctx.services.promptQueue?.pause(conversationId, 'stop'); // AF-016: the chat's queue waits until the person resumes it
     const agents = runningIn(ctx.services, conversationId, only);
     await Promise.all(agents.map((agentId) => ctx.services.dispatcher.interrupt(agentId, conversationId)));
     // B-057 S13: the person's Stop also ends the splits of this chat – of an agent whose only work here is splits, too.

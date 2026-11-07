@@ -1,4 +1,4 @@
-// Settings › Appearance (AF-008, data-tour="appearance"): the whole look and layout without editing a file.
+// Settings › Appearance (AF-008; its nav entry carries data-tour="appearance"): the whole look and layout without editing a file.
 // - Theme: the colour scheme (System, Light, Dark – preferences.theme) and the themes – Autark's own, the person's own
 //   (appearance.themes) and ready-made starting points. "New theme", Edit or Duplicate open the editor: name, accent
 //   colour, the content's background for the light and the dark scheme (with their contrast to the text), font and text
@@ -365,7 +365,7 @@ export function AppearancePage() {
     await resetAppearance().then(() => pushToast({ title: 'Back to the default look and layout', tone: 'info' }, 2500), (error) => toastError(error));
   };
   return (
-    <div class="appearance-page" data-tour="appearance">
+    <div class="appearance-page">
       <Group title="Theme" id="settings-theme" actions={<ActionButton label="Reset to default" onClick={() => void reset()} />}>
         <Row label="Colour scheme" hint="System follows this PC's light or dark setting">
           <Segmented label="Colour scheme" value={prefs.theme} options={[...SCHEMES]} onChange={(theme) => void setPrefs({ theme })} />

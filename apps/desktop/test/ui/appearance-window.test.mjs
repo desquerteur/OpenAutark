@@ -83,7 +83,8 @@ test('Settings › Appearance: an own theme, panels in order, the dock – kept 
   const rootVar = (name) => page.evaluate((key) => getComputedStyle(document.documentElement).getPropertyValue(key).trim(), name);
   const goSettings = async () => {
     await page.evaluate(() => { location.hash = '#/settings/appearance'; });
-    await page.locator('[data-tour="appearance"]').waitFor();
+    await page.locator('.appearance-page').waitFor();
+    assert.equal(await page.locator('.settings-nav [data-tour="appearance"]').count(), 1, 'the nav entry is the tour target');
   };
 
   // 1. A new theme from Autark's own; every change shows at once (a draft), Save keeps it.

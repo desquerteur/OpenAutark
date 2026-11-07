@@ -7,9 +7,8 @@
 // (dialog) top right, and at the end a card
 // with "Continue" and "Watch again". The scene keeps its aspect and is scaled to fit its box (CSS
 // transform), at every window size from 640×480 to phone width.
-// Used by the first run's 'tour' step (onboarding/FirstRun.tsx) and by the replay dialog (TourDialog.tsx). The
-// first run's player keeps its place when the layer mounts again (the window crossing the phone layout); the
-// dialog starts at its poster on every opening.
+// Used by the replay dialog (TourDialog.tsx), which starts at its poster on every opening. AF-002: the first run no
+// longer hosts it; the page mode (Skip, Connect, keeping its place over a remount) stays for a page that does.
 // Owns: playback state, the controls and the scene's fit. Never: the story (timeline.ts), the drawing
 // (Scene.tsx) or what Continue leads to (the caller's onDone).
 

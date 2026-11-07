@@ -92,11 +92,12 @@ const FOLDER_DIALOGS: Record<FolderPurpose, DialogOptions> = {
   backup: { title: 'Choose where to save the backup', buttonLabel: 'Back up here', properties: ['openDirectory', 'createDirectory', 'promptToCreate'] },
   restore: { title: 'Choose an Autark backup folder', buttonLabel: 'Choose backup', properties: ['openDirectory'] },
   chats: { title: 'Choose a folder for the chat folders', buttonLabel: 'Choose folder', properties: ['openDirectory', 'createDirectory', 'promptToCreate'] },
+  agent: { title: 'Choose the folder the agent works in', buttonLabel: 'Choose folder', properties: ['openDirectory'] }, // AF-014
 };
 
 /** Renderer input → purpose (throws bad_request for anything else). */
 export function folderPurpose(value: unknown): FolderPurpose {
-  if (value === 'restore' || value === 'backup' || value === 'chats') return value;
+  if (value === 'restore' || value === 'backup' || value === 'chats' || value === 'agent') return value;
   throw new WorkforceError('bad_request', 'Invalid folder purpose.');
 }
 

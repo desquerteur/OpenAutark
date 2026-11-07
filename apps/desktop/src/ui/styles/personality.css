@@ -1,0 +1,20 @@
+/* AF-006: Settings › Personality and an agent's own personality and role on its page – the preset chips, the text areas
+   with their counter, the preview of what the agents read and the role editor.
+   Owns: these rules. Never: the settings rows themselves (settings.css) or the agent page frame (team.css). */
+
+.personality-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.personality-preset { border: 1px solid var(--field); }
+.personality-note { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.personality-note .set-textarea { resize: vertical !important; }
+.personality-count { align-self: flex-end; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.personality-preview { margin: 4px 0 24px; color: var(--secondary); font-size: 13px; }
+.personality-preview > summary { cursor: pointer; padding: 6px 0; }
+.personality-preview-text {
+  margin: 6px 0 0; padding: 10px 12px; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--hover); color: var(--text); font-family: var(--mono); font-size: 12px; line-height: 1.6; white-space: pre-wrap;
+}
+.personality-preview-empty { margin: 6px 0 0; color: var(--muted); }
+.agent-section-hint { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+.agent-personality .set-row { padding-left: 6px; padding-right: 6px; }
+.agent-role-input { min-height: 180px; resize: vertical !important; }
+.agent-role-edit .agent-editor-actions { margin-top: 8px; }

@@ -1,9 +1,10 @@
 // The connector files in <data>/connectors/ – the whole configuration of connected apps, edited by the AI (skill
 // connect-apps) or the person:
 //   mcp.json   {"mcpServers": {"<name>": {"url": "https://…", "headers": {…}} | {"command": "npx", "args": […], "env": {…}, "cwd": "…"}}}
-//              – the map Claude Code and Cursor use; "disabled": true turns one off.
+//              – the map Claude Code and Cursor use; "disabled": true turns one off; AF-005: "agents": ["<agent id or name>", …]
+//              lets only those agents use it (missing = every agent; [] = none) – agent-access.ts.
 //   mail.json  {"mailboxes": {"<name>": {"address": "me@x.com", "password": "secret://<id>", "agent": "<agent id or name>",
-//              "user"?, "imap"?: {"host", "port", "tls": "implicit"|"starttls"}, "smtp"?: {…}, "disabled"?: true}}}
+//              "user"?, "imap"?: {"host", "port", "tls": "implicit"|"starttls"}, "smtp"?: {…}, "disabled"?: true, "agents"?: […]}}}
 // Any value may hold secret://<id> handles of the secrets catalog (resolved only when it connects; a plain value works
 // too). status.json is written by the runtime: each connector's state, tool count, error and open sign-in page.
 // migrateRecords() turns the records of the old Settings › Apps (kv 'apps', keys 'app:<id>') into these files once.
@@ -13,6 +14,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { APP_ID_MAX, APP_ID_PATTERN, type ConnectedApp, type MailServer } from '../../shared/model/apps.ts';
+import { agentsOf } from './agent-access.ts';
 import type { AppKv, Connector } from './types.ts';
 
 export const CONNECTORS_DIR = 'connectors';
@@ -69,7 +71,11 @@ function readJson(file: string): { value?: Record<string, unknown>; problem?: st
   }
 }
 
-const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 16);
+/** AF-005: who may use an entry is no part of its connection – a changed "agents" list connects nothing again. */
+const fingerprint = (value: Record<string, unknown>) => {
+  const { agents: _who, ...connection } = value;
+  return createHash('sha256').update(JSON.stringify(connection)).digest('hex').slice(0, 16);
+};
 
 /** Every connector the two files name (keys in file order, mcp.json first), and the problems found. */
 export function readConnectors(dataDir: string): { connectors: Connector[]; problems: string[] } {
@@ -84,7 +90,7 @@ export function readConnectors(dataDir: string): { connectors: Connector[]; prob
   else {
     for (const [name, raw] of Object.entries(servers)) {
       if (!isRecord(raw)) { problems.push(`${MCP_FILE}: "${name}" must be an object.`); continue; }
-      const base = { name, enabled: raw.disabled !== true && raw.enabled !== false, fingerprint: fingerprint(raw) };
+      const base = { name, enabled: raw.disabled !== true && raw.enabled !== false, fingerprint: fingerprint(raw), ...agentsOf(raw) };
       const url = text(raw.url) ?? text(raw.serverUrl);
       const command = text(raw.command);
       if (url) connectors.push({ ...base, id: freeId(name, taken), transport: 'http', url, ...(strings(raw.headers) ? { headers: strings(raw.headers) } : {}) });
@@ -107,7 +113,7 @@ export function readConnectors(dataDir: string): { connectors: Connector[]; prob
       const imap = server(raw.imap);
       const smtp = server(raw.smtp);
       connectors.push({
-        id: freeId(name, taken), name, transport: 'mail', enabled: raw.disabled !== true && raw.enabled !== false, fingerprint: fingerprint(raw),
+        id: freeId(name, taken), name, transport: 'mail', enabled: raw.disabled !== true && raw.enabled !== false, fingerprint: fingerprint(raw), ...agentsOf(raw),
         mail: { address, password, ...(text(raw.user) ? { user: text(raw.user) } : {}), ...(imap ? { imap } : {}), ...(smtp ? { smtp } : {}), ...(text(raw.agent) ? { agent: text(raw.agent) } : {}) },
       });
     }
@@ -134,7 +140,7 @@ export function ensureFiles(dataDir: string): void {
 /** status.json: what the AI reads after a change (written by the runtime only). */
 export function writeStatus(dataDir: string, apps: readonly ConnectedApp[], problems: readonly string[], now: number): void {
   const connectors = Object.fromEntries(apps.map((app) => [app.name, {
-    id: app.id, type: app.transport === 'mail' ? 'mail' : 'mcp', status: app.status, tools: app.tools,
+    id: app.id, type: app.transport === 'mail' ? 'mail' : 'mcp', status: app.status, tools: app.tools, ...(app.agents ? { agents: app.agents } : {}),
     ...(app.error ? { error: app.error } : {}), ...(app.signInUrl ? { signInUrl: app.signInUrl } : {}),
     ...(app.toolNames.length ? { toolNames: app.toolNames } : {}),
   }]));

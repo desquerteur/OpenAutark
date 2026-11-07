@@ -106,7 +106,7 @@ function ButtonCell(props: { cell: HeaderButtonCell; box: string; lead?: boolean
     else cell.onClick?.(event);
   };
   return (
-    <span class={`${props.box}${cell.busy ? ' busy' : ''}`} data-cell={cell.id} {...(cell.contextMenu ? context : {})}>
+    <span class={`${props.box}${cell.busy ? ' busy' : ''}`} data-cell={cell.id} data-tour={cell.tour} {...(cell.contextMenu ? context : {})}>
       <IconButton
         icon={cell.icon} label={cell.label} iconSize={props.lead ? 20 : 18}
         pressed={cell.menu ? undefined : cell.pressed}

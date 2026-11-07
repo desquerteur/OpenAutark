@@ -835,7 +835,32 @@ simpler: the separate gardener is gone, the subconscious's brains decide, and th
 ## 6. Engines, accounts, routing, decisions
 
 **Agents run without asking** on every engine: Claude Code with `--permission-mode bypassPermissions`, Codex with
-`approvalPolicy: 'never'`, ACP permission requests answered allow.
+`approvalPolicy: 'never'`, ACP permission requests answered allow – unless the agent has an access mode (AF-013, below).
+
+**Access modes (AF-013, `runtime/access/*`, `shared/model/access.ts`)**: per agent `<data>/agents/<id>/access.json`
+(`access.set`; no file = full access, the behaviour above), a chat can override the mode (`access.setChatMode`, the
+composer's mode cell `chat/composer/AccessModeCell.tsx`, click or Shift+Tab), a run too (`access.setRunMode`). Modes: `read`
+(reads and read-only commands; changes denied), `ask` (every change, command and outside tool asks the person), `project`
+(changes and commands inside the turn's folder run, outside asks), `full`. Rules: write/denied folders, command allow/deny
+patterns, network, connector/MCP tools, money (deny > allow > mode; `access/rules.ts`, `access/commands.ts`). An `ask` waits
+in `access/approvals.ts` for the person's dialog (`shell/AccessRequestDialog.tsx`: Allow once · Always for <agent> – adds
+the rule – · Deny; 30 min, a stopped turn or Escape refuse). Enforcement per engine: the tool registry judges the app's own
+tools on every engine (the only check for API and local models); Claude Code gets its own permission mode, disallowed
+tools and `--permission-prompt-tool` answered by the hub (`engines/claude/access.ts`, `access/prompt-tool.ts`); Codex
+gets a sandbox and approval policy, each approval request judged (`engines/codex/access.ts`); ACP permission requests are
+judged (`engines/acp/turn.ts`). Not enforced: Claude Code's reads (Read/Glob/Grep never prompt), what a command does once
+it runs on engines without an OS sandbox (Claude Code, ACP, `shell.exec`: the command text is judged), browser/computer
+clicks beyond their tool's category.
+
+**Agent from folder (AF-014, `runtime/folder-agents/*`, `ui/team/FolderAgentDialog.tsx`)**: a folder chosen in the dialog
+(Team › Add › Agent from folder…), dropped on the Team list or sent by the Explorer's right-click entry "Create Autark agent
+from this folder" (`main/explorer-menu.ts`: HKCU `Directory\shell` and `Directory\Background\shell`, registered at the
+packaged app's first start, removable in the dialog, deleted by the uninstaller; `--agent-from-folder <folder>` reaches a
+running app as a second instance → navigate `agentFromFolder`) becomes a new agent's home project. `folderAgents.find`
+suggests name and role (package.json, pyproject.toml, Cargo.toml, go.mod, README) and lists the instruction files, skills and
+other tools' settings; `folderAgents.create` hires the agent with an own part that follows those files and uses those skills
+(they reach every turn through "Home project", §5.1), sets the home and the access mode `project`. Several agents per folder
+are fine; Team › Add › "Group agents by folder" groups the list by `folderAgents.homes`.
 
 | Engine | How it runs (`runtime/engines`) |
 |---|---|
@@ -945,7 +970,8 @@ simpler: the separate gardener is gone, the subconscious's brains decide, and th
 validate → place → run → redact → journal.** Validation checks the arguments against the schema (`validate.ts`);
 placement decides the company on this PC (`company`, §5) and the PC (`placement.ts`, §8); the output is redacted and bounded (`outputs.ts`); the journal
 (`journal.ts`) records the call with an idempotency key (a resend of a running call id gets its result). There is no
-permission, approval or judgment step. Every string argument first passes the secrets leak guard
+permission, approval or judgment step – except the agent's access mode and rules (AF-013, §6), which the registry
+checks before a call runs. Every string argument first passes the secrets leak guard
 (`secrets/guard.ts`): a stored secret value becomes its handle, so it never lands in a note, file or message.
 
 A tool is offered when its mode's patterns match, when it is in `EVERY_MODE` (asking the person, delegation,
@@ -971,8 +997,10 @@ via Bing; DuckDuckGo, Mojeek, Startpage and Brave answered every query with a bo
 ### 7.2 Connectors are files plus a skill
 
 * `<data>/connectors/mcp.json` – `{"mcpServers": {"<name>": {"url", "headers"} | {"command", "args", "env", "cwd"}}}`
-  (the map Claude Code, Cursor and Codex use; `"disabled": true` turns one off). `mail.json` – mailboxes (address,
-  password, agent, optional imap/smtp). Any value may be a `secret://<id>` handle, resolved only at connect time.
+  (the map Claude Code, Cursor and Codex use; `"disabled": true` turns one off; AF-005: `"agents": [<id or name>…]` gives its
+  tools to those agents only – `apps/agent-access.ts`, `ToolDef.forAgent` checked by the registry's offer and call; left out
+  of the fingerprint, so a changed list connects nothing again). `mail.json` – mailboxes (address,
+  password, agent, optional imap/smtp, `agents`). Any value may be a `secret://<id>` handle, resolved only at connect time.
 * `apps/service.ts` applies the files at start and on every change, connects lazily (`apps/connections.ts`), registers
   `app.<id>.<tool>` for every agent, caches tool lists (a start needs no server), runs the MCP OAuth sign-in
   (`apps/oauth/*`; the browser opens only for a new or changed entry or `apps.reconnect`) and writes `status.json`.
@@ -1002,6 +1030,17 @@ secretary modes list none of them (`telegram-setup`: browser mode only). Shipped
 `app-settings`, `app-look`, `agent-duplicate`, `connect-apps`, `phone-access`, `phone-adb`, `app-guide` ("How this
 app works"), `org-setup-onboarding` (hiring and shaping a team, tool facts only), `task-ownership`, `human-minimal-handoff`, `representation`, `reference-curator` and work skills (video, web, research,
 writing, social, bookkeeping …).
+
+**Skills from a link** (AF-007, `skills/links/*`, RPC `skills.previewLink/linkTargets/installLink/linked/checkUpdate/applyUpdate`,
+UI `settings/skill-links.tsx`): a GitHub repository or folder (also `/tree/<ref>/<path>`, every ref split tried; read as
+`github.com/<o>/<r>/archive/<ref>.zip`), a SKILL.md address, a ZIP address or an uploaded ZIP. A preview lists every skill
+(name, description, files, scripts) and holds the bytes the person saw; the install writes exactly those into one place – the
+shared library, an agent's own skills (`SkillService.folderFor`) or an agent's home project's `.claude/skills` – staged in a
+hidden `.installing/` folder and renamed into place. ZIP entries are checked (no `..`, absolute paths, drive letters, links,
+device names, same-name entries; `LINK_LIMITS`: 64 MB archive, 10 MB per file, 30 MB and 500 files per skill); scripts are
+only saved (no executable bit), never run; Markdown loses invisible characters. `.autark-source.json` beside the skill keeps
+the source and every file's hash; Update reads the source again and shows changed/added/removed files (the person's own
+edits marked, their added files kept) before one swap.
 
 ### 7.4 The secrets catalog
 
@@ -1271,7 +1310,10 @@ area, the sync between two real PCs, the employee push and the HTTPS route via `
   summary and full `FeedbackPrivacy.tsx` notice before Send. Canvas export keeps the flattened JPEG within
   600,000 image bytes; an oversized complete envelope stays local rather than dropping its screenshot. A send that is not
   confirmed leaves the report saved on the PC, and the form's action cell then reads "Send again" (the same saved
-  report with its screenshot goes out again).
+  report with its screenshot goes out again). AF-003: the form has Bug | Idea; a delivered report shows "Report no."
+  (the first eight characters of its mailbox id, `reportNumber`, also in the team inbox); a failed send reads "Not sent."
+  with its reason (`details.reason`: offline, timeout, server, refused, not_set_up); runtime.log has a line at start
+  (can this build send – receiver.json found?), per saved, sent and failed report (ids and reasons, never the text).
 
 ## 10. Browser, the global pane and the areas
 
@@ -1471,7 +1513,11 @@ area). On the phone, files open with the system app.
   `runtime/accounts/provider-file.ts` reconciles them into accounts; protocols `openai-chat`, `openai-responses`,
   `anthropic`, `decision`; a cell names the model that runs, never "Auto" (§6); account rows have Move up/down and no plan
   roles), **Voice**, **Calendar**, **Secrets** (the inline band, §7.4),
-  **Apps**, **Skills & memory** (skills with their route, the memory tree, click opens the file tab), **Devices** (§8),
+  **Connectors** (AF-005, page id `apps`, nav `data-tour="connectors"`: the connected rows with status, Test, on/off and a ⋯
+  menu – tools, Agents…, token, file, Remove –; the catalog with GitHub, Google, Notion, Slack, Discord …; "Own MCP server"
+  (HTTP with headers or stdio with arguments and variables, every value into Secrets) and "Paste JSON" (the `mcpServers` of
+  Claude Desktop / Claude Code, checked by `settings/mcp-import.ts`), all written into `connectors/mcp.json`),
+  **Skills & memory** (skills with their route, the memory tree, click opens the file tab), **Devices** (§8),
   **Feedback**, **About** (version and update, back up and restore, data folder). Everything else is a file the AI edits.
 * **Browser surfaces**: the global pane, each chat's area above its messages and each agent's area on its page, with
   Chrome-like tabs for pages and panels – §10.
@@ -1486,7 +1532,7 @@ area). On the phone, files open with the system app.
   pin). The + menu (`composer/PlusMenu.tsx`: Files & folders, Photos & screenshots, Secret – the composer's secret mode,
   §7.4 –, Task, then the send items of `composer/slash.ts`) and the Send button's right-click (Send as important, Send
   silently, **Schedule…**) never grey an entry out: with nothing to send a level sets the draft's level and Task fills
-  "/task ". No permission chip. **Schedule
+  "/task ". Beside Plus the access mode cell (AF-013, §6). **Schedule
   mode** (§4.6): one settings block over the text inside the frame, the text area grows, and the bottom edge of the
   composer, Plus, Ultra, the model chip, Send and the header do not move (the window test measures them in light, dark,
   640×480 and phone width, and that the block's boxes do not change when switching Once/Repeat); Send turns into a round
@@ -1503,9 +1549,12 @@ area). On the phone, files open with the system app.
   stream still re-read the items when the agent's live note changes (at most every 2 s, `useRunItems`).
 * **Rail** (`shell/Rail.tsx`): My day · Work · Chats · Team; from the bottom: profile (`ProfileMenu.tsx`: the
   companies, "New company", Settings – §3), plan quotas, update. Command palette: Ctrl/Cmd+K.
-* **First run** (`ui/onboarding`, `ui/tour`): the tour (video with a play button; "Connect to my other PC" beside Skip
-  opens the connect card, §8) → the AI card (the model setup; one usable AI is needed to continue) → About you (name and
-  company only). `onboarding.start` then posts one fixed line as the person into the Manager's chat
+* **First run** (`ui/onboarding`, AF-002): the setup assistant on My day (`#/home` and `#/day`; elsewhere the status line
+  says "Setup is not finished yet." with Continue setup, `setup-reminder.ts`) – "Step n of 4", each step with one
+  sentence on what it is for and a Skip: About you (language, name, company; "Connect to my other PC" opens the connect
+  card, §8) → Connect an AI (the model setup with its key test; Continue needs a model that answers, "Skip for now" asks
+  once) → Connect your tools (the rows of Settings › Apps) → Your first agent (the Manager, optionally one more hire).
+  Steps of older versions read as `profile` (`settings/validate.ts`). Start calls `onboarding.start`, which posts one fixed line as the person into the Manager's chat
   (`prompts/onboarding.md`, fallback `onboarding/brief.ts`), an ordinary message wake on the strongest model. B-076
   (owner 05.11.: the 0.3.2 start made the agent stop and ask how far it may go, then wait): the line says what just
   happened ("I just installed Autark, entered <name> and <company> and clicked Start. You are my first AI colleague."),
@@ -1514,6 +1563,15 @@ area). On the phone, files open with the system app.
   what you ask me is your call"); the browsers' passwords belong in the secrets catalog (exported, imported unread) and
   the models (work, decisions, search by meaning) can likely be better. No "ask me first", no language order (the PC's
   language is a fact in the prompt), nothing to store as a permission; no technical switch stands behind any of it.
+* **Spotlight tour** (`ui/tour/spotlight*.ts`, `Spotlight.tsx`, AF-002): after Start the tour goes through the app – a
+  modal `<dialog>` dims the window and cuts out one element at a time (SVG mask), with a bubble (progress "n / total",
+  1–2 sentences, Skip / Back / Next; → ← Enter Esc; a sheet in the phone layout). Steps hang on `data-tour` names (the
+  agreed list in `spotlight-steps.ts` `TOUR_NAMES`) and open their place themselves (a route, the Manager's chat or page,
+  the side pane); a step whose element this build lacks is skipped silently. `settings.onboarding.tour` / `tourStep` /
+  `hints` keep its state (a tour left part way goes on at the next start); after it was closed or finished, an area opened
+  for the first time shows a one-step hint. Settings › General › Getting started (and the palette) show it again and run
+  the setup again. The feedback video (`TourPlayer.tsx`) plays only in its dialog now (Settings › Feedback, the palette,
+  the tour's feedback step).
 * **Rich answers** (`shared/blocks`, `ui/blocks`): agents write Markdown with ```mermaid, ```ui blocks from one catalog
   (`shared/blocks/catalog.ts`; validated forgivingly) and ```app mini-tools that run in sandboxed frames
   (`wf-sandbox://`, a small live-frame budget). Ask blocks become to-dos (§4.3).
@@ -1657,7 +1715,7 @@ All paths below `code/apps/desktop/src` unless stated.
 | Voice, calls, media | `ui/lib/dictation.ts`, `shared/voice/*`, `runtime/voice/*`, `runtime/calls/*` (`call-log.ts` a call's row, `wiring.ts` start-up and shutdown), `shared/model/call.ts`, `runtime/media/*`, `main/media-*.ts`, UI `ui/chat/composer/*`, `ui/chat/call/*` |
 | Browser | `main/workspace-*.ts` (one shown tab per space `workspace-shown.ts`, preview marks `workspace-marks.ts`), `main/side-driver/*`, `runtime/browser/*`, UI `ui/workspace/*`, `ui/chat/ChatArea.tsx`, `ui/team/AgentBrowser.tsx` |
 | Shell, header, menus, settings | `ui/shell/*`, `ui/lib/{header,header-model,context-menu,dialog}.tsx`, `ui/settings/*`, `ui/styles/*`, `main/title-bar.ts` |
-| First run, feedback, repair | `ui/onboarding/*`, `ui/tour/*`, `runtime/onboarding/*`, `ui/feedback/*`, `runtime/feedback/*`, `runtime/repair/*`, `ui/repair/*` |
+| First run, spotlight tour, feedback, repair | `ui/onboarding/*`, `ui/tour/*` (spotlight tour: `ui/tour/spotlight*`), `runtime/onboarding/*`, `ui/feedback/*`, `runtime/feedback/*`, `runtime/repair/*`, `ui/repair/*` |
 | Rich answers | `shared/blocks/*`, `ui/blocks/*`, `ui/sandbox/wf.ts` |
 | Updates, launcher, tray | `main/updates/*`, `main/updates-wiring.ts`, `main/launcher*.ts`, `main/tray.ts` |
 | wf terminal client | `runtime/wf-cli/*`, the agents' shim `runtime/engines/wf-shim.ts` |

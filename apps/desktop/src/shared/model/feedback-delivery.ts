@@ -12,6 +12,14 @@ export const FEEDBACK_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as
 export type FeedbackImageType = typeof FEEDBACK_IMAGE_TYPES[number];
 
 /**
+ * AF-003: the short number the sender sees after Send and the team sees in its inbox for the same report – the first
+ * eight letters and digits of the report's receipt id (the mailbox document id), upper case: "668FC8DE".
+ */
+export function reportNumber(receiptId: string): string {
+  return receiptId.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase();
+}
+
+/**
  * `feedback.status`: `sending` – this build has a receiver (resources/feedback/receiver.json: the team's public key
  * and the mailbox); without one a report is only saved on this PC and the UI says so. `receiving` – this PC holds the
  * team's private key (the vault), so Settings › Feedback shows the team inbox; always false for anyone but the owner.

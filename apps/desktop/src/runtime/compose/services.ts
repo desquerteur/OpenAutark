@@ -43,6 +43,7 @@ import { profileZone } from '../context/time.ts'; // B-044: a hit's saved day in
 import { createDataLifecycle } from './data-lifecycle.ts';
 import { SkillLibrary } from '../skills/service.ts';
 import { createAgentCore, mainSkillOptions } from './agent-core.ts';
+import { createAccess } from './access.ts'; // AF-013: access modes, rules and approval requests
 import { RootWatcher } from '../root/watcher.ts'; // B-044: the open data folder's one watcher
 import '../contracts/root.ts';
 import '../contracts/secret-files.ts';
@@ -76,6 +77,7 @@ import { WorkStop, bindWorkStop } from '../agents/work-stop.ts';
 import { createCalls } from '../calls/wiring.ts';
 import { createCalendar } from './calendar.ts'; // B-041 My day: calendar, sources, estimates, day service, morning run
 import { createSplits } from './splits.ts'; // B-057: an agent split into parallel workers (services.splits)
+import { createPromptQueues } from './prompt-queue.ts'; // AF-016: the chats' prompt queues (services.promptQueue)
 import { Mcp } from '../mcp/hub.ts';
 import '../contracts/apps.ts'; // RuntimeServices.apps
 import { createApps } from '../apps/index.ts'; // connectors: MCP servers and mailboxes from <data>/connectors
@@ -198,6 +200,7 @@ export async function createCore(options: CoreOptions): Promise<Core> {
   s.skills = skillLibrary;
   // Wave 3: <data>/agents/<id>/SYSTEM.md is each agent's instructions (the row keeps the last good text), skills/ its Main Skills.
   createAgentCore(s, org, skillLibrary);
+  createAccess(s); // AF-013: per agent agents/<id>/access.json; no file = full access as before
   // B-044: <data>/README.md and agents/README.md – the maps of the data folder, written at start and when the team changes.
   s.rootMaps = new RootMaps({
     paths: { data: paths.data, workspace: paths.workspace }, bus, log, writes: s.rootWatcher,
@@ -293,6 +296,7 @@ export async function createCore(options: CoreOptions): Promise<Core> {
   const workStop = new WorkStop({ services });
   bindWorkStop(s, workStop);
   workStop.restore();
+  createPromptQueues(s); // AF-016: the chats' prompt queues – after the dispatcher and the work stop (compose/prompt-queue.ts)
   createCalls(s); // realtime voice and the call talker in chats (stop: compose/lifecycle.ts 'calls')
   createCalendar(s); // B-041 My day (compose/calendar.ts; stopCalendar at shutdown)
   // Outages end with an event (T04): an account that becomes usable or a model that becomes

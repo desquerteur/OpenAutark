@@ -69,7 +69,7 @@ export function ProfileButton(props: { size?: number; placement?: 'right-end' | 
   useEffect(loadCompanies, []);
   return (
     <>
-      <button ref={ref} type="button" class="profile-button" aria-label="Profile menu" aria-haspopup="menu" aria-expanded={open} onClick={() => { if (!open) loadCompanies(); setOpen(!open); }}>
+      <button ref={ref} type="button" class="profile-button" data-tour="settings" aria-label="Profile menu" aria-haspopup="menu" aria-expanded={open} onClick={() => { if (!open) loadCompanies(); setOpen(!open); }}>
         <HumanAvatar size={props.size ?? 36} />
       </button>
       <Menu

@@ -15,9 +15,9 @@ import { Button } from '../lib/ui.tsx';
 /** Clears an optional settings field: the runtime merge treats `null` as "remove key". */
 export const CLEAR = null as unknown as undefined;
 
-export function Group(props: { title?: string; id?: string; children: ComponentChildren; actions?: ComponentChildren; hint?: ComponentChildren }) {
+export function Group(props: { title?: string; id?: string; children: ComponentChildren; actions?: ComponentChildren; hint?: ComponentChildren; tour?: string }) {
   return (
-    <section class="set-group" id={props.id}>
+    <section class="set-group" id={props.id} data-tour={props.tour}>
       {(props.title || props.actions) && (
         <header class="set-group-head">
           {props.title && <h3>{props.title}</h3>}

@@ -22,6 +22,8 @@ import { BandFoot, SecretForm, type SecretTarget } from './SecretForm.tsx';
 import { BAND_HINT, exportMenu, importLine, pastedRows, readyRows, withEmptyRow, type KvRow } from './secret-groups.ts';
 
 const MAX_BYTES = 5 * 1024 * 1024;
+/** AF-005: the same rows for a connector's headers and variables (apps-server.tsx). */
+export { Rows as NameValueRows };
 const fresh = (): KvRow => ({ id: newId('req'), name: '', value: '' });
 const textOf = (event: Event) => (event.currentTarget as HTMLInputElement | HTMLTextAreaElement).value;
 

@@ -9,7 +9,8 @@
 // splits are rows inside the same expansion, below its reports – a group that starts never pushes the open
 // reports down (splits/SplitNav.tsx – the caret takes its reserved slot when the agent has only splits; a
 // closed row shows the running count in its always-reserved cell). At the very end a collapsed "Archived (n)" group
-// (ArchivedGroup.tsx; a right click on its rows offers Restore).
+// (ArchivedGroup.tsx; a right click on its rows offers Restore). AF-014: Add › "Agent from folder…" and a folder dropped on
+// the list open FolderAgentDialog.tsx; Add › "Group agents by folder" shows the agents by home project (FolderGroups.tsx).
 // Owns: the team navigation, its expand state (per device), search and the Add menu with its dialogs.
 // Never: edits the org or draws header markup (lib/header.tsx does).
 
@@ -23,7 +24,7 @@ import type { HeaderProps } from '../lib/header.tsx';
 import { useContextMenu, openContextMenu } from '../lib/context-menu.tsx';
 import { agentName, agents, isMobile, route } from '../lib/store.ts';
 import { go } from '../lib/router.ts';
-import { can } from '../lib/session.ts';
+import { can, isOwner } from '../lib/session.ts';
 import { setupAgainAllowed, startSetupAgain } from '../onboarding/setup-again.ts';
 import { countReports, groupBySpace, matchesAgent } from './model.ts';
 import type { OrgEntry } from './model.ts';
@@ -34,6 +35,8 @@ import { ensureSpaces, orgTree, peopleTree, spaces, teamPeople } from './org-sta
 import { agentMenu, personMenu } from './menus.ts';
 import { ArchivedGroup } from './ArchivedGroup.tsx';
 import { NewAgentDialog } from './NewAgentDialog.tsx';
+import { FolderGroups } from './FolderGroups.tsx'; // AF-014
+import { droppedFolder, groupByFolder, mayHoldFolder, openFolderAgent, setGroupByFolder } from './folder-agent.ts'; // AF-014
 import { PersonDialogs, personDialog } from './person-dialogs.tsx';
 import { importTeamRequest, setUpWithAi } from './set-up-with-ai.ts';
 import { SplitCount, SplitNavRows, hasSplits, useSplitNav } from '../splits/SplitNav.tsx'; // B-057
@@ -49,9 +52,11 @@ const addingAgent = signal(false);
 function addMenu(): MenuSection[] {
   const sections: MenuSection[] = [{ items: [
     { label: 'Agent', onSelect: () => { addingAgent.value = true; } },
+    ...(isOwner() ? [{ label: 'Agent from folder…', onSelect: () => openFolderAgent() }] : []), // AF-014
     ...(can('people.save') ? [{ label: 'Person', onSelect: () => { personDialog.value = { kind: 'new' as const }; } }] : []),
     { label: 'Import an agent team…', onSelect: () => { void setUpWithAi(importTeamRequest()); } },
   ] }];
+  if (isOwner()) sections.push({ items: [{ label: 'Group agents by folder', checked: groupByFolder.peek(), onSelect: () => setGroupByFolder(!groupByFolder.peek()) }] }); // AF-014
   if (setupAgainAllowed()) sections.push({ items: [{ label: 'Start setup again', onSelect: () => { void startSetupAgain(); } }] });
   return sections;
 }
@@ -61,7 +66,7 @@ export function teamNavHeader(): HeaderProps {
   const state = search.value;
   return {
     title: 'Team',
-    cells: [{ id: 'add', icon: 'plus', label: 'Add', menu: addMenu() }],
+    cells: [{ id: 'add', icon: 'plus', label: 'Add', menu: addMenu(), tour: 'agent-create' }],
     search: {
       label: 'Search the team', open: state.open, query: state.query,
       onQuery: (query) => { search.value = { ...search.peek(), query }; },
@@ -219,7 +224,9 @@ export function TeamNav() {
   const personMatches = q ? teamPeople.value.filter((person) => matchesPerson(person, q)).sort((a, b) => a.name.localeCompare(b.name)) : [];
 
   return (
-    <div class="team-nav">
+    <div class="team-nav" // AF-014: a folder dropped here opens "Agent from folder"
+      onDragOver={(event) => { if (isOwner() && mayHoldFolder(event.dataTransfer)) event.preventDefault(); }}
+      onDrop={(event) => { const folder = isOwner() ? droppedFolder(event.dataTransfer) : undefined; if (folder) { event.preventDefault(); openFolderAgent(folder); } }}>
       {isMobile.value && ( // the phone has no side header: its Add sits at the top of the list
         <button type="button" class="text-button team-add" aria-haspopup="menu" onClick={(event) => { const box = (event.currentTarget as HTMLElement).getBoundingClientRect(); openContextMenu(box.left, box.bottom, addMenu()); }}>Add</button>
       )}
@@ -241,7 +248,7 @@ export function TeamNav() {
                   {peopleTree.value.map((entry) => <PersonBranch key={entry.person.id} entry={entry} depth={0} expand={expand} personId={personId} />)}
                 </div>
               )}
-              {groups.map((group, index) => (
+              {groupByFolder.value ? <FolderGroups agents={list} row={(agent) => <AgentRow key={agent.id} agent={agent} depth={0} reports={0} activeId={activeId} />} /> : groups.map((group, index) => (
                 <div class="team-space" key={group.space?.id ?? `rest-${index}`}>
                   {(group.space || peopleTree.value.length > 0) && <div class="team-space-title">{group.space?.name ?? 'Agents'}</div>}
                   {group.entries.map((entry) => <Branch key={entry.agent.id} entry={entry} depth={0} expand={expand} />)}

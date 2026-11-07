@@ -17,6 +17,7 @@ import { bridge, os } from '../lib/platform.ts';
 import { isOwner, PC_NOTE } from '../lib/session.ts';
 import { settings, systemInfo, updateSettings } from '../lib/store.ts';
 import { act, CLEAR, Group, Row, Segmented, TextField, Toggle } from './controls.tsx';
+import { GettingStarted } from './GettingStarted.tsx';
 
 const START_HINT = 'Opens the app when the PC starts and keeps agents working in the background';
 const THEMES = [{ value: 'system', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }] as const;
@@ -92,6 +93,7 @@ export function GeneralPage() {
           <Toggle label="Enter sends" checked={prefs.enterSends} onChange={(enterSends) => void setPrefs({ enterSends })} />
         </Row>
       </Group>
+      <GettingStarted /> {/* AF-002: show the tour again, run setup again */}
     </>
   );
 }

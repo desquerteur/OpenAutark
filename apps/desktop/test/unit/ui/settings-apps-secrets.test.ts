@@ -98,7 +98,7 @@ test('catalog: search and what is connected already', () => {
 });
 
 test('an app row: its line and its one action', () => {
-  assert.equal(appLine({ address: 'a.example', status: 'ok', tools: 1 }), 'a.example · 1 tool');
+  assert.equal(appLine({ address: 'a.example', status: 'ok', tools: 1 }), 'a.example · Connected · 1 tool'); // AF-005: the status in words
   assert.equal(appLine({ address: 'a.example', status: 'error', tools: 0, error: 'refused' }), 'a.example · refused');
   assert.equal(appAction({ status: 'ok' })?.label, 'Test');
   assert.equal(appAction({ status: 'signin' })?.label, 'Connect again');

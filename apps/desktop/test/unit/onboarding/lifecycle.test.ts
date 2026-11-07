@@ -1,6 +1,6 @@
 // Onboarding lifecycle against the real RPC server, settings, chat service and skill library: the built-in
 // team-building skill (org-setup-onboarding) never retires – it stays in the manager's index before and after
-// the first run; onboarding.reset (owner only) opens the first-run layer again at step 'ai'; onboarding.start
+// the first run; onboarding.reset (owner only) opens the setup assistant again at step 'profile'; onboarding.start
 // (owner only) ends the layer, completes the onboarding and posts the start text, which wakes the Manager.
 
 import { test } from 'node:test';
@@ -36,6 +36,9 @@ function setup() {
   return { ...f, skills, onboarding, boss, owner, phone, indexed };
 }
 
+/** The first-run part of the onboarding section (the tour's keys beside it have their own tests, AF-002). */
+const stepOf = (o: { completed: boolean; step: string }) => ({ completed: o.completed, step: o.step });
+
 test('the team-building skill stays in the manager index before and after the first run and a reset; reset is owner only', async (t) => {
   const f = setup();
   t.after(f.cleanup);
@@ -49,7 +52,7 @@ test('the team-building skill stays in the manager index before and after the fi
   assert.equal((await f.phone.request('onboarding.reset')).error?.code, 'forbidden', 'owner only');
   assert.equal(f.services.settings.get().onboarding.completed, true);
   assert.deepEqual(await f.owner.call('onboarding.reset'), { ok: true });
-  assert.deepEqual(f.services.settings.get().onboarding, { completed: false, step: 'ai' });
+  assert.deepEqual(stepOf(f.services.settings.get().onboarding), { completed: false, step: 'profile' });
   assert.ok(f.indexed(MANAGER_MODE).includes(SKILL));
 });
 
@@ -60,7 +63,7 @@ test("onboarding.start (owner only): step done, the Manager's chat and a message
   assert.equal((await f.owner.request('onboarding.start', { chat: 'x' })).error?.code, 'bad_request');
   const { conversationId } = await f.owner.call<{ conversationId: string }>('onboarding.start');
   assert.ok(f.chats.get(conversationId), "the Manager's first chat");
-  assert.deepEqual(f.services.settings.get().onboarding, { completed: true, step: 'done' }, 'start completes the onboarding');
+  assert.deepEqual(stepOf(f.services.settings.get().onboarding), { completed: true, step: 'done' }, 'start completes the onboarding');
   const wake = f.wakeRows().find((row) => row.reason === 'message');
   assert.equal(wake?.agent_id, f.boss.id);
   assert.equal(wake?.conversation_id, conversationId);

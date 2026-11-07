@@ -59,6 +59,7 @@ import { traceInput } from '../engines/trace-text.ts';
 import { recordTurnInput } from './interruption-context.ts';
 import { runWithNativeTimeouts } from './native-timeout.ts';
 import { temperatureOf } from './next-route.ts'; // B-078
+import { turnAccessPolicy } from '../access/turn.ts'; // AF-013
 
 /**
  * B-054: the first line of the note of the outside event that started the run (TurnRequest.originNote – only an
@@ -245,6 +246,8 @@ export async function runAttempt(services: RuntimeServices, plan: TurnPlan, turn
   // The tool offer is computed by buildTurn (SES2: the session's prompt key covers exactly these).
   const tools = turn.engine.caps.dynamicTools ? (turn.tools ?? []) : [];
   const temperature = temperatureOf(plan.previous);
+  const cwd = splitCwd(services, plan.split) ?? turnCwd(services, plan.task, plan.agent.id); // I02: the task's own worktree once it has one, else (B-044) the agent's home project, else the workspace; B-057: a split's worktree or its group's folder
+  const access = turnAccessPolicy(services, { agentId: plan.agent.id, conversationId: plan.conversationId, runId: request.runId, cwd }); // AF-013: absent = full access as before
   let release: (() => void) | undefined;
   let result: EngineTurnResult;
   try {
@@ -270,7 +273,7 @@ export async function runAttempt(services: RuntimeServices, plan: TurnPlan, turn
         } finally { boundary(callId, false); watch.call(callId, false); }
       },
       mcp: lease ? { url: lease.url, token: lease.token } : undefined,
-      cwd: splitCwd(services, plan.split) ?? turnCwd(services, plan.task, plan.agent.id), // I02: the task's own worktree once it has one, else (B-044) the agent's home project, else the workspace; B-057: a split's worktree or its group's folder
+      cwd, ...(access ? { access } : {}),
       onEvent, signal: watch.signal,
     }, { ...toolCtx, services }, { thread: plan.thread });
   } catch (error) {
@@ -287,6 +290,9 @@ export async function runAttempt(services: RuntimeServices, plan: TurnPlan, turn
     watch.signal.removeEventListener('abort', releaseLease);
     lease?.release();
   }
+  // AF-012: the person's Stop wins – an engine that still answered 'done' after it (one that did not hear the signal) ends
+  // stopped like any other, with its text so far (turn-finish.ts keeps it as a 'stopped' answer); its late calls were refused above.
+  if (request.signal.aborted && request.control.stopKind === 'human' && result.stop === 'done') result = { ...result, stop: 'interrupted' };
   if (turn.trace && (!turn.engine.caps.trace || result.traceAsText)) {
     try { services.runs.item(request.runId, { kind: 'note', data: { traceAsText: result.traceAsText ?? turn.engine.id }, effectStatus: 'none' }); } catch { /* journal is best effort */ }
   }

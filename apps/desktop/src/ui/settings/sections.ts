@@ -17,6 +17,8 @@ export interface SectionInfo {
   requires: readonly MethodName[];
   /** The file or folder behind the page, relative to the data folder (or the workspace), and how the header names it. */
   file: { path: string; label: string; base?: 'workspace' };
+  /** The nav entry's data-tour name for the spotlight tour (AF-002), where the page has one. */
+  tour?: string;
 }
 
 const SETTINGS_FILE = { path: 'settings.json', label: 'Open settings.json' };
@@ -28,9 +30,14 @@ export const SECTIONS: readonly SectionInfo[] = [
     'behavior', 'keep running', 'keep the screen on', 'screen', 'keep awake', 'sleep',
   ] },
   // AF-008: the look and layout (settings.json › appearance), data-tour="appearance" on the page
-  { id: 'appearance', title: 'Appearance', icon: 'palette', file: SETTINGS_FILE, requires: ['settings.update'], keywords: [
+  { id: 'appearance', title: 'Appearance', icon: 'palette', file: SETTINGS_FILE, requires: ['settings.update'], tour: 'appearance', keywords: [
     'appearance', 'look', 'theme', 'themes', 'dark', 'light', 'colour', 'color', 'accent', 'background', 'font', 'text size', 'density', 'radius', 'corners',
     'layout', 'sidebar', 'panels', 'chat tabs', 'dock', 'browser pane', 'export theme', 'import theme', 'reset', 'default', 'darstellung',
+  ] },
+  // AF-006: how the agents speak to the person (settings.json `personality`, profile.notes as "About me")
+  { id: 'personality', title: 'Personality', icon: 'smiley', file: SETTINGS_FILE, requires: [], tour: 'personality', keywords: [
+    'personality', 'tone', 'style', 'voice of the ai', 'casual', 'formal', 'factual', 'friendly', 'direct', 'playful', 'du', 'sie', 'address', 'form of address',
+    'language', 'emoji', 'length', 'short', 'detailed', 'custom instructions', 'instructions', 'how the ai should treat me', 'about me', 'notes', 'presets', 'template',
   ] },
   // Listed everywhere (B-078: it holds the former Voice page); its providers and uses show where accounts.detect is allowed.
   { id: 'models', title: 'Models', icon: 'plugs', file: SETTINGS_FILE, requires: [], keywords: [
@@ -49,8 +56,11 @@ export const SECTIONS: readonly SectionInfo[] = [
   { id: 'secrets', title: 'Secrets', icon: 'key', file: { path: 'secrets', label: 'Open the secrets folder' }, requires: ['secrets.list'], keywords: [
     'secrets', 'password', 'passwords', 'api keys', 'tokens', 'cards', 'payment card', 'vault', 'catalog', 'logins', '2fa', 'import passwords', 'handle', '.env', 'env file', 'import keys',
   ] },
-  { id: 'apps', title: 'Apps', icon: 'squares-four', file: { path: 'connectors/mcp.json', label: 'Open mcp.json' }, requires: ['apps.list'], keywords: [
+  // AF-005: the page of the connectors (its id stays 'apps' – older links and #/settings/connectors open it)
+  { id: 'apps', title: 'Connectors', icon: 'squares-four', file: { path: 'connectors/mcp.json', label: 'Open mcp.json' }, requires: ['apps.list'], tour: 'connectors', keywords: [
     'apps', 'connected apps', 'connections', 'integrations', 'mcp', 'mcp servers', 'notion', 'linear', 'github', 'zapier', 'mail', 'mailbox', 'email', 'reconnect', 'sign in', 'tools', 'add by address', 'token', 'test',
+    'connectors', 'google', 'gmail', 'drive', 'google drive', 'slack', 'discord', 'own mcp server', 'stdio', 'http', 'sse', 'command', 'environment variables', 'headers',
+    'json', 'paste json', 'import', 'claude desktop', 'claude code', 'cursor', 'agents', 'who may use', 'on', 'off', 'remove',
   ] },
   { id: 'skills', title: 'Skills & memory', icon: 'folder', file: { path: 'skills', label: 'Open the skills folder', base: 'workspace' }, requires: ['skills.list'], keywords: [
     'skills', 'skill', 'new skill', 'descriptions', 'memory', 'memories', 'knowledge', 'library', 'open folder', 'modes', 'mode',

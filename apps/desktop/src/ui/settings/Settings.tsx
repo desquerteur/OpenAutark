@@ -26,6 +26,7 @@ import { FeedbackPage } from './FeedbackPage.tsx';
 import { GeneralPage } from './GeneralPage.tsx';
 import { ModelSetup } from './ModelSetup.tsx';
 import { ModelUses } from './ModelUses.tsx';
+import { PersonalityPage } from './PersonalityPage.tsx'; // AF-006
 import { openInData, openInTab } from './open-file.ts';
 import { groupAccounts, providerGroup, type ProviderGroup } from './providers.ts';
 import { SecretsPage } from './SecretsPage.tsx';
@@ -76,6 +77,7 @@ function CalendarPage() {
 const CONTENT: Readonly<Record<SettingsPage, ComponentType>> = {
   general: GeneralPage,
   appearance: AppearancePage,
+  personality: PersonalityPage,
   models: ModelsPage,
   calendar: CalendarPage,
   secrets: SecretsPage,

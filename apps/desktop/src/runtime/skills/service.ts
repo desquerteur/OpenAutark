@@ -17,7 +17,7 @@
 // reaches (alwaysFor). invalidate() makes the next read check the folders again. B-078: a description is optional – a skill
 // without one shows its heading and first sentence (shared/text/external.ts) until knowledge/describe.ts writes one.
 // Owns: discovery with an mtime-validated cache, routes, load, save (with the skill's modes), import of an agent file's
-// skills, remove, the per-mode index. Never: puts skill bodies into the index (descriptions only; bodies load on
+// skills, remove, the per-mode index, the folder a new skill gets (folderFor – skills from a link, links/). Never: puts skill bodies into the index (descriptions only; bodies load on
 // demand), treats a skill text as a permission, or writes into builtin/imported folders.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -130,6 +130,12 @@ export class SkillLibrary implements SkillService {
       throw error;
     }
     return this.reread(name, input.ownerAgentId);
+  }
+
+  /** AF-007: the folder a new skill of this name gets – an agent's own skills, else the shared library (the routes above). */
+  folderFor(name: string, ownerAgentId?: string): string {
+    if (!SKILL_NAME.test(name)) throw new WorkforceError('bad_request', 'Skill names are lowercase letters, digits and hyphens.');
+    return path.join(ownerAgentId ? path.join(this.agentDir(ownerAgentId), 'skills') : path.join(this.options.paths.workspace, 'skills'), name);
   }
 
   remove(name: string): void {

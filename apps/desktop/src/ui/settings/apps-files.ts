@@ -1,11 +1,16 @@
 // Settings › Apps writes what the AI writes: one entry of <data>/connectors/mcp.json or mail.json (skill connect-apps). The
 // runtime's watcher applies the change within a second; `apps.changed` brings the rows up to date. A key or password goes into
 // the secrets catalog first and the file holds only its handle secret://<id>. Everything else in the file stays as it is.
+// AF-005: servers from the own-server form and the JSON import go in together (saveServers: their keys into Secrets first),
+// and an entry's "agents" list says which agents may use it (agentsPatch; missing = every agent).
 // Owns: the pure edits of those two files, the entries the forms make, a row's words, and the one read-edit-write through files.*.
 // Never: holds a value after handing it to secrets.save, writes a key into a file, or connects anything itself (the runtime does).
 
 import type { AppStatus, ConnectedApp, MailServer } from '../../shared/model/apps.ts';
+import type { Agent } from '../../shared/model/org.ts';
+import { kindForName } from '../../shared/model/key-values.ts';
 import { rpc } from '../lib/rpc.ts';
+import { withHandles, type ImportedServer } from './mcp-import.ts';
 
 export type ConnectorFile = 'mcp.json' | 'mail.json';
 type Json = Record<string, unknown>;
@@ -17,10 +22,10 @@ export const fileOf = (app: Pick<ConnectedApp, 'transport'>): ConnectorFile => (
 const STATUS: Readonly<Record<AppStatus, string>> = { ok: 'Connected', connecting: 'Connecting…', waiting: 'Waiting for the sign-in in your browser', signin: 'Needs a sign-in', error: 'Not connected', off: 'Off' };
 export const toolCount = (tools: number): string => `${tools} ${tools === 1 ? 'tool' : 'tools'}`;
 
-/** The app's one line: its address, its state or why not, its tools. */
-export function appLine(app: Pick<ConnectedApp, 'address' | 'status' | 'error' | 'tools'>): string {
-  const state = app.status === 'ok' ? toolCount(app.tools) : app.error || STATUS[app.status];
-  return [app.address, state].filter(Boolean).join(' · ');
+/** The app's one line: its address, its state or why not, its tools (AF-005: and its agents when it is not for all). */
+export function appLine(app: Pick<ConnectedApp, 'address' | 'status' | 'error' | 'tools' | 'agents'>): string {
+  const state = app.status === 'ok' ? `${STATUS.ok} · ${toolCount(app.tools)}` : app.error || STATUS[app.status];
+  return [app.address, state, agentsWord(app.agents)].filter(Boolean).join(' · ');
 }
 
 /** The one action of the row's cell by its status: Test, Connect again, the open sign-in page; none while off; `wait` runs nothing new while it connects. */
@@ -58,6 +63,29 @@ export function freeKey(name: string, entries: Json): string {
 export function withEntry(file: ConnectorFile, text: string, name: string, entry: Json): string {
   const { root, entries } = parsed(file, text);
   return written(file, root, { ...entries, [freeKey(name, entries)]: entry });
+}
+
+/** The file with several new entries (each name made free in turn); the names they got, in order. */
+export function withEntries(file: ConnectorFile, text: string, list: ReadonlyArray<{ name: string; entry: Json }>): { text: string; names: string[] } {
+  const { root, entries } = parsed(file, text);
+  const next: Json = { ...entries };
+  const names = list.map(({ name, entry }) => { const key = freeKey(name, next); next[key] = entry; return key; });
+  return { text: written(file, root, next), names };
+}
+
+/** AF-005: who may use an entry – agent ids, or undefined for every agent (the key goes). */
+export const agentsPatch = (ids: readonly string[] | undefined): Json => ({ agents: ids ? [...ids] : undefined });
+
+/** The words for an entry's agents list: '' for every agent. */
+export function agentsWord(agents: readonly string[] | undefined): string {
+  if (!agents) return '';
+  return agents.length === 0 ? 'no agent' : agents.length === 1 ? '1 agent' : `${agents.length} agents`;
+}
+
+/** The agents an entry's list names (by id, or by name in any case). */
+export function namedAgents(list: readonly string[] | undefined, team: readonly Pick<Agent, 'id' | 'name'>[]): Set<string> {
+  const names = new Set((list ?? []).map((entry) => entry.toLowerCase()));
+  return new Set(team.filter((agent) => (list ?? []).includes(agent.id) || names.has(agent.name.toLowerCase())).map((agent) => agent.id));
 }
 
 /** The file without the entry `name`. */
@@ -131,8 +159,27 @@ export function mailEntry(fields: MailFields): { blocked: string; entry?: Json }
 }
 
 /** A key into the catalog; the file gets its handle. */
-export async function storeKey(label: string, kind: 'token' | 'password', value: string, description: string): Promise<string> {
+export async function storeKey(label: string, kind: 'token' | 'password' | 'api_key', value: string, description: string): Promise<string> {
   return (await rpc.call('secrets.save', { label, kind, value, description })).id;
+}
+
+/**
+ * AF-005: the servers into mcp.json – each value they move goes into the secrets catalog first ("<name> · <key>"), the
+ * file gets its handle – in one write; the names they got (a taken name gets " 2" …).
+ */
+export async function saveServers(servers: readonly ImportedServer[]): Promise<string[]> {
+  const ready: Array<{ name: string; entry: Json }> = [];
+  for (const server of servers) {
+    const ids = new Map<string, string>();
+    for (const move of server.moves) {
+      const label = `${server.name} · ${move.key}`;
+      ids.set(`${move.where}.${move.key}`, await storeKey(label, kindForName(move.key), move.value, `Used by the connector ${server.name} (Settings › Connectors).`));
+    }
+    ready.push({ name: server.name, entry: withHandles(server, ids) });
+  }
+  let names: string[] = [];
+  await editConnectors('mcp.json', (text) => { const done = withEntries('mcp.json', text, ready); names = done.names; return done.text; });
+  return names;
 }
 
 /** Reads the file, applies `change` to its text and writes it back, unless someone changed it in between (a conflict the caller shows). */

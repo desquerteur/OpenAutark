@@ -11,19 +11,23 @@
 @import "./chat-area.css"; /* B-072: a chat's area – its tabs above the messages */
 @import "./working.css"; /* B-048 E4.5: the chat header's working popover and the live block's model slot */
 @import "./composer.css";
+@import "./queue.css"; /* AF-016: the prompt queue above the composer and the Send split */
 @import "./ask-strip.css"; /* B-078: important question above the composer */
 @import "./schedule.css"; /* B-044: the schedule dialog and the chat's Scheduled line */
 @import "./blocks.css";
 @import "./widgets.css";
 @import "./settings.css";
 @import "./accounts.css"; /* B-044: account rows (limit bars, fixed action slots) and the add dialogs */
+@import "./account-face.css"; /* AF-009: an account's picture – logo, avatar or initials – in the rail and the account rows */
 @import "./calendar-settings.css"; /* Settings › Calendar */
+@import "./personality.css"; /* AF-006: Settings › Personality, an agent's own personality and role */
 @import "./overlays.css";
 @import "./feedback.css"; /* B-055 Q4: the feedback cell, its menu and "Paint over" */
 @import "./mobile.css";
 @import "./phone-swipe.css"; /* B-078: swipe between a chat and its area on the phone */
 @import "./first-run.css"; /* B-044: the first-run layer */
 @import "./tour.css"; /* B-055 Q5: the feedback tour (first-run step and replay dialog) */
+@import "./spotlight.css"; /* AF-002: the spotlight tour through the app and the first-visit hints */
 @import "./tasks.css";
 @import "./task-center.css"; /* task center: quick composer, posts, quick-task panel, references */
 @import "./day.css"; /* B-041: My day */
@@ -37,9 +41,14 @@
 @import "./workspace-chrome.css"; /* B-055: the person's browser like Chrome, named cursors */
 @import "./workspace-tabs.css"; /* the pane's app tabs (Notes, Media, Video, Screen) and find in page */
 @import "./file-tab.css"; /* the pane's file tab, the memory tree of Settings › Skills & memory */
+@import "./skill-links.css"; /* AF-007: Settings › Skills › Add from link and its update preview */
 @import "./notes.css"; /* Chat details › Notes row */
 @import "./bridges.css";
+@import "./access.css"; /* AF-013: the composer's access mode cell, the approval dialog, the agent's access rules */
+@import "./folder-agent.css"; /* AF-014: the "Agent from folder" dialog and the Team list's folder groups */
 @import "./splits.css"; /* B-057: split rows, the sidebar's split rows, a split's page, the composer's Ultra cell */
+@import "./agent-view.css"; /* AF-004: the chat's agent view – several agents and their parts as one tree */
 @import "./remote.css";
 @import "./repair.css"; /* 23.10.: repair screen after a broken upgrade or a crash loop */
 @import "./appearance.css"; /* AF-008: the person's own theme beyond the tokens, Settings › Appearance */
+@import "./call.css"; /* AF-015: the call view (full and mini) and the call card in the chat */

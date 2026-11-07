@@ -4,6 +4,7 @@
 // report". It survives closing the menu until it is sent; a draft without text and without marks
 // counts as empty, so the next press takes a fresh screenshot (keepsShot). Talk from the cell and
 // the mic in the field both append to the text (joinText).
+// AF-003: the draft also keeps its kind – "Bug" (the default) or "Idea" – chosen above the field.
 // Owns: the draft state and taking its screenshot. Never: uploads, sends or draws anything.
 
 import { signal } from '@preact/signals';
@@ -13,13 +14,27 @@ import type { PaintMark, ShotDraft } from './paint.ts';
 /** Where the person was when the screenshot was taken (the report's context). */
 export interface DraftPlace { view?: string; conversationId?: string }
 
+/** AF-003: the kinds the form offers (the runtime knows more: change, praise – agents may use them). */
+export type DraftKind = 'bug' | 'idea';
+export const DRAFT_KINDS: ReadonlyArray<{ kind: DraftKind; label: string; placeholder: string }> = [
+  { kind: 'bug', label: 'Bug', placeholder: 'What happened, or what went wrong?' },
+  { kind: 'idea', label: 'Idea', placeholder: 'What would you like?' },
+];
+
 export interface FeedbackDraft extends ShotDraft {
   text: string;
   marks: readonly PaintMark[];
   where: DraftPlace;
+  /** AF-003: undefined = 'bug'. */
+  kind?: DraftKind;
 }
 
 export const EMPTY_DRAFT: FeedbackDraft = { text: '', shot: null, painted: null, marks: [], withShot: true, where: {} };
+
+/** The draft's kind ('bug' unless "Idea" was chosen). */
+export function draftKind(draft: Pick<FeedbackDraft, 'kind'>): DraftKind {
+  return draft.kind === 'idea' ? 'idea' : 'bug';
+}
 
 export const feedbackDraft = signal<FeedbackDraft>(EMPTY_DRAFT);
 /** A screenshot is being taken for the draft (its thumbnail shows a placeholder meanwhile). */

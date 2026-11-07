@@ -1,5 +1,5 @@
-// B-055: opening the feedback tour from anywhere (the command palette's "Watch how it works"; the
-// first run shows it itself). The player (ui/tour/TourPlayer.tsx) is mounted by the shell while
+// B-055: opening the feedback tour from anywhere (the command palette's "Watch how it works", Settings › Feedback,
+// the spotlight tour's feedback step – AF-002: the first run no longer shows it). The player (ui/tour/TourPlayer.tsx) is mounted by the shell while
 // `tourOpen` is true.
 // Owns: the open/close signal. Never: the player or its timeline.
 

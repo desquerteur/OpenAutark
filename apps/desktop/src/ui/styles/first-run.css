@@ -1,4 +1,4 @@
-/* The first-run layer (onboarding/FirstRun.tsx and its two cards: AI, About you). The layer is Home's place in
+/* The setup assistant (onboarding/FirstRun.tsx and its four steps: About you, AI, tools, first agent – AF-002). The layer is My day's place in
    the main zone: the same airy column as Home, one card at a time. Nothing moves: the card's status line and
    every async hint are reserved one-line slots and busy buttons keep their box (base.css). One card build and one card height for every
    step: the title with its rule, the body from the top, the status line on the body's foot and the action row
@@ -19,6 +19,30 @@
 .first-run-body > .first-run-status { margin-top: auto; } /* the status line sits on the body's foot in every card */
 .first-run-status.error { color: var(--danger); }
 .first-run-status.ok { color: var(--success); }
+
+/* AF-002: "Step n of 4", the step names (the current one in the text colour) and each step's one sentence */
+.first-run-progress { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; padding: 0 2px; }
+.first-run-progress > .first-run-step { margin: 0; padding: 0; }
+.first-run-steps { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 12px; line-height: 18px; }
+.first-run-step-name[aria-current="step"] { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
+.first-run-purpose { margin: -4px 0 0; color: var(--secondary); font-size: 13px; line-height: 20px; }
+.first-run-spacer { flex: 1 1 auto; }
+.first-run-connect { margin-right: auto; }
+.first-run-field-wide { grid-column: 1 / -1; }
+.first-run-note { margin: 0; color: var(--secondary); font-size: 13px; }
+
+/* Connect your tools: the rows of Settings › Apps inside the card */
+.first-run-apps { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* Your first agent: the Manager (and anyone hired here), the hire form */
+.first-run-agent { display: flex; align-items: flex-start; gap: 12px; padding: 4px 0; }
+.first-run-agent-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.first-run-agent-name { color: var(--text); font-size: 14px; font-weight: 600; line-height: 20px; }
+.first-run-agent-role { color: var(--muted); font-weight: 400; }
+.first-run-agent-about { color: var(--secondary); font-size: 13px; line-height: 20px; }
+.first-run-hire { display: flex; flex-direction: column; gap: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
+.first-run-hire-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.first-run-hire-open { align-self: flex-start; }
 
 /* The AI card's model setup (settings/ModelSetup.tsx) */
 .first-run-rows { margin-top: -12px; } /* the title's rule is the rows' top edge: no second rule, no double gap */

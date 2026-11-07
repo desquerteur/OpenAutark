@@ -58,7 +58,7 @@ test("start(): the fixed line as the person's own, addressed to the Manager, one
   assert.equal(personAsks(h.services, { agent: h.manager, conversationId }), true, "routed as a person's request: the strongest model");
 
   assert.equal(groupWakes(h.wakes.claim(h.manager.id)).length, 1, 'one claim, one group: one turn');
-  assert.deepEqual(h.settings.get().onboarding, { completed: true, step: 'done' });
+  assert.deepEqual([h.settings.get().onboarding.completed, h.settings.get().onboarding.step], [true, 'done']);
 });
 
 test('asked twice: one line, one wake; after "Set up team again" with an answer in between, a new line', () => {
@@ -105,7 +105,7 @@ test('an own prompt that renders to nothing posts nothing and still ends the fir
   Object.assign(h.services, { prompts: { text: () => '{{#unknown}}never{{/unknown}}' } });
   const { conversationId } = h.onboarding.start();
   assert.equal(h.chats.messages(conversationId).filter((message) => message.authorId === HUMAN_ID).length, 0);
-  assert.deepEqual(h.settings.get().onboarding, { completed: true, step: 'done' });
+  assert.deepEqual([h.settings.get().onboarding.completed, h.settings.get().onboarding.step], [true, 'done']);
 });
 
 test('exactly ONE Manager turn: real dispatcher, delivery, wake queue and scheduler – the line is new in the chat, no notes', async () => {
@@ -188,7 +188,7 @@ test('onboarding.start takes no params: any key is refused and starts nothing; t
     assert.equal(response.error?.code, 'bad_request', JSON.stringify(params));
   }
   assert.equal(f.wakeRows().length, 0, 'a refused call starts nothing');
-  assert.equal(f.services.settings.get().onboarding.step, 'tour', 'still the first step (B-055 Q5: the tour)');
+  assert.equal(f.services.settings.get().onboarding.step, 'profile', 'still the first step (AF-002: About you)');
 
   const { conversationId } = await owner.call<{ conversationId: string }>('onboarding.start');
   const posted = f.chats.messages(conversationId).filter((message) => message.authorId === HUMAN_ID);
@@ -197,5 +197,5 @@ test('onboarding.start takes no params: any key is refused and starts nothing; t
   const rows = f.wakeRows().filter((row) => row.agent_id === boss.id);
   assert.equal(rows.length, 1);
   assert.equal(rows[0].reason, 'message');
-  assert.deepEqual(f.services.settings.get().onboarding, { completed: true, step: 'done' });
+  assert.deepEqual([f.services.settings.get().onboarding.completed, f.services.settings.get().onboarding.step], [true, 'done']);
 });

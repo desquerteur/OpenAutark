@@ -1,13 +1,14 @@
 // Electron window check of 21.10. 17:09 (chat without a generic Stop) with the demo engine in an
 // isolated profile. The agent's turn hangs on a native tool ([[hang:bash …]]), so it keeps working:
-//   * the composer always sends, disabled without content; its Plus menu greys nothing out (04.11.2026); no conversation toggle. A 1:1 preview
+//   * the composer sends, disabled without content – AF-012 (07.11.2026): while the agent works an empty field shows Stop in
+//     Send's cell (its own check: composer-stop-window.test.mjs); its Plus menu greys nothing out (04.11.2026); no conversation toggle. A 1:1 preview
 //     omits the sender and is named after the agent (B-050 K2: "<agent> · Release"). The live task link opens its detail;
 //   * a normal message sent while the agent works goes out and reaches the running turn (journal note
 //     'steered'), the turn is not interrupted;
 //   * the Send button's right-click menu › "Send as important" sends the draft as 'important' at once and it is
 //     steered too;
 //   * the chat header's live line opens the working popover, whose last entry is "Stop all agent work": the turn ends,
-//     the status line "Agent work stopped" offers Resume, the composer still has no Stop; Resume removes the line;
+//     the status line "Agent work stopped" offers Resume, nothing works so the composer shows no Stop; Resume removes the line;
 //   * light, dark, 640×480 and phone width (no horizontal page scroll); no renderer errors.
 // Run: npm run test:ui   (needs a fresh build)   SCREENSHOTS=<dir> keeps the screenshots.
 
@@ -93,9 +94,9 @@ test('Chat without Stop: compose, talk and steer while an agent works; the emerg
   const activity = await working;
   const runId = activity.active.find(run => run.agentId === manager.id).runId;
 
-  // No Stop or voice toggle in the composer: empty field → disabled Send.
-  assert.equal(await actions.locator('[aria-label="Stop"]').count(), 0, 'no generic Stop while the agent works');
-  assert.equal(await actions.locator('.send-button[aria-label="Send"]').isDisabled(), true);
+  // AF-012: an empty field while the agent works → Stop in Send's cell; no voice toggle.
+  await actions.locator('[data-tour="run-stop"][aria-label="Stop"]').waitFor({ timeout: 15_000 }); // Stop while the agent works
+  assert.equal(await actions.locator('.send-button[aria-label="Send"]').count(), 0);
   assert.equal(await actions.locator('[aria-label="Start conversation"]').count(), 0);
   // owner 04.11.2026: the Plus menu greys nothing out with an empty field (the levels then set the draft's level)
   await page.locator('.composer-plus').click();
@@ -165,7 +166,7 @@ test('Chat without Stop: compose, talk and steer while an agent works; the emerg
   await pill.waitFor({ timeout: 10_000 });
   assert.match((await pill.textContent()) ?? '', /Agent work stopped/);
   await page.waitForFunction(() => !document.querySelector('.chat-header .chat-live'), undefined, { timeout: 15_000 });
-  assert.equal(await actions.locator('[aria-label="Stop"]').count(), 0, 'still no Stop in the composer');
+  assert.equal(await actions.locator('[aria-label="Stop"]').count(), 0, 'nothing works: no Stop in the composer');
   await shot('no-stop-06-stopped-light');
   await page.emulateMedia({ colorScheme: 'dark' });
   await shot('no-stop-07-stopped-dark');

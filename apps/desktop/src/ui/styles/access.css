@@ -1,0 +1,37 @@
+/* AF-013: the composer's access mode cell, the approval dialog and the agent's access rules dialog.
+   Owns: these components. Never: the composer row itself (composer.css). */
+
+/* The mode cell: one fixed width beside Plus (a longer label never moves the row; it is cut) */
+.access-mode-cell {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex: none; width: 96px; height: 28px;
+  padding: 0 8px; border: 1px solid var(--line); border-radius: 14px; color: var(--secondary); font-size: 12px; font-weight: 500;
+  white-space: nowrap; overflow: hidden;
+}
+.access-mode-cell .access-mode-label { overflow: hidden; text-overflow: ellipsis; }
+.access-mode-cell:hover:not(:disabled):not(.placeholder) { background: var(--hover); color: var(--text); }
+.access-mode-cell:disabled { cursor: default; }
+.access-mode-cell.placeholder { border-color: transparent; pointer-events: none; }
+.access-mode-cell.mode-read { color: var(--secondary); }
+.access-mode-cell.mode-ask { border-color: color-mix(in srgb, var(--update) 45%, var(--line)); color: var(--update); }
+.access-mode-cell.mode-project { border-color: color-mix(in srgb, var(--update) 30%, var(--line)); }
+.access-mode-cell.override { background: color-mix(in srgb, var(--update) 8%, transparent); }
+@media (max-width: 520px) {
+  .access-mode-cell { width: 32px; padding: 0; }
+  .access-mode-cell .access-mode-label { display: none; }
+}
+
+/* The approval dialog */
+.access-request-body { display: grid; gap: 8px; }
+.access-request-step {
+  margin: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--hover);
+  font-family: var(--mono, ui-monospace, monospace); font-size: 13px; overflow-wrap: anywhere;
+}
+.access-request-meta { margin: 0; color: var(--secondary); font-size: 12px; }
+.access-request-link { padding: 0; border: 0; background: none; color: var(--update); font: inherit; cursor: pointer; }
+.access-request-link:hover { text-decoration: underline; }
+
+/* The rules dialog */
+.access-rules-field { display: grid; gap: 4px; margin-top: 10px; }
+.access-rules-label { font-size: 12px; font-weight: 500; color: var(--secondary); }
+.access-rules-text { min-height: 44px; resize: vertical; font-family: var(--mono, ui-monospace, monospace); font-size: 12px; }
+.access-rules-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

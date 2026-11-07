@@ -14,6 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Menu, Notification, app, dialog, protocol } from 'electron';
 import { launchFlags } from './app-paths.ts';
+import { folderFromArgv } from './explorer-menu.ts'; // AF-014: --agent-from-folder <folder>
 import { companiesDir, companyArgs, companyDir, companyFlag, spawnApp, wakeCompanies } from './companies.ts';
 import type { Desktop } from './desktop.ts';
 import { applyIdentity } from './identity-move.ts';
@@ -84,7 +85,10 @@ if (!launch) {
   let showWhenStarted = false; // a second launch arrived while this one was still starting
   const show = () => { if (desktop) desktop.show(); else showWhenStarted = true; };
 
+  let askedFolder = folderFromArgv(process.argv); // AF-014: the Explorer's "Create Autark agent from this folder"
   app.on('second-instance', (_event, argv) => {
+    const folder = folderFromArgv(argv);
+    if (folder) { if (desktop) desktop.agentFromFolder(folder); else askedFolder = folder; return; }
     if (!launchFlags(argv).background) show();
   });
   // The tray keeps the app – and the agents in the runtime – alive without a window.
@@ -97,6 +101,7 @@ if (!launch) {
       desktop = await startDesktop({ background: flags.background, testData, company, companies });
       if (updated && companies) wakeCompanies(companies.dir);
       if (showWhenStarted) desktop.show();
+      if (askedFolder) { desktop.agentFromFolder(askedFolder); askedFolder = undefined; }
       if (restarted) launchNotice(restarted, show);
     })
     .catch((error: unknown) => {

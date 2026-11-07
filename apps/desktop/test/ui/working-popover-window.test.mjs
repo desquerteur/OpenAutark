@@ -90,12 +90,13 @@ test('working popover: who works on which model, live steps on expand, over the 
   await live.waitFor({ timeout: 15_000 });
   assert.equal(await live.evaluate((element) => element.tagName), 'BUTTON', 'the live line is a button');
   assert.equal(await live.getAttribute('aria-haspopup'), 'dialog');
-  await page.locator('.working-message').nth(1).waitFor({ timeout: 15_000 });
+  // AF-004: two agents at work are one agent view – one running row each.
+  await page.locator('.agents-view .agents-item.kind-agent').nth(1).waitFor({ timeout: 15_000 });
   // Both hanging tools are running (each live note is its running step now), so the live line's text – one of the
   // measured boxes below – no longer changes while the popover opens.
   await page.waitForFunction(() => {
-    const blocks = [...document.querySelectorAll('.working-message')];
-    return blocks.length === 2 && blocks.every((block) => block.querySelector('.run-items.live-steps .run-item.tool.running'));
+    const rows = [...document.querySelectorAll('.agents-view .agents-item.kind-agent')];
+    return rows.length === 2 && rows.every((row) => row.classList.contains('state-running') && row.querySelector('.agents-row-steps')?.textContent?.trim());
   }, undefined, { timeout: 15_000 });
   await shot('working-00-closed-light');
 
@@ -125,10 +126,10 @@ test('working popover: who works on which model, live steps on expand, over the 
   assert.match(last, /Stop all agent work/);
   await shot('working-01-open-light');
 
-  // The live block's byline names the same model · effort in its slot.
+  // The agent view's row names the same model · effort in its tooltip (AF-004).
   for (const agent of [manager, ava]) {
-    const block = page.locator('.working-message', { has: page.locator('.author-name', { hasText: exact(agent.name) }) });
-    assert.equal((await block.locator('.working-model').textContent())?.trim(), modelText(runOf(agent.id)), `${agent.name}: byline model`);
+    const row = page.locator('.agents-view .agents-item.kind-agent > .agents-row', { has: page.locator('.agents-row-name', { hasText: exact(agent.name) }) });
+    assert.ok(((await row.locator('.agents-row-main').getAttribute('title')) ?? '').endsWith(modelText(runOf(agent.id))), `${agent.name}: row model`);
   }
 
   // A row expands to the run's live steps (the hanging native tool), still over the content.

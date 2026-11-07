@@ -16,8 +16,9 @@ import { validateRouting } from '../routing/uses-settings.ts';
 import { validateLifecycle } from '../knowledge/lifecycle-settings.ts';
 import { clockMinutes } from '../../shared/model/day-settings.ts';
 import { MAX_WORDS } from '../../shared/voice/vocabulary.ts';
-import { NOTES_MAX, PATTERNS, SECTIONS, optionsOf, rangeOf } from './schema.ts';
-import { validateAppearance } from './appearance-schema.ts';
+import { MAX_HINTS, NOTES_MAX, PATTERNS, SECTIONS, optionsOf, rangeOf } from './schema.ts';
+import { validatePersonality } from '../personality/settings-section.ts'; // AF-006
+import { validateAppearance } from './appearance-schema.ts'; // AF-010/AF-008
 
 type Plain = Record<string, unknown>;
 
@@ -95,6 +96,17 @@ function validTimezone(zone: unknown): boolean {
   try { new Intl.DateTimeFormat('en', { timeZone: zone }); return true; } catch { return false; }
 }
 
+/** AF-002: first-run steps of older versions; a first run that stopped on one goes on at 'profile'. */
+const LEGACY_STEPS: ReadonlySet<string> = new Set(['tour', 'about', 'team', 'voice']);
+const TOUR_ID = new RegExp(PATTERNS.tourStep);
+
+/** AF-002: the spotlight tour's keys of the onboarding section (absent = their default). */
+function validateTour(o: Settings['onboarding']): void {
+  if (o.tour !== undefined) oneOf(o.tour, 'onboarding.tour');
+  if (o.tourStep !== undefined && (typeof o.tourStep !== 'string' || !TOUR_ID.test(o.tourStep))) bad('onboarding.tourStep', 'a step id or ""');
+  if (o.hints !== undefined && (!Array.isArray(o.hints) || o.hints.length > MAX_HINTS || o.hints.some((id) => typeof id !== 'string' || !id || !TOUR_ID.test(id)))) bad('onboarding.hints', `a list of up to ${MAX_HINTS} area ids`);
+}
+
 const HHMM = new RegExp(PATTERNS.clock);
 const LANGUAGE = new RegExp(PATTERNS.language);
 const GOOGLE_CLIENT_ID = new RegExp(PATTERNS.googleClientId);
@@ -112,6 +124,7 @@ export function validateSettings(s: Settings): void {
 
   const ui = s.preferences;
   oneOf(ui.theme, 'preferences.theme');
+  oneOf(ui.whileWorking ?? 'now', 'preferences.whileWorking'); // AF-016
   intIn(ui.sidebarWidth, 'preferences.sidebarWidth');
   intIn(ui.workspaceWidth, 'preferences.workspaceWidth');
   for (const key of ['sidebarOpen', 'workspaceOpen', 'enterSends', 'closeToTray', 'openAtLogin', 'autoDownloadUpdates'] as const) boolean(ui[key], `preferences.${key}`);
@@ -144,10 +157,12 @@ export function validateSettings(s: Settings): void {
 
   boolean(s.onboarding.completed, 'onboarding.completed');
   const step = s.onboarding.step as string;
-  if (step === 'team' || step === 'voice') s.onboarding.step = 'about'; // cards that became "About you" (a first run that stopped there)
+  if (LEGACY_STEPS.has(step)) s.onboarding.step = 'profile'; // AF-002: older first runs that stopped there go on at the assistant's first step
   oneOf(s.onboarding.step, 'onboarding.step'); // B-044 first run
+  validateTour(s.onboarding); // AF-002: the spotlight tour's state
   boolean(s.feedback.includeDiagnostics, 'feedback.includeDiagnostics');
   if (s.library !== undefined) { if (!isPlain(s.library)) bad('library', 'an object'); boolean(s.library.publish, 'library.publish'); } // B-078
+  validatePersonality(s.personality, bad); // AF-006
   boolean(s.pwa.enabled, 'pwa.enabled');
   oneOf(s.pwa.bind, 'pwa.bind');
   oneOf(s.devices.peer, 'devices.peer');

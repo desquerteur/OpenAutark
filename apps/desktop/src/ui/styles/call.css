@@ -1,0 +1,141 @@
+/* AF-015: a call looks like a call (chat/call/CallOverlay.tsx, CallWave.tsx, CallTranscript.tsx).
+   The call view is its own layer over the window – dark in both themes, like a phone's call screen – with the agent big
+   in the middle, a ring that pulses with who speaks (--call-ring, data-speaker – set per frame by CallWave.tsx), the
+   status and clock, the wave, captions, the background line and four round controls; the mini view is a small floating
+   window (a bar under the top edge on the phone). The call card is the call's bubble in the chat.
+   Owns: these rules. Never: rules of other areas. */
+
+.call-view {
+  --call-ring: 1; --call-level: 0; /* the colours are tokens (tokens.css --call-*) */
+  color: var(--call-fg); font-family: var(--font);
+}
+.call-view button { color: inherit; font: inherit; }
+.call-view :focus-visible { outline: 2px solid var(--call-fg); outline-offset: 3px; }
+.call-view.full:focus { outline: none; } /* the view takes the focus when it opens; its controls show the ring */
+
+/* ---------------------------------------------------------------- full view */
+.call-view.full {
+  position: fixed; inset: 0; z-index: 45; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--call-backdrop);
+  animation: call-in .22s ease-out;
+}
+@keyframes call-in { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+
+.call-top {
+  display: flex; align-items: center; gap: 8px; height: var(--header-h); padding: 0 12px 0 max(12px, var(--caption-left));
+  -webkit-app-region: drag; app-region: drag;
+}
+.call-top button { -webkit-app-region: no-drag; app-region: no-drag; }
+.call-top-button { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--call-control); }
+.call-top-button:hover { background: var(--call-control-hover); }
+.call-top-title { color: var(--call-muted); font-size: 13px; font-weight: 500; letter-spacing: .02em; }
+
+.call-stage {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 0;
+  padding: 8px 24px; overflow: hidden; text-align: center;
+}
+
+.call-face { position: relative; display: grid; place-items: center; width: 200px; height: 200px; margin-bottom: 14px; }
+.call-face > .avatar, .call-face > .call-face-empty { position: relative; z-index: 1; box-shadow: var(--call-shadow-face); }
+.call-face-empty { display: grid; place-items: center; width: 136px; height: 136px; border-radius: 50%; background: var(--call-control); }
+.call-ring {
+  position: absolute; inset: 18px; border-radius: 50%; border: 3px solid var(--call-quiet);
+  transform: scale(var(--call-ring)); transition: transform 90ms linear, border-color .2s ease, opacity .2s ease;
+}
+.call-ring.outer { inset: 0; border-width: 2px; opacity: .45; transform: scale(calc(1 + (var(--call-ring) - 1) * 1.8)); }
+.call-view[data-speaker=agent] .call-ring { border-color: var(--call-agent); }
+.call-view[data-speaker=person] .call-ring { border-color: var(--call-person); }
+.call-view[data-phase=connecting] .call-ring { animation: call-ringing 1.4s ease-in-out infinite; }
+.call-view[data-phase=connecting] .call-ring.outer { animation-delay: .25s; }
+@keyframes call-ringing { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.08); opacity: .35; } }
+
+.call-name { margin: 0; font-size: 28px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.call-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: 0; color: var(--call-muted); font-size: 15px; min-height: 24px; }
+.call-view[data-phase=speaking] .call-status > span:last-child { color: var(--call-agent); }
+.call-muted-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--call-tint-strong); color: var(--call-fg); font-size: 12px; }
+
+.call-wave { width: 240px; height: 44px; margin: 6px 0 2px; }
+
+.call-captions { width: min(560px, 100%); min-height: 64px; display: grid; align-items: center; padding: 10px 16px; border-radius: var(--r-lg); background: var(--call-tint); }
+.call-captions p { margin: 0; font-size: 16px; line-height: 1.45; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.call-captions strong { font-weight: 600; margin-right: 4px; }
+.call-captions [data-who=agent] strong { color: var(--call-agent); }
+.call-captions [data-who=person] strong { color: var(--call-person); }
+.call-captions .call-captions-empty { color: var(--call-muted); font-size: 14px; }
+
+.call-background { display: inline-flex; align-items: center; gap: 8px; max-width: min(560px, 100%); margin: 4px 0 0; color: var(--call-muted); font-size: 13px; }
+.call-background-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--call-agent); }
+
+.call-controls { display: flex; justify-content: center; align-items: flex-start; gap: 28px; padding: 16px 24px 36px; }
+.call-control { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 76px; }
+.call-control-button { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--call-control); transition: background .15s ease, color .15s ease; }
+.call-control-button:hover { background: var(--call-control-hover); }
+.call-control-button.on { background: var(--call-fg); color: var(--call-bg); }
+.call-control.danger .call-control-button { background: var(--call-danger); color: var(--call-danger-fg); }
+.call-control.danger .call-control-button:hover { background: var(--call-danger-hover); }
+.call-control-label { color: var(--call-muted); font-size: 12px; line-height: 1.3; text-align: center; }
+
+/* ---------------------------------------------------------------- mini view (floating window) */
+.call-view.mini {
+  position: fixed; z-index: 45; left: 68px; bottom: 16px; display: flex; align-items: center; gap: 6px;
+  width: 300px; min-height: 64px; padding: 8px 10px 8px 8px; border-radius: 18px; background: var(--call-bg);
+  box-shadow: var(--call-shadow-mini), 0 0 0 1px var(--call-edge) inset; cursor: grab; touch-action: none; user-select: none;
+  animation: call-in .18s ease-out;
+}
+.call-view.mini[style] { bottom: auto; }
+.call-view.mini:active { cursor: grabbing; }
+.call-mini-open { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 2px; border-radius: 12px; text-align: left; }
+.call-mini-open:hover { background: var(--call-hover); }
+.call-face.small { width: 48px; height: 48px; margin: 0; flex: none; }
+.call-face.small .call-ring { inset: 0; border-width: 2px; }
+.call-face.small > .avatar { box-shadow: none; }
+.call-mini-text { display: flex; flex-direction: column; min-width: 0; }
+.call-mini-name { overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.call-mini-status { display: inline-flex; align-items: center; gap: 4px; color: var(--call-muted); font-size: 12px; white-space: nowrap; }
+.call-view.mini[data-phase=speaking] .call-mini-status { color: var(--call-agent); }
+.call-mini-controls { display: flex; gap: 6px; flex: none; }
+.call-mini-controls .call-control { width: auto; }
+.call-mini-controls .call-control-button { width: 40px; height: 40px; }
+
+/* the phone: the mini window is a bar under the header row (never under a desktop window's caption controls) */
+.call-view.mini.phone { left: 8px; right: 8px; top: calc(env(safe-area-inset-top) + var(--header-h) + 6px); bottom: auto; width: auto; cursor: default; }
+/* …and the status lines (other voice chats, notices) move below that bar instead of lying under it */
+:root:has(.call-view.mini.phone) .mobile-shell > .status-host { top: calc(env(safe-area-inset-top) + var(--header-h) + 80px); }
+
+/* ---------------------------------------------------------------- narrow screens (phone, 375 px) */
+@media (max-width: 719px) {
+  .call-top { padding-top: env(safe-area-inset-top); height: calc(var(--header-h) + env(safe-area-inset-top)); }
+  .call-face { width: 168px; height: 168px; margin-bottom: 8px; }
+  .call-face-empty { width: 112px; height: 112px; }
+  .call-name { font-size: 24px; }
+  .call-captions p { font-size: 15px; }
+  .call-controls { gap: 12px; padding: 12px 12px calc(28px + env(safe-area-inset-bottom)); }
+  .call-control { width: 72px; }
+  .call-control-button { width: 60px; height: 60px; }
+}
+@media (max-height: 560px) {
+  .call-face { width: 120px; height: 120px; margin-bottom: 0; }
+  .call-captions { min-height: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call-view.full, .call-view.mini { animation: none; }
+  .call-ring, .call-ring.outer { transition: border-color .2s ease; transform: none; }
+  .call-view[data-phase=connecting] .call-ring { animation: none; }
+}
+
+/* ---------------------------------------------------------------- the call card in the chat */
+.call-card { width: min(440px, 100%); padding: 12px 14px 10px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.call-card-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.call-card-mark { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--hover); color: var(--secondary); }
+.call-card.running .call-card-mark { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
+.call-card-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.call-card-title { overflow: hidden; font-size: 14px; font-weight: 600; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.call-card-meta { font-size: 12px; line-height: 1.4; }
+.call-card-length { flex: none; font-size: 14px; font-weight: 600; }
+.call-card-length.live { color: var(--success); }
+.call-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; padding-left: 46px; }
+.call-card .call-transcript-toggle { margin-left: -6px; padding: 0 8px 0 4px; }
+.call-card-open { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 8px; border-radius: 6px; color: var(--success); font-size: 12px; font-weight: 500; }
+.call-card-open:hover { background: var(--hover); }
+.call-card .call-transcript-body { margin: 8px 0 0 18px; }

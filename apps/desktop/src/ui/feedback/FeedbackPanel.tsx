@@ -1,34 +1,34 @@
 // B-055 Q4: the feedback form – in the header menu (FeedbackMenu.tsx) and in Settings › Feedback's "New report"
 // dialog (FeedbackPanel). One field (focused) with the mic inside it (tap to toggle, hold to talk – it keeps adding
 // text), the "Screenshot" row where this host captured the window (checked by default, a thumbnail that opens "Paint
-// over", one muted line), and one action: Send where this build can send, else Save (delivery.ts). No categories.
+// over", one muted line), and one action: Send where this build can send, else Save (delivery.ts).
 // The report carries one image: the painted one flattened, or the original re-encoded (paint.ts reportImage – never
 // the raw shot of a painted draft). The draft lives in draft.ts, so closing the menu keeps it; a created report
 // clears it. After Send/Save the form says what happened in one line; when the send was not confirmed, the
 // action cell of that line reads "Send again" (not Close) and sends the same saved report. The message slot beside
 // the action is always reserved, so nothing moves when an error comes.
+// AF-003: a two-way choice "Bug | Idea" above the field (the report's kind); a send that was not confirmed reads
+// "Not sent." with the reason beside the action (announced); a delivered report shows "Report no. …" with Copy.
 // Owns: the form, uploading its image and submitting. Never: starts an app change, requests a login, opens a
 // browser or discards a failed submission.
 
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { FeedbackKind, FeedbackReport } from '../../shared/model/system.ts';
+import type { FeedbackReport } from '../../shared/model/system.ts';
 import { uploadFile } from '../lib/files.ts';
 import { Icon } from '../lib/icons.tsx';
 import { errorText, rpc } from '../lib/rpc.ts';
 import { settings } from '../lib/store.ts';
+import { pushToast, toastError } from '../lib/toasts.ts';
 import { Spinner } from '../lib/ui.tsx';
 import { canCaptureWindow, dataUrlToBlob, useDictation } from './bridge.ts';
-import { appendDraftText, clearDraft, feedbackDraft, paintSettled, shotTaking, takeShot, updateDraft } from './draft.ts';
-import type { FeedbackDraft } from './draft.ts';
-import { canSendAgain, doneText, sendAgainLabel, sendLabel, sendReport, SHOT_HINT, SHOT_LABEL, SHOT_MISSING, useFeedbackSending } from './delivery.ts';
+import { appendDraftText, clearDraft, DRAFT_KINDS, draftKind, feedbackDraft, paintSettled, shotTaking, takeShot, updateDraft } from './draft.ts';
+import type { DraftKind, FeedbackDraft } from './draft.ts';
+import { canSendAgain, doneText, receiptText, sendAgainLabel, sendLabel, sendReport, SHOT_HINT, SHOT_LABEL, SHOT_MISSING, useFeedbackSending } from './delivery.ts';
 import { talkError, talkState } from './FeedbackButton.tsx';
 import { FeedbackPrivacyNote } from './FeedbackPrivacy.tsx';
 import { PAINT_UNREADY, REPORT_IMAGE_NAME, reportImage } from './paint.ts';
 import { flatten } from './paint-image.ts';
 import { here, openPaint } from './popover-state.ts';
-
-/** Reports from the menu carry no category any more (Q4); the runtime still wants one. */
-const REPORT_KIND: FeedbackKind = 'bug';
 
 /** The report's one image, uploaded (painted: as flattened; else the original re-encoded). */
 async function uploadImage(draft: FeedbackDraft): Promise<{ screenshotFileId?: string }> {
@@ -60,6 +60,36 @@ function ShotRow(props: { draft: FeedbackDraft; disabled: boolean }) {
       </div>
     </div>
   );
+}
+
+/** AF-003: Bug | Idea – one radio group (arrow keys move the choice, one tab stop). */
+function KindChoice(props: { kind: DraftKind; disabled: boolean }) {
+  const pick = (kind: DraftKind, focus?: HTMLElement | null) => { updateDraft({ kind }); focus?.focus(); };
+  const onKeyDown = (event: KeyboardEvent) => {
+    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const index = (DRAFT_KINDS.findIndex((option) => option.kind === props.kind) + step + DRAFT_KINDS.length) % DRAFT_KINDS.length;
+    const group = (event.currentTarget as HTMLElement | null);
+    pick(DRAFT_KINDS[index].kind, group?.querySelectorAll<HTMLElement>('[role=radio]')[index]);
+  };
+  return (
+    <div class="segmented feedback-kind" role="radiogroup" aria-label="Kind of feedback" onKeyDown={onKeyDown}>
+      {DRAFT_KINDS.map((option) => {
+        const checked = option.kind === props.kind;
+        return (
+          <button key={option.kind} type="button" role="radio" aria-checked={checked} tabIndex={checked ? 0 : -1}
+            class={checked ? 'selected' : ''} disabled={props.disabled} onClick={() => pick(option.kind)}>
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function copyNumber(receiptId: string): void {
+  void navigator.clipboard.writeText(receiptId).then(() => pushToast({ title: 'Copied', tone: 'info' }, 1500), (error: unknown) => toastError(error, 'Could not copy'));
 }
 
 export function FeedbackForm(props: { onClose: () => void }) {
@@ -95,7 +125,7 @@ export function FeedbackForm(props: { onClose: () => void }) {
       const current = feedbackDraft.peek();
       const files = await uploadImage(current);
       const where = current.where.view ? current.where : here();
-      saved = await rpc.call('feedback.create', { kind: REPORT_KIND, text: current.text.trim(), view: where.view, conversationId: where.conversationId, ...files });
+      saved = await rpc.call('feedback.create', { kind: draftKind(current), text: current.text.trim(), view: where.view, conversationId: where.conversationId, ...files });
       clearDraft(); // the report holds it now; the next press takes a fresh screenshot
       if (!canSendHere) { setDone(saved); return; } // saved on the PC; nothing is sent
       setDone(await sendReport(saved.id));
@@ -127,11 +157,19 @@ export function FeedbackForm(props: { onClose: () => void }) {
   if (done) {
     const report = done;
     const retry = canSendAgain(report.status, sending);
+    const receipt = receiptText(report);
+    const outcome = report.status === 'sent' ? ' ok' : error ? ' failed' : '';
     return (
       <div class="feedback-panel done">
-        <p class="feedback-done">{doneText(report.status, sending !== false)}</p>
+        <p class={`feedback-done${outcome}`}>{doneText(report.status, sending !== false)}</p>
+        {receipt && (
+          <p class="feedback-receipt">
+            <span class="feedback-receipt-number" title={report.receiptId}>{receipt}</span>
+            <button type="button" class="button ghost small" aria-label="Copy the report number" onClick={() => copyNumber(report.receiptId!)}>Copy</button>
+          </p>
+        )}
         <div class="feedback-actions">
-          <p class="feedback-message" role="status" title={error ?? undefined}>{error}</p>
+          <p class="feedback-message" role="alert" title={error ?? undefined}>{error}</p>
           {retry
             ? <button type="button" class="button primary feedback-again" disabled={busy} onClick={() => void again(report.id)}>{sendAgainLabel(busy)}</button>
             : <button type="button" class="button primary" onClick={props.onClose}>Close</button>}
@@ -143,15 +181,17 @@ export function FeedbackForm(props: { onClose: () => void }) {
   const listening = dictation.state === 'listening';
   const transcribing = dictation.state === 'transcribing' || talkState.value === 'transcribing';
   const message = error ?? dictation.error ?? talkError.value;
+  const kind = draftKind(draft);
   return (
     <div class="feedback-panel">
+      <KindChoice kind={kind} disabled={busy} />
       <div class="feedback-input">
         <textarea
           ref={field}
           class="set-textarea"
           rows={4}
           aria-label="Your feedback"
-          placeholder="What happened, or what would you like?"
+          placeholder={DRAFT_KINDS.find((option) => option.kind === kind)?.placeholder}
           value={draft.text} disabled={busy}
           onInput={(event) => updateDraft({ text: (event.currentTarget as HTMLTextAreaElement).value })}
           onKeyDown={(event) => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) void submit(); }}

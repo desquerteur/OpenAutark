@@ -7,7 +7,7 @@
 // Owns: the definitions, both texts and how the text is read. Never: reads or writes files, decides what applies.
 
 import type { Settings } from '../../shared/model/system.ts';
-import { ONBOARDING_STEPS } from '../../shared/model/system.ts';
+import { ONBOARDING_STEPS, TOUR_STATES } from '../../shared/model/system.ts';
 import { DEFAULT_DAY_SETTINGS, MAX_BUFFER_MIN } from '../../shared/model/day-settings.ts';
 import { DEFAULT_RETENTION, MAX_RETENTION_DAYS } from '../../shared/model/lifecycle.ts';
 import { localSpeechIds } from '../../shared/model/local-speech-models.ts';
@@ -16,6 +16,7 @@ import { KEY_HANDLE, PROVIDER_ID, PROVIDER_PROTOCOLS, providerNotes } from '../.
 import { DEFAULT_RELAY } from '../../shared/model/relay.ts';
 import { MAX_WORDS } from '../../shared/voice/vocabulary.ts';
 import { APPEARANCE_SECTION } from './appearance-schema.ts';
+import { PERSONALITY_SECTION } from '../personality/settings-section.ts'; // AF-006
 
 type Plain = Record<string, unknown>;
 type Literal = string | number | boolean;
@@ -75,7 +76,12 @@ export const PATTERNS = {
   language: '^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$',
   provider: '^[a-z][a-z0-9-]{1,39}$',
   googleClientId: '^[A-Za-z0-9._-]{1,200}$',
+  /** AF-002: a tour step or area id (onboarding.tourStep, onboarding.hints). */
+  tourStep: '^[a-z0-9-]{0,40}$',
 } as const;
+
+/** AF-002: the most area hints onboarding.hints keeps. */
+export const MAX_HINTS = 40;
 
 const flag = (key: string, about: string, value: boolean): KeyDef => ({ key, about, type: 'boolean', options: [true, false], default: value });
 const choice = (key: string, about: string, options: readonly string[], value: string): KeyDef => ({ key, about, type: 'string', options, default: value });
@@ -103,6 +109,7 @@ export const SECTIONS: readonly SectionDef[] = [
     text('timezone', 'Your time zone', 'an IANA time zone such as "Europe/Berlin"', { maxLength: 64, default: fromPc('timezone') }),
     text('notes', 'How you want to be spoken to, kept by the AI (a language per topic, a form of address) – every agent reads it', `text up to ${NOTES_MAX} characters`, { maxLength: NOTES_MAX, default: '' }),
   ] },
+  PERSONALITY_SECTION, // AF-006: Settings › Personality (runtime/personality/settings-section.ts)
   { key: 'preferences', title: 'Window and app', keys: [
     choice('theme', 'Colour scheme of the window', ['system', 'light', 'dark'], 'system'),
     flag('sidebarOpen', 'The sidebar on the left is open', true),
@@ -110,6 +117,7 @@ export const SECTIONS: readonly SectionDef[] = [
     flag('workspaceOpen', 'The side pane on the right (the browser) is open', false),
     int('workspaceWidth', 'Width of the side pane in pixels', 280, 1200, 420),
     flag('enterSends', 'Enter sends a message, Shift+Enter starts a new line (false: Ctrl+Enter sends)', true),
+    choice('whileWorking', 'What sending does while an agent works in the chat: now = it reaches the agent at once, queue = it waits in the queue of the chat until the agent is done (Ctrl+Enter does the other)', ['now', 'queue'], 'now'), // AF-016
     flag('closeToTray', 'Closing the window keeps the app and the agents running', true),
     flag('openAtLogin', 'Whether the app starts with the PC', false),
     flag('autoDownloadUpdates', 'New versions download by themselves', false),
@@ -176,7 +184,12 @@ export const SECTIONS: readonly SectionDef[] = [
   ] },
   { key: 'onboarding', title: 'First run', keys: [
     flag('completed', 'Whether the first run is finished', false),
-    choice('step', 'The first-run card on screen (done = finished)', ONBOARDING_STEPS, 'tour'),
+    choice('step', 'The setup assistant\'s step on screen (done = finished)', ONBOARDING_STEPS, 'profile'),
+    // AF-002: the spotlight tour through the app (Settings › General › Getting started shows it again)
+    choice('tour', 'The app tour: new = not shown yet, started = stopped part way, done = seen to the end, skipped = closed with Skip', TOUR_STATES, 'new'),
+    text('tourStep', 'The app tour\'s step it goes on at', 'a step id, or "" (the start)', { pattern: PATTERNS.tourStep, default: '' }),
+    { key: 'hints', about: 'The areas whose short first-visit hint was shown', type: 'array', allowed: `a list of up to ${MAX_HINTS} area ids`,
+      default: [], schema: { maxItems: MAX_HINTS, items: { type: 'string', pattern: PATTERNS.tourStep } } },
   ] },
 ];
 
