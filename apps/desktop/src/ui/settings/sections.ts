@@ -27,6 +27,11 @@ export const SECTIONS: readonly SectionInfo[] = [
     'enter sends', 'send', 'tray', 'close', 'login', 'startup', 'start with windows', 'notifications', 'sound',
     'behavior', 'keep running', 'keep the screen on', 'screen', 'keep awake', 'sleep',
   ] },
+  // AF-008: the look and layout (settings.json › appearance), data-tour="appearance" on the page
+  { id: 'appearance', title: 'Appearance', icon: 'palette', file: SETTINGS_FILE, requires: ['settings.update'], keywords: [
+    'appearance', 'look', 'theme', 'themes', 'dark', 'light', 'colour', 'color', 'accent', 'background', 'font', 'text size', 'density', 'radius', 'corners',
+    'layout', 'sidebar', 'panels', 'chat tabs', 'dock', 'browser pane', 'export theme', 'import theme', 'reset', 'default', 'darstellung',
+  ] },
   // Listed everywhere (B-078: it holds the former Voice page); its providers and uses show where accounts.detect is allowed.
   { id: 'models', title: 'Models', icon: 'plugs', file: SETTINGS_FILE, requires: [], keywords: [
     'codex', 'claude', 'plan', 'account', 'provider', 'login', 'sign in', 'api key', 'openai', 'anthropic', 'openrouter', 'gemini', 'deepinfra', 'mistral',

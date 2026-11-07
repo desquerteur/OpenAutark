@@ -23,3 +23,8 @@ the window and on connected phones, after the app's own styles. Deleting the fil
 
 A new view is a page: a file `<data>/pages/<name>.html` becomes a row on every tab area's "+" page (the global pane, each chat's area) and reaches the whole app (skill
 `app-data-model`, with a small example). A tool for one conversation is a ```app mini-tool in the chat (tool `ui.help`, topic "app").
+
+Simpler changes need no CSS: Settings › Appearance (and `settings.json › appearance`) holds the person's own themes –
+accent colour, background for light and dark, font, text size, density, corner radius – (`themes`, the one in use:
+`theme`), where a chat's tabs dock (`chatDock`: right, left, bottom, top or float, with sizes) and the order of the
+panels a new tab offers (`panels`, `hiddenPanels`). `theme.css` still wins over a theme.

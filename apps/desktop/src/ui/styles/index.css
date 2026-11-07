@@ -42,3 +42,4 @@
 @import "./splits.css"; /* B-057: split rows, the sidebar's split rows, a split's page, the composer's Ultra cell */
 @import "./remote.css";
 @import "./repair.css"; /* 23.10.: repair screen after a broken upgrade or a crash loop */
+@import "./appearance.css"; /* AF-008: the person's own theme beyond the tokens, Settings › Appearance */

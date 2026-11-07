@@ -17,6 +17,7 @@ import { accounts, isMobile } from '../lib/store.ts';
 import { AboutPage } from './AboutPage.tsx';
 import { AccountRow } from './AccountRow.tsx';
 import { AppsPage } from './AppsPage.tsx';
+import { AppearancePage } from './AppearancePage.tsx';
 import { DayGroup } from './calendar-day.tsx';
 import { CalendarsGroup } from './calendar-sources.tsx';
 import { Group } from './controls.tsx';
@@ -74,6 +75,7 @@ function CalendarPage() {
 
 const CONTENT: Readonly<Record<SettingsPage, ComponentType>> = {
   general: GeneralPage,
+  appearance: AppearancePage,
   models: ModelsPage,
   calendar: CalendarPage,
   secrets: SecretsPage,

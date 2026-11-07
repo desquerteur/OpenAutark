@@ -3,7 +3,11 @@
 // docked right (the default, like a side panel), left, at the bottom or the top, or floating as a window of its own over
 // the chat, with its width, height and the floating window's box. Every value is checked here once (forgiving reads
 // for the UI, the same limits for settings.json's comments and checks – runtime/settings/schema.ts, validate.ts).
+// AF-008: the person's own themes and the one in use (shared/model/themes.ts) and the order and visibility of the panels a
+// new tab offers.
 // Owns: the shapes, defaults, limits and the pure geometry. Never: reads or writes files, touches the DOM.
+
+import { THEME_LIMITS, themeOf, themesProblem, type CustomTheme } from './themes.ts';
 
 /** Where a chat's tabs sit. */
 export type DockPlace = 'right' | 'left' | 'bottom' | 'top' | 'float';
@@ -40,9 +44,64 @@ export const DEFAULT_CHAT_DOCK: ChatDock = {
 /** The room the chat keeps beside a docked area (its messages and composer stay usable). */
 export const CHAT_MIN = { width: 340, height: 240 } as const;
 
+/** AF-008: the panels a blank tab offers (workspace/NewTabPage.tsx), in the person's order. */
+export type PanelKind = 'day' | 'work' | 'notes' | 'media' | 'files' | 'agents';
+export const DEFAULT_PANELS: readonly PanelKind[] = ['day', 'work', 'notes', 'media', 'files', 'agents'];
+export const PANEL_LABELS: Readonly<Record<PanelKind, string>> = { day: 'My day', work: 'Work', notes: 'Notes', media: 'Media', files: 'Files', agents: 'Agents' };
+
 /** settings.json › appearance. */
 export interface AppearanceSettings {
   chatDock: ChatDock;
+  /** AF-008: the theme in use – the id of one of `themes`, or '' for Autark's own look. */
+  theme: string;
+  /** AF-008: the person's own themes (shared/model/themes.ts). */
+  themes: CustomTheme[];
+  /** AF-008: every panel of a new tab, in its order. */
+  panels: PanelKind[];
+  /** AF-008: the panels a new tab leaves out. */
+  hiddenPanels: PanelKind[];
+}
+
+/** The panels in the person's order: unknown and doubled ones dropped, missing ones at the end. */
+export function panelOrderOf(value: unknown): PanelKind[] {
+  const listed = Array.isArray(value) ? value.filter((item): item is PanelKind => DEFAULT_PANELS.includes(item as PanelKind)) : [];
+  const unique = [...new Set(listed)];
+  return [...unique, ...DEFAULT_PANELS.filter((kind) => !unique.includes(kind))];
+}
+
+/** A forgiving read of the whole section (the window draws from this). */
+export function appearanceOf(value: unknown): AppearanceSettings {
+  const raw = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const themes: CustomTheme[] = [];
+  for (const item of Array.isArray(raw.themes) ? raw.themes : []) {
+    const theme = themeOf(item, themes.map((each) => each.id));
+    if (theme && themes.length < THEME_LIMITS.themes) themes.push(theme);
+  }
+  const theme = typeof raw.theme === 'string' && themes.some((each) => each.id === raw.theme) ? raw.theme : '';
+  const hidden = Array.isArray(raw.hiddenPanels) ? [...new Set(raw.hiddenPanels.filter((item): item is PanelKind => DEFAULT_PANELS.includes(item as PanelKind)))] : [];
+  return { chatDock: chatDockOf(raw.chatDock), theme, themes, panels: panelOrderOf(raw.panels), hiddenPanels: hidden };
+}
+
+/** The problem with written appearance keys other than chatDock (settings.json's check), or undefined. */
+export function appearanceProblem(raw: Record<string, unknown>): { path: string; expected: string } | undefined {
+  if (raw.themes !== undefined) { const problem = themesProblem(raw.themes); if (problem) return problem; }
+  if (raw.theme !== undefined) {
+    const ids = Array.isArray(raw.themes) ? raw.themes.map((item) => (item as Record<string, unknown>)?.id) : [];
+    if (typeof raw.theme !== 'string' || (raw.theme !== '' && !ids.includes(raw.theme))) return { path: 'theme', expected: '"" or the id of one of the themes' };
+  }
+  if (raw.panels !== undefined) {
+    const list = raw.panels;
+    if (!Array.isArray(list) || list.length !== DEFAULT_PANELS.length || new Set(list).size !== list.length || !list.every((item) => DEFAULT_PANELS.includes(item as PanelKind))) {
+      return { path: 'panels', expected: `every one of ${DEFAULT_PANELS.join(', ')} once` };
+    }
+  }
+  if (raw.hiddenPanels !== undefined) {
+    const list = raw.hiddenPanels;
+    if (!Array.isArray(list) || new Set(list).size !== list.length || !list.every((item) => DEFAULT_PANELS.includes(item as PanelKind))) {
+      return { path: 'hiddenPanels', expected: `some of ${DEFAULT_PANELS.join(', ')}` };
+    }
+  }
+  return undefined;
 }
 
 const clampInt = (value: unknown, [min, max]: readonly [number, number], fallback: number): number =>
