@@ -254,4 +254,23 @@ dialog.dialog.voice-words-dialog { height: min(560px, calc(100vh - 2 * var(--dia
 .apps-tools-more { color: var(--muted); font-family: inherit; }
 .apps-mail-servers { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 10px; }
 .apps-mail-servers .input { width: 100%; min-width: 0; }
+/* AF-005 Connectors: the row's ⋯ (the same menu as its right click), the own-server form's Name | Value rows in a box of one
+   height, the pasted JSON and its check in fixed boxes (typing moves nothing below them), the agents list */
+.apps-row .set-row-control { gap: 8px; }
+.apps-more { flex: none; }
+.secret-edit .apps-rows-label { display: block; margin-top: 14px; }
+.apps-rows { height: 128px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+dialog .apps-rows .secret-kv-row > textarea.input { height: 34px; min-height: 0; padding: 6px 10px; font-size: 13px; line-height: 20px; resize: none; } /* not the dialog's tall textarea */
+.secret-edit .apps-key + .apps-key { margin-top: 14px; }
+dialog textarea.apps-import-text { min-height: 0; resize: none; }
+.apps-import-text { display: block; width: 100%; height: 220px; resize: none; font-family: var(--mono); font-size: 12px; line-height: 1.5; white-space: pre; }
+.apps-import-check { height: 92px; margin: 10px 0 0; padding: 0; overflow-y: auto; color: var(--secondary); font-size: 12px; line-height: 18px; list-style: none; overflow-wrap: anywhere; }
+.apps-import-check.error { color: var(--danger); }
+.apps-import-check .note { color: var(--muted); }
+.apps-agents { display: grid; gap: 2px; max-height: 280px; margin-top: 12px; overflow-y: auto; }
+.apps-agents.inactive { opacity: .6; }
+.apps-agent { display: grid; grid-template-columns: 16px minmax(0, auto) minmax(0, 1fr); align-items: center; gap: 10px; min-height: 32px; cursor: pointer; }
+.apps-agent > input { width: 16px; height: 16px; margin: 0; }
+.apps-agent-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.apps-agent-role { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .feedback-review-text { max-height: 50vh; overflow-y: auto; white-space: pre-wrap; user-select: text; }

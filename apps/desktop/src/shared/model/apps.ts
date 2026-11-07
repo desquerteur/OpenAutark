@@ -31,6 +31,8 @@ export interface ConnectedApp {
   toolNames: string[];
   /** While 'waiting': the sign-in page (the system browser opened it). */
   signInUrl?: string;
+  /** AF-005: the agents (ids or names) that may use it, as its file names them; missing = every agent. */
+  agents?: string[];
 }
 
 export interface MailServer { host: string; port: number; tls: 'implicit' | 'starttls' }

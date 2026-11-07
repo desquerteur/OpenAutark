@@ -215,8 +215,10 @@ export interface Connector {
   /** mail: the mailbox; servers are looked up from the address when not given; `agent` (id or name) is woken by new mail. */
   mail?: { address: string; user?: string; password: string; imap?: MailServer; smtp?: MailServer; agent?: string };
   enabled: boolean;
-  /** Changes whenever the entry's content does (a changed entry connects again). */
+  /** Changes whenever the entry's content does (a changed entry connects again; its "agents" list is left out). */
   fingerprint: string;
+  /** AF-005: the agents (ids or names) that may use it – missing: every agent (agent-access.ts). */
+  agents?: string[];
 }
 
 /** What tools.ts needs from the service to turn a connector's MCP tools into Workforce tools. */
@@ -236,6 +238,6 @@ export interface AppsService {
   list(): ConnectedApp[];
   /** Connects again; an MCP server that needs a sign-in opens it in the system browser. */
   reconnect(id: string): Promise<ConnectedApp>;
-  /** Ids of the connectors whose tools agents get right now (for the environment line). */
+  /** Ids of the connectors whose tools this agent gets right now (for the environment line; AF-005: their "agents" lists). */
   usableBy(agentId: string): string[];
 }

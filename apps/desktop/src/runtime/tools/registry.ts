@@ -77,6 +77,12 @@ export const HIDDEN_ARGS: ReadonlyMap<string, readonly string[]> = new Map([['ph
 /** Arguments that go straight into the vault: the leak guard (secrets/guard.ts) leaves them as given. */
 export const VAULT_ARGS: ReadonlyMap<string, readonly string[]> = new Map([['secrets.save', ['value']]]);
 
+/** AF-005: the tool's own agent rule (ToolDef.forAgent); one that fails offers nothing. */
+function forAgent(tool: ToolDef, agent: Agent): boolean {
+  if (!tool.forAgent) return true;
+  try { return tool.forAgent(agent); } catch { return false; }
+}
+
 const CUT_OFF = 'This call already started earlier, but no result was recorded (it was probably cut off), so whether it had an effect is unknown. I check that before doing it again.';
 
 export class Registry implements ToolRegistry {
@@ -107,7 +113,8 @@ export class Registry implements ToolRegistry {
   }
 
   /** Is `tool` offered in `mode`? (Same rule for the offer and for calls.) */
-  allowed(tool: ToolDef, _agent: Agent, mode: ModeInfo): boolean {
+  allowed(tool: ToolDef, agent: Agent, mode: ModeInfo): boolean {
+    if (!forAgent(tool, agent)) return false; // AF-005: a connector shared with some agents only
     if (tool.modes && !tool.modes.includes(mode.key)) return false;
     if (!EVERY_MODE.has(tool.name) && !tool.anyMode && !matchesPatterns(tool.name, mode.tools)) return false;
     if (tool.requires === 'device') return mode.workspace === 'computer' || mode.workspace === 'browser' || (mode.tools ?? []).some((pattern) => pattern !== '*' && matchesPatterns(tool.name, [pattern]));
@@ -141,6 +148,7 @@ export class Registry implements ToolRegistry {
     const tool = this.tools.get(name);
     if (!tool) return failure(`Unknown tool "${name}". Use one of the listed tools.`);
 
+    if (!forAgent(tool, ctx.agent)) return failure(`"${name}" belongs to a connected app the person shares with other agents only, so I cannot use it.`); // AF-005
     let mode: ModeInfo | undefined;
     try { mode = services.modes.get(ctx.mode); } catch { mode = undefined; }
     if (mode && !this.allowed(tool, ctx.agent, mode)) return failure(`Tool "${name}" is not in mode "${ctx.mode}".`);

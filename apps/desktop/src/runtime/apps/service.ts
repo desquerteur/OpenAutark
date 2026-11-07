@@ -3,7 +3,9 @@
 // (the data folder watcher, owner of the entry 'connectors'). Applying: a new or changed entry connects and lists its
 // tools ('connecting' → 'ok', tools registered as `app.<id>.<tool>` for every agent); an entry that is gone loses its
 // tools, connection and sign-in; "disabled": true unregisters its tools ('off'). At start an entry whose tool list is
-// cached (kv 'tools:<id>', same content) registers it without starting or calling a server.
+// cached (kv 'tools:<id>', same content) registers it without starting or calling a server. AF-005: an entry whose only
+// change is its "agents" list keeps its connection and tools – who may use them is read at offer and call time
+// (agent-access.ts, tools.ts).
 // Sign-in: an http server that answers 401 starts the MCP sign-in in the system browser ('waiting' with the page) when
 // the entry was just added or changed in the file or apps.reconnect asks for it – never on a plain start (then it says
 // 'signin' and how to start it). A server that allows no sign-in, a refused key or a refused mail login say so ('signin').
@@ -17,6 +19,7 @@ import { WorkforceError } from '../../shared/errors.ts';
 import type { AppStatus, ConnectedApp } from '../../shared/model/apps.ts';
 import type { Timers } from '../schedules/scheduler.ts';
 import type { ToolDef } from '../tools/types.ts';
+import { connectorAllows, sameAgents } from './agent-access.ts';
 import { CONNECTORS_DIR, ensureFiles, migrateRecords, readConnectors, STATUS_FILE, writeStatus } from './connectors.ts';
 import { AppConnections } from './connections.ts';
 import type { AppsDeps } from './deps.ts';
@@ -136,13 +139,16 @@ export class Apps implements AppsService {
       };
       if (item.error && (item.status === 'error' || item.status === 'signin')) app.error = item.error;
       if (item.signIn && item.status === 'waiting') app.signInUrl = item.signIn.authUrl;
+      if (item.connector.agents) app.agents = [...item.connector.agents];
       return app;
     });
   }
 
-  /** Connectors whose tools agents get now (every agent gets every connector). */
-  usableBy(_agentId: string): string[] {
-    return [...this.items.values()].filter((item) => (item.status === 'ok' || item.status === 'connecting') && item.registered.length > 0).map((item) => item.connector.id);
+  /** Connectors whose tools this agent gets now (AF-005: those whose "agents" list names its id, or that have none). */
+  usableBy(agentId: string): string[] {
+    return [...this.items.values()]
+      .filter((item) => (item.status === 'ok' || item.status === 'connecting') && item.registered.length > 0 && connectorAllows(item.connector, { id: agentId }))
+      .map((item) => item.connector.id);
   }
 
   async reconnect(id: string): Promise<ConnectedApp> {
@@ -179,7 +185,10 @@ export class Apps implements AppsService {
     for (const connector of read.connectors) {
       seen.add(connector.id);
       const prev = this.items.get(connector.id);
-      if (prev && prev.connector.fingerprint === connector.fingerprint && prev.connector.name === connector.name) continue;
+      if (prev && prev.connector.fingerprint === connector.fingerprint && prev.connector.name === connector.name) {
+        if (!sameAgents(prev.connector.agents, connector.agents)) { prev.connector = connector; this.changed(connector.id); } // AF-005: who, not how
+        continue;
+      }
       if (prev) this.drop(prev, false);
       const cached = this.d.kv.get<{ fingerprint?: string; tools?: McpToolDef[] }>(`tools:${connector.id}`);
       const tools = cached?.fingerprint === connector.fingerprint && Array.isArray(cached.tools) ? cached.tools.filter((tool) => tool && typeof tool.name === 'string') : [];

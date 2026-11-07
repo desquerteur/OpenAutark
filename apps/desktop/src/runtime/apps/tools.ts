@@ -3,6 +3,7 @@
 // * Names, descriptions and schemas: tools-schema.ts; answers and failures: tools-result.ts.
 // * Offered in every mode (anyMode) to every agent while the connector is registered (the service registers a
 //   connector's tools while it is on and unregisters them when it goes); run() says why a call cannot go now.
+//   AF-005: an entry with an "agents" list is offered to those agents only (forAgent, read live – agent-access.ts).
 // * A secret://<id> handle in the arguments is filled in from the vault when the call goes out; whatever comes back
 //   has those values masked by their handles (secrets/handles.ts maskValues).
 // * Every answer is outside content: it starts with "[untrusted content from app …]". Nothing is retried.
@@ -14,6 +15,7 @@ import { APP_ID_PATTERN } from '../../shared/model/apps.ts';
 import type { ToolContext, ToolDef, ToolOutput } from '../tools/types.ts';
 import { failure } from '../tools/types.ts';
 import { handlesIn, maskValues } from '../secrets/handles.ts';
+import { connectorAllows } from './agent-access.ts';
 import type { AppToolHost, Connector, McpCallResult, McpToolDef } from './types.ts';
 import { APP_TOOL_PREFIX, appLabel, appToolDescription, appToolNames, appToolSchema, cleanServerText } from './tools-schema.ts';
 import { withMailRun } from './mail/loops.ts';
@@ -65,6 +67,7 @@ function toolDef(connector: Connector, tool: McpToolDef, name: string, host: App
     inputSchema: schema,
     category: read ? 'read' : 'write_system',
     anyMode: true,
+    forAgent: (agent) => connectorAllows(host.state(appId)?.connector ?? connector, agent),
     describe: () => ({ summary: `${label()}: ${title}`, resource: `app://${appId}`, external: !read }),
     async run(args, ctx): Promise<ToolOutput> {
       const app = label();
