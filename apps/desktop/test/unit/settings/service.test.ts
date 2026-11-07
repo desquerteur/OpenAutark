@@ -29,7 +29,7 @@ test('defaults cover the full Settings shape with the confirmed values', () => {
   assert.deepEqual(s.notifications.pushFor, ['todo', 'blocker', 'important']);
   assert.equal(s.preferences.sidebarWidth, 288);
   assert.equal(s.preferences.closeToTray, true);
-  assert.deepEqual(Object.keys(s).sort(), ['day', 'devices', 'feedback', 'library', 'notifications', 'onboarding', 'preferences', 'profile', 'pwa', 'routing', 'voice']); // day: B-041 My day; library: B-078
+  assert.deepEqual(Object.keys(s).sort(), ['day', 'devices', 'feedback', 'library', 'notifications', 'onboarding', 'personality', 'preferences', 'profile', 'pwa', 'routing', 'voice']); // day: B-041 My day; library: B-078; personality: AF-006
   assert.deepEqual(s.voice.vocabulary, []);
 });
 

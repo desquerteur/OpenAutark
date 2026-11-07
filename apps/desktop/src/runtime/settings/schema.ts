@@ -15,6 +15,7 @@ import { MODEL_USES, OFFABLE_USES, USE_ABOUT, USE_AUTO, USE_LABELS, type ModelUs
 import { KEY_HANDLE, PROVIDER_ID, PROVIDER_PROTOCOLS, providerNotes } from '../../shared/model/provider-entries.ts';
 import { DEFAULT_RELAY } from '../../shared/model/relay.ts';
 import { MAX_WORDS } from '../../shared/voice/vocabulary.ts';
+import { PERSONALITY_SECTION } from '../personality/settings-section.ts'; // AF-006
 
 type Plain = Record<string, unknown>;
 type Literal = string | number | boolean;
@@ -102,6 +103,7 @@ export const SECTIONS: readonly SectionDef[] = [
     text('timezone', 'Your time zone', 'an IANA time zone such as "Europe/Berlin"', { maxLength: 64, default: fromPc('timezone') }),
     text('notes', 'How you want to be spoken to, kept by the AI (a language per topic, a form of address) – every agent reads it', `text up to ${NOTES_MAX} characters`, { maxLength: NOTES_MAX, default: '' }),
   ] },
+  PERSONALITY_SECTION, // AF-006: Settings › Personality (runtime/personality/settings-section.ts)
   { key: 'preferences', title: 'Window and app', keys: [
     choice('theme', 'Colour scheme of the window', ['system', 'light', 'dark'], 'system'),
     flag('sidebarOpen', 'The sidebar on the left is open', true),

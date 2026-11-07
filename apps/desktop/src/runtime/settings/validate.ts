@@ -17,6 +17,7 @@ import { validateLifecycle } from '../knowledge/lifecycle-settings.ts';
 import { clockMinutes } from '../../shared/model/day-settings.ts';
 import { MAX_WORDS } from '../../shared/voice/vocabulary.ts';
 import { NOTES_MAX, PATTERNS, SECTIONS, optionsOf, rangeOf } from './schema.ts';
+import { validatePersonality } from '../personality/settings-section.ts'; // AF-006
 
 type Plain = Record<string, unknown>;
 
@@ -146,6 +147,7 @@ export function validateSettings(s: Settings): void {
   oneOf(s.onboarding.step, 'onboarding.step'); // B-044 first run
   boolean(s.feedback.includeDiagnostics, 'feedback.includeDiagnostics');
   if (s.library !== undefined) { if (!isPlain(s.library)) bad('library', 'an object'); boolean(s.library.publish, 'library.publish'); } // B-078
+  validatePersonality(s.personality, bad); // AF-006
   boolean(s.pwa.enabled, 'pwa.enabled');
   oneOf(s.pwa.bind, 'pwa.bind');
   oneOf(s.devices.peer, 'devices.peer');

@@ -29,6 +29,11 @@ export const SECTIONS: readonly SectionInfo[] = [
     'enter sends', 'send', 'tray', 'close', 'login', 'startup', 'start with windows', 'notifications', 'sound',
     'behavior', 'keep running', 'keep the screen on', 'screen', 'keep awake', 'sleep',
   ] },
+  // AF-006: how the agents speak to the person (settings.json `personality`, profile.notes as "About me")
+  { id: 'personality', title: 'Personality', icon: 'smiley', file: SETTINGS_FILE, requires: [], tour: 'personality', keywords: [
+    'personality', 'tone', 'style', 'voice of the ai', 'casual', 'formal', 'factual', 'friendly', 'direct', 'playful', 'du', 'sie', 'address', 'form of address',
+    'language', 'emoji', 'length', 'short', 'detailed', 'custom instructions', 'instructions', 'how the ai should treat me', 'about me', 'notes', 'presets', 'template',
+  ] },
   // Listed everywhere (B-078: it holds the former Voice page); its providers and uses show where accounts.detect is allowed.
   { id: 'models', title: 'Models', icon: 'plugs', file: SETTINGS_FILE, requires: [], keywords: [
     'codex', 'claude', 'plan', 'account', 'provider', 'login', 'sign in', 'api key', 'openai', 'anthropic', 'openrouter', 'gemini', 'deepinfra', 'mistral',

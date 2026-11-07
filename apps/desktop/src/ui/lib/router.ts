@@ -26,7 +26,7 @@ export type Route =
 export type RouteView = Route['view'];
 
 /** The Settings pages (settings/sections.ts holds their titles and keywords), in nav order. */
-export const SETTINGS_PAGES = ['general', 'models', 'calendar', 'secrets', 'apps', 'skills', 'devices', 'feedback', 'about'] as const;
+export const SETTINGS_PAGES = ['general', 'personality', 'models', 'calendar', 'secrets', 'apps', 'skills', 'devices', 'feedback', 'about'] as const; // AF-006: personality
 export type SettingsPage = (typeof SETTINGS_PAGES)[number];
 export const DEFAULT_SETTINGS_PAGE: SettingsPage = 'general';
 

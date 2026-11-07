@@ -46,13 +46,16 @@ import { register as sideTabs } from './side-tabs.ts'; // B-076: the phone's sid
 import { register as phoneUse } from './phone-use.ts'; // B-078: phoneUse.attach/reply and phone.pairLink (the owner's Android phone)
 import { register as skillLinks } from './skill-links.ts'; // AF-007: skills from a link (preview, install, update)
 import { register as session } from './session.ts';
+import { register as personality } from './personality.ts'; // AF-006: an agent's own personality and its role part of SYSTEM.md
 
 /**
  * Client-facing modules (chats.ts also registers blocks.*), then providers/security/devices/app,
  * then the rest (portability.ts also registers agents.export/derive and system.backup/restore),
  * then session.ts (session.info reads the finished table at call time).
  */
-export const HANDLER_MODULES: readonly HandlerModule[] = [system, org, chats, tasks, knowledge, files, filesPath, providers, security, devices, app, media, portability, bridges, browser, sideView, work, remote, relay, taskCenter, references, teamStart, calls, repair, people, providerHistory, notes, agentCore, calendar, day, chatFiles, connectedApps, feedbackInbox, splits, abilities, pages, companies, sideTabs, phoneUse, skillLinks, rpcMethods, session];
+export const HANDLER_MODULES: readonly HandlerModule[] = [system, org, chats, tasks, knowledge, files, filesPath, providers, security, devices, app, media, portability, bridges, browser, sideView, work, remote, relay, taskCenter, references, teamStart, calls, repair, people, providerHistory, notes, agentCore, calendar, day, chatFiles, connectedApps, feedbackInbox, splits, abilities, pages, companies, sideTabs, phoneUse, skillLinks,
+  personality, // AF-006
+  rpcMethods, session];
 
 export function createHandlerTable(): HandlerTable {
   const table = new HandlerTable();

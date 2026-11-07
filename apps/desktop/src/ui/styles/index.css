@@ -19,6 +19,7 @@
 @import "./accounts.css"; /* B-044: account rows (limit bars, fixed action slots) and the add dialogs */
 @import "./account-face.css"; /* AF-009: an account's picture – logo, avatar or initials – in the rail and the account rows */
 @import "./calendar-settings.css"; /* Settings › Calendar */
+@import "./personality.css"; /* AF-006: Settings › Personality, an agent's own personality and role */
 @import "./overlays.css";
 @import "./feedback.css"; /* B-055 Q4: the feedback cell, its menu and "Paint over" */
 @import "./mobile.css";

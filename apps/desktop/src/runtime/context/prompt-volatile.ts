@@ -27,6 +27,7 @@ import { hasHavePart } from '../org/system-parts.ts'; // B-077: the pinned headi
 import { homeSection } from '../agent-core/prompt.ts'; // B-044: the home project and its skills (names + descriptions)
 import { environmentNow } from './environment.ts'; // B-047 D6: the PC, readable data folder, accounts needing sign-in, what it knows
 import { workNearbySection } from '../work-presence/context-line.ts'; // B-055 G (Q11): who else is changing files near this agent's work
+import { personalitySection } from '../personality/prompt.ts'; // AF-006: "## My personality", read fresh each turn
 
 /** The one cap of what always stands in the prompt (knowledge/always.ts). */
 export const PINNED_CAP = ALWAYS_CHARS;
@@ -138,6 +139,7 @@ export function volatileSections(services: RuntimeServices, input: VolatileInput
   const modeTask = taskId ?? split?.group?.taskId; // B-057: … and its mode is its parent's (task mode → chat mode → agent default)
   const sections: Array<[string, () => string]> = [
     ['now', () => nowSection(services, input, zone)],
+    ['personality', () => personalitySection(services, agent)], // AF-006: the global personality with the agent's own over it
     ['split', () => (split ? splitSection(agent, split) : '')], // B-057 S5: who it is, its part, the other parts, its rules
     ['environment', () => environmentNow(services, { agent, conversationId: reach, mode: turnModeInfo(services, agent, reach, modeTask) })], // B-047 D6 (every mode)
     ['work-nearby', () => workNearbySection(services, { agent, taskId })], // B-055 G (Q11): at most 3 lines / 300 chars, '' when no one works nearby
