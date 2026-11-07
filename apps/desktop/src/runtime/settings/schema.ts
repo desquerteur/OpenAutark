@@ -109,6 +109,7 @@ export const SECTIONS: readonly SectionDef[] = [
     flag('workspaceOpen', 'The side pane on the right (the browser) is open', false),
     int('workspaceWidth', 'Width of the side pane in pixels', 280, 1200, 420),
     flag('enterSends', 'Enter sends a message, Shift+Enter starts a new line (false: Ctrl+Enter sends)', true),
+    choice('whileWorking', 'What sending does while an agent works in the chat: now = it reaches the agent at once, queue = it waits in the queue of the chat until the agent is done (Ctrl+Enter does the other)', ['now', 'queue'], 'now'), // AF-016
     flag('closeToTray', 'Closing the window keeps the app and the agents running', true),
     flag('openAtLogin', 'Whether the app starts with the PC', false),
     flag('autoDownloadUpdates', 'New versions download by themselves', false),

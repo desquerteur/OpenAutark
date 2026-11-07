@@ -107,6 +107,7 @@ export function topicOf(event: EventName, data: unknown): Topic {
     case 'message.removed':
     case 'external.mention': // C8
     case 'notes.updated': // wave 3: a new version of the chat's shared notes (shared/model/notes.ts)
+    case 'queue.updated': // AF-016: the chat's prompt queue (shared/model/prompt-queue.ts)
       return `chat:${value.conversationId ?? ''}`;
     case 'conversation.upserted':
     case 'conversation.removed':

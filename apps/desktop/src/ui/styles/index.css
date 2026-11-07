@@ -11,6 +11,7 @@
 @import "./chat-area.css"; /* B-072: a chat's area – its tabs above the messages */
 @import "./working.css"; /* B-048 E4.5: the chat header's working popover and the live block's model slot */
 @import "./composer.css";
+@import "./queue.css"; /* AF-016: the prompt queue above the composer and the Send split */
 @import "./ask-strip.css"; /* B-078: important question above the composer */
 @import "./schedule.css"; /* B-044: the schedule dialog and the chat's Scheduled line */
 @import "./blocks.css";

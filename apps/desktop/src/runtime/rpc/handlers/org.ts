@@ -121,13 +121,18 @@ export function register(table: HandlerTable): void {
     const runId = id(input(params), 'runId');
     // AF-012: a turn the dispatcher has started (agent.activity names it) but not yet journaled stops by its id too.
     const known = ctx.services.runs.get(runId);
-    if (!known && await ctx.services.dispatcher.cancelRun?.(runId)) return { ok: true };
+    if (!known) {
+      const early = ctx.services.dispatcher.activity().find((item) => item.runId === runId && !item.split);
+      if (early?.conversationId) ctx.services.promptQueue?.pause(early.conversationId, 'stop'); // AF-016
+      if (await ctx.services.dispatcher.cancelRun?.(runId)) return { ok: true };
+    }
     const run = known ?? notFound('Run', { runId });
     // Finished runs have nothing to stop; the call stays idempotent. Stopping by run id never
     // hits another turn of the same agent (interrupt() without a chat stops whatever runs).
     if (run.status === 'running' || run.status === 'queued') {
       if (run.conversationId && !run.taskId && !run.splitId) clearChatRetry(ctx.services, run.agentId, run.conversationId);
       const { dispatcher, splits } = ctx.services;
+      if (run.conversationId && !run.splitId) ctx.services.promptQueue?.pause(run.conversationId, 'stop'); // AF-016: its chat's queue waits
       // AF-012: a split's run is the person's Stop of that one part (the split service ends it as stopped – never retried):
       // the agent view's Stop per sub-agent. Every other run stops through the dispatcher, by its id.
       if (run.splitId && splits) splits.stop({ splitId: run.splitId }, HUMAN_ID);

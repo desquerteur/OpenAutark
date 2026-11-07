@@ -3,6 +3,9 @@
 // waveform sits in the action row's spacer) and one primary button: Send, disabled without content.
 // AF-012: while an agent works in the chat and nothing is to be sent, that button is Stop (a square, data-tour="run-stop"),
 // and Esc stops too – in the field after its own uses, and in the chat column outside a field (composer/stop.ts).
+// AF-016: while an agent works (or messages wait), Enter does the person's default – send now or add to the chat's queue
+// (composer/queue.ts) – and Ctrl+Enter the other; the caret right of Send offers both (SendSplit.tsx); the queued
+// messages show right above the composer (QueueList.tsx).
 // Action row, fixed cells: [+] [spacer] [Ultra] [Model] [Mic] [Send] – nothing in it moves on a click.
 // How a message goes out: /important, /silent, or the Plus menu's and the Send button's right-click menu's "Send as important",
 // "Send silently" (with nothing to send yet: the draft's level) and "Schedule…": that switches the composer into schedule
@@ -45,6 +48,10 @@ import { DictationWave } from './composer/DictationWave.tsx';
 import { mentionsIn, targetAgent } from './composer/target.ts';
 import { composerControls } from './composer/controls.ts';
 import { escapeStops, stopChat, useChatStop } from './composer/stop.ts';
+import type { SendWhileWorking } from '../../shared/model/prompt-queue.ts';
+import { preferredMode, queueDraft, queueFor, sendMode, setPreferredMode } from './composer/queue.ts';
+import { QueueList } from './composer/QueueList.tsx';
+import { SendSplit } from './composer/SendSplit.tsx';
 
 export function Composer(props: { chat: ConversationSummary }) {
   const { chat } = props;
@@ -142,8 +149,8 @@ export function Composer(props: { chat: ConversationSummary }) {
   // The whole draft goes out – files, secrets, reply – also at another level (composer/send.ts).
   const sendAs = (body: string, sentLevel: MessageLevel) => sendDraft({ conversationId: chat.id, body, level: sentLevel, mentions: (sent) => mentionsIn(sent, chat), ultraOffered: ultraOffered(chat) });
 
-  /** `sentLevel`: the Plus menu's "Send as important" / "Send silently" (no slash command then). */
-  const send = async (sentLevel?: MessageLevel) => {
+  /** `sentLevel`: the Plus menu's "Send as important" / "Send silently" (no slash command then); `how`: AF-016 now, queue or the other one than the default. */
+  const send = async (sentLevel?: MessageLevel, how?: SendWhileWorking | 'other') => {
     if (sending || transcribing.peek().has(chat.id)) return; // never sends without the dictated words
     setSending(true); // also while a dictation is transcribed first (a second tap sends nothing twice)
     try {
@@ -162,6 +169,9 @@ export function Composer(props: { chat: ConversationSummary }) {
         if (clear) updateDraft(chat.id, { text: '' }); // a sent command's draft is already fresh (sendDraft)
         return;
       }
+      const way = how === 'now' || how === 'queue' ? how
+        : sendMode({ busy: (chat.live?.length ?? chat.working.length) > 0, queued: queueFor(chat.id).peek().items.length, other: how === 'other', preferred: preferredMode() });
+      if (!sentLevel && way === 'queue') { await queueDraft(chat.id, body, (sent) => mentionsIn(sent, chat)); return; }
       await sendAs(body, sentLevel ?? draft.value.level);
     } finally {
       setSending(false);
@@ -191,7 +201,8 @@ export function Composer(props: { chat: ConversationSummary }) {
     if (event.key !== 'Enter' || event.isComposing) return;
     const mod = event.ctrlKey || event.metaKey;
     const enterSends = preferences.value.enterSends && !isMobile.value;
-    if ((enterSends && !event.shiftKey && !mod) || (!enterSends && mod)) { event.preventDefault(); void (scheduling ? scheduleNow() : send()); }
+    if ((enterSends && !event.shiftKey && !mod) || (!enterSends && mod && !event.shiftKey)) { event.preventDefault(); void (scheduling ? scheduleNow() : send()); }
+    else if (!scheduling && mod && (enterSends ? !event.shiftKey : event.shiftKey)) { event.preventDefault(); void send(undefined, 'other'); } // AF-016
   };
 
   const onPaste = (event: ClipboardEvent) => {
@@ -239,6 +250,7 @@ export function Composer(props: { chat: ConversationSummary }) {
 
   return (
     <div class="composer-area" ref={areaRef} data-tour="composer">
+      <QueueList conversationId={chat.id} />
       <div class={`composer${dragOver ? ' drag-over' : ''}${level === 'important' ? ' important' : ''}${scheduling ? ' scheduling' : ''}`}
         onDragOver={(event) => { if (event.dataTransfer?.types.includes('Files')) { event.preventDefault(); setDragOver(true); } }}
         onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
@@ -279,6 +291,8 @@ export function Composer(props: { chat: ConversationSummary }) {
           <ModelChip chat={chat} agentId={agentId} openSignal={modelSignal} />
           <MicButton draftKey={chat.id} field={fieldRef} onStop={() => void dictateIntoDraft()} />
           {primary}
+          <SendSplit actions={{ sendNow: hasContent ? () => void send(undefined, 'now') : undefined, queue: hasContent ? () => void send(undefined, 'queue') : undefined,
+            preferred: preferredMode(), setPreferred: (next) => void setPreferredMode(next), enterSends: preferences.value.enterSends && !isMobile.value, scheduling }} />
         </div>
       </div>
       <input ref={fileRef} type="file" multiple hidden onChange={(event) => { const input = event.target as HTMLInputElement; void addFiles([...(input.files ?? [])]); input.value = ''; }} />

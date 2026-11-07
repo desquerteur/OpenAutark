@@ -111,6 +111,7 @@ export function validateSettings(s: Settings): void {
 
   const ui = s.preferences;
   oneOf(ui.theme, 'preferences.theme');
+  oneOf(ui.whileWorking ?? 'now', 'preferences.whileWorking'); // AF-016
   intIn(ui.sidebarWidth, 'preferences.sidebarWidth');
   intIn(ui.workspaceWidth, 'preferences.workspaceWidth');
   for (const key of ['sidebarOpen', 'workspaceOpen', 'enterSends', 'closeToTray', 'openAtLogin', 'autoDownloadUpdates'] as const) boolean(ui[key], `preferences.${key}`);
