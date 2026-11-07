@@ -5,7 +5,9 @@
 //   and chat.direct – together about 940 characters of spec, ~235 tokens, under the 600-token bound K10 set; a mode's
 //   direct offer stays at most 27 tools – test/unit/tools/tools-core.test.ts. B-057's agents.split is no core tool (owner
 //   30.10.2026: the agent does not need it all the time): tools.find / tools.call reach it, the environment's one
-//   'Splitting' line names it, and once an agent used it in a chat it is direct there from the next fresh session on – tools/learned.ts);
+//   'Splitting' line names it, and once an agent used it in a chat it is direct there from the next fresh session on – tools/learned.ts;
+//   AF-001: the chat essentials are allowed in every mode (registry.ts CHAT_ALWAYS), so chat.send, chat.read and chat.direct
+//   are direct everywhere; chat.create stays direct for the manager only – the 27-tool bound – and one tools.call away elsewhere);
 // - MODE_CORE: a built-in mode's own essentials; a saved (custom) mode gets the essentials of the tool families
 //   its patterns name (FAMILY_CORE), a '*' mode the general ones;
 // - NO_OWN_TOOLS_CORE: the execution core of an engine without its own shell/file tools (HTTP/local models),

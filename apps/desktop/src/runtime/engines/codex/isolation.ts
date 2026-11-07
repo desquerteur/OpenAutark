@@ -27,6 +27,7 @@
 
 import * as path from 'node:path';
 import type { EngineTurnInput } from '../types.ts';
+import { agentIdentityEnv } from '../agent-token.ts'; // AF-001
 
 /** Turned off with `-c features.<name>=false` when the app-server starts (server.ts). */
 export const WORKSPACE_FEATURES = ['skill_mcp_dependency_install', 'external_migration'];
@@ -68,9 +69,10 @@ export function trustKeys(cwd: string, real?: string, platform: NodeJS.Platform 
 
 /**
  * thread/start and thread/resume settings: read-only until a turn sets its sandbox; the cwd untrusted
- * and the project root; no project docs; `shellSet` (the safe git env) in every shell.
+ * and the project root; no project docs; `shellSet` (the safe git env) in every shell. AF-001: with `agentId` (a thread is
+ * one agent's) its shells also get the agent's wf identity (engines/agent-token.ts), so its `wf send` writes as the agent.
  */
-export function threadIsolation(keys: string[], shellSet: Record<string, string> = {}): {
+export function threadIsolation(keys: string[], shellSet: Record<string, string> = {}, agentId?: string): {
   sandbox: 'read-only'; approvalsReviewer: typeof REVIEWER;
   config: {
     projects: Record<string, typeof UNTRUSTED>; project_root_markers: string[]; project_doc_max_bytes: 0;
@@ -81,7 +83,7 @@ export function threadIsolation(keys: string[], shellSet: Record<string, string>
     sandbox: 'read-only', approvalsReviewer: REVIEWER,
     config: {
       projects: Object.fromEntries(keys.map((key) => [key, UNTRUSTED])), project_root_markers: [], project_doc_max_bytes: 0,
-      shell_environment_policy: { set: { ...shellSet } },
+      shell_environment_policy: { set: { ...shellSet, ...agentIdentityEnv(agentId) } },
     },
   };
 }

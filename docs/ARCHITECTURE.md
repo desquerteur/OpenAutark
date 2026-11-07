@@ -68,7 +68,7 @@ tells the AI.
 * **Shared** (`src/shared`): pure types, the RPC contract (`shared/api`), models (`shared/model`), the generative-UI
   block catalog (`shared/blocks`), text and voice helpers. No Node, DOM or Electron imports.
 * **Who calls** (`shared/api/protocol.ts` `ClientScope`, decided by the transport, never by the client): `owner`
-  (desktop window, local CLI, bearer token from `runtime.json`), `device` (a paired phone/browser of the owner),
+  (desktop window, local CLI, bearer token from `runtime.json`; AF-001 `agentId`: an agent's own wf, §3), `device` (a paired phone/browser of the owner),
   `person` (a device of an employee), `peer` (a linked PC runtime), `agent` (an MCP lease of a running turn),
   `external` (an external agent docked into one chat). `rpc/server.ts` dispatches, `rpc/scopes.ts` filters pushed
   events, the handler table (`rpc/handlers/*`) decides which scope may call what.
@@ -167,6 +167,14 @@ drive are relative, so a non-ASCII user name never appears in them); written LF 
 reaches its own company. In PowerShell JSON arguments lose their inner quotes; the stdin form
 `'<json>' | wf call <method> -` works, and the skills show both forms. The README and the `app-settings` skill also
 document the HTTP route.
+**An agent's wf writes as the agent** (AF-001, `engines/agent-token.ts`): every shell of an agent also gets
+`AUTARK_AGENT_TOKEN` – `wfa1.<agent id>.<HMAC>` under a key that lives only in this runtime process – from
+`shell.exec`/`secrets.run` per call, Claude Code per turn and Codex per thread (`shell_environment_policy.set`; a thread is
+one agent's). wf sends it beside the owner token (Hello `agent`, only to the agent's own data dir); `/ws` keeps owner
+access and marks the scope with the agent (`ClientScope` owner `agentId`), and `messages.send` then runs the agent's own
+`chat.send` (`rpc/handlers/agent-send.ts`): its name, only its chats, no wake for itself, the running run's id. A token of
+another process or of an archived agent closes the socket (4406, wf exit 3) – never a line in the person's name. An
+inherited token is never passed on (`withShim`). ACP agents share one process per account and get none (still the owner).
 
 **SQLite** (`runtime/db`): one database with WAL and a prepared-statement cache. Main tables: conversations,
 members, messages (+FTS), tasks (+FTS; steps and human to-dos are tasks), runs and run_items (the journal), wakes,
@@ -342,6 +350,13 @@ of the owner (or of the lead, for unowned team work):
 
 A person's Stop pauses the task until they resume it. `recover()` wakes every unfinished agent task once after a
 restart. The loop never completes, blocks or escalates a task by itself.
+
+**Restart limit** (AF-001, `agents/restart-guard.ts`): the dispatcher counts an agent's automatic restarts – wake groups of
+only `retry`/`review` (this loop, a lead's pick, chat retries, re-checks) and `model.set now` – at most 30 within 10 minutes.
+The start that reaches the limit still runs; then those groups go back to the queue, due when a 10-minute cooldown ends
+(the scheduler's timer brings them back), with one log warning and one quiet line in the chat ("… restarted its own work
+30 times within 10 minutes …"). `model.set now` is refused meanwhile (the new model takes the next turn). A message, an
+answer, task news, an event or a schedule is no automatic restart and runs at once. In memory: a runtime start begins afresh.
 
 ### 4.5 Splits and Ultra
 
@@ -948,7 +963,8 @@ permission, approval or judgment step. Every string argument first passes the se
 (`secrets/guard.ts`): a stored secret value becomes its handle, so it never lands in a note, file or message.
 
 A tool is offered when its mode's patterns match, when it is in `EVERY_MODE` (asking the person, delegation,
-`model.set`, `decide`, the secrets catalog with export and delete, `companies.list`, find, web search, the meta tools …)
+`model.set`, `decide`, the secrets catalog with export and delete, `companies.list`, find, web search, the meta tools,
+AF-001 the chat essentials `CHAT_ALWAYS` – `chat.send`, `chat.read`, `chat.direct`, `chat.create`, `chat.list`, `chat.search` …)
 or when it is a connector tool (`anyMode`); device tools need a mode that works on a computer or browser. Tool
 descriptions, errors and result notes speak as the agent (B-075: "I end my turn now"; `agents.list` marks the caller
 `me: true`).
@@ -1650,7 +1666,7 @@ All paths below `code/apps/desktop/src` unless stated.
 | First run, feedback, repair | `ui/onboarding/*`, `ui/tour/*`, `runtime/onboarding/*`, `ui/feedback/*`, `runtime/feedback/*`, `runtime/repair/*`, `ui/repair/*` |
 | Rich answers | `shared/blocks/*`, `ui/blocks/*`, `ui/sandbox/wf.ts` |
 | Updates, launcher, tray | `main/updates/*`, `main/updates-wiring.ts`, `main/launcher*.ts`, `main/tray.ts` |
-| wf terminal client | `runtime/wf-cli/*`, the agents' shim `runtime/engines/wf-shim.ts` |
+| wf terminal client | `runtime/wf-cli/*`, the agents' shim `runtime/engines/wf-shim.ts`, their identity `runtime/engines/agent-token.ts` (AF-001) |
 | Feedback mailbox and team inbox | `runtime/feedback/*`, `ui/feedback/FeedbackInbox.tsx`, `resources/feedback/{receiver.json,firestore.rules,firebase.json}`; `code/services/feedback` is a retired prototype |
 | Release environment | `code/scripts/desktop-release/` (tools and preflight only), `apps/desktop/scripts/package-desktop.mjs`, `scripts/nsis-build.mjs` |
 | Native release CI | Public binary repository workflows `release-from-compiled.yml` and `verify-mac-intel.yml`; inputs are a draft tag, compiled ZIP asset and SHA-256, never private TypeScript product sources; native evidence stays in the draft until publication |

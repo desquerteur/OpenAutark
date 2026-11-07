@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { unpackedPath } from '../computer/service.ts';
+import { AGENT_TOKEN_ENV } from '../../shared/api/protocol.ts';
 
 export interface ShimFile { name: string; text: string }
 
@@ -78,6 +79,7 @@ function writeShim(dir: string, files: ShimFile[]): boolean {
 /** `base` plus AUTARK_DATA, and `dir` first on PATH (once; on Windows under the variable's own spelling, e.g. Path). */
 export function withShim(base: NodeJS.ProcessEnv, data: string, dir: string | undefined, platform: NodeJS.Platform): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...base, AUTARK_DATA: data };
+  delete env[AGENT_TOKEN_ENV]; // AF-001: an agent identity this runtime inherited is never passed on – each agent gets its own (agent-token.ts)
   if (!dir) return env;
   const key = (platform === 'win32' ? Object.keys(env).find((name) => name.toUpperCase() === 'PATH') : undefined) ?? 'PATH';
   const separator = platform === 'win32' ? ';' : ':';

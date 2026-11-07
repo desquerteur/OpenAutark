@@ -2,7 +2,8 @@
 // first frame must be a Hello within 10 s; its token decides the scope (owner/device, else an
 // external agent's token through `external` – bridges/external-agents.ts, which also judges the
 // transport) or the socket closes with 4401 (4403 for a removed device or external agent);
-// whether the socket's peer is on a secure transport is passed along for device scopes. The authenticated
+// whether the socket's peer is on a secure transport is passed along for device scopes. AF-001: an owner Hello may carry
+// `agent` (the identity of the agent whose wf it is): the scope stays owner with that agent's id, a refused one closes 4406. The authenticated
 // socket is adapted to an RpcConnection (B-050 K8 d: `view` may wrap it) and attached to the RPC server. External
 // agents hold ≤ 2 sockets each, ≤ 8 together (more close with 1013); one closes with 4403 once its
 // access ends (`external.watch`, armed with the first external socket); a device's sockets close when its row is
@@ -41,6 +42,7 @@ export const CLOSE = {
   badHello: 4400,
   unauthorized: 4401,
   revoked: 4403,
+  agentRefused: 4406, // AF-001: an owner Hello whose `agent` identity this runtime did not issue or whose agent is gone
   helloTimeout: 4408,
   slowConsumer: 4429,
   busy: 1013,
@@ -109,7 +111,7 @@ function adapt(ws: WebSocket, log: () => Logger): RpcConnection & { deliver(text
   };
 }
 
-interface Hello { token: string; client?: string }
+interface Hello { token: string; client?: string; agent?: string }
 
 /** Validates the first frame; undefined when it is not a Hello. */
 function parseHello(text: string): Hello | 'protocol' | undefined {
@@ -118,8 +120,9 @@ function parseHello(text: string): Hello | 'protocol' | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const hello = value as Record<string, unknown>;
   if (typeof hello.token !== 'string' || hello.token.length > 512) return undefined;
+  if (hello.agent !== undefined && (typeof hello.agent !== 'string' || !hello.agent || hello.agent.length > 512)) return undefined; // AF-001
   if (hello.protocol !== undefined && hello.protocol !== PROTOCOL_VERSION) return 'protocol';
-  return { token: hello.token, client: typeof hello.client === 'string' ? hello.client.slice(0, 20) : undefined };
+  return { token: hello.token, client: typeof hello.client === 'string' ? hello.client.slice(0, 20) : undefined, ...(typeof hello.agent === 'string' ? { agent: hello.agent } : {}) };
 }
 
 /** C8: the second token kind on `/ws` – external agents docked into one chat (bridges/external-agents.ts). */
@@ -140,6 +143,8 @@ export interface ClientSocketDeps {
   revoked?(token: string): boolean;
   /** C8: external-agent tokens, tried after `authenticate` refused a token. */
   external?: ExternalSocketAuth;
+  /** AF-001: Hello `agent` (an agent's wf, engines/agent-token.ts) → that agent's id; undefined refuses the socket (4406). Owner Hellos only. */
+  agent?(token: string): string | undefined;
   view?(connection: RpcConnection, scope: ClientScope, client: string | undefined): RpcConnection; // B-050 K8 (d): by scope and Hello `client` (other programs' message view)
   keepalive: Keepalive;
   log: () => Logger;
@@ -209,6 +214,13 @@ export class ClientSockets {
         try { removed = this.deps.revoked?.(hello.token) === true || this.deps.external?.revoked?.(hello.token) === true; } catch { removed = false; }
         if (removed) ws.close(CLOSE.revoked, 'revoked'); else ws.close(CLOSE.unauthorized, 'unauthorized');
         return;
+      }
+      if (hello.agent !== undefined) {
+        // AF-001: wf run by an agent – owner access, but its chat lines are the agent's; never silently the person's.
+        let agentId: string | undefined;
+        try { agentId = scope.kind === 'owner' && !scope.main ? this.deps.agent?.(hello.agent) : undefined; } catch { agentId = undefined; }
+        if (!agentId || scope.kind !== 'owner') { ws.close(CLOSE.agentRefused, 'agent refused'); return; }
+        scope = { kind: 'owner', agentId };
       }
       if (scope.kind === 'external') {
         if (!this.externalRoom(scope.memberId)) { ws.close(CLOSE.busy, 'too many connections'); return; }

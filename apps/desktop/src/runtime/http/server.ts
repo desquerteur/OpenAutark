@@ -21,6 +21,7 @@ import type { ClientScope } from '../../shared/api/protocol.ts';
 import { WorkforceError } from '../../shared/errors.ts';
 import type { Logger } from '../contracts.ts';
 import { externalAgentSockets } from '../bridges/external-agents.ts';
+import { actingAgent } from '../engines/agent-token.ts'; // AF-001
 import { sendError, sendJson } from './body.ts';
 import { serveFile } from './files.ts';
 import { listenWithFallback, relisten } from './listen.ts';
@@ -83,6 +84,7 @@ export class HttpServer {
       authenticate: (token, loopback, secure) => this.authenticate(token, loopback, secure),
       revoked: (token) => this.deps.pwa.revoked?.(token) === true || this.personRevoked(token),
       external: this.external,
+      agent: (token) => actingAgent(deps.services(), token), // AF-001: an agent's wf writes as that agent
       // B-050 K8 (d): other programs' sockets get message events with author, chat and level.
       view: (connection, scope, client) => (scope.kind === 'external' || client === 'external' ? withMessageViews(connection, deps.services, scope) : connection),
       keepalive: this.keepalive,

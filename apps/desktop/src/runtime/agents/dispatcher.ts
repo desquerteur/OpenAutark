@@ -43,6 +43,8 @@
 // settled without a turn, and one the agent already answered in its chat without it carries answeredNote.
 // Linked PCs (owner 31.10.2026): an agent runs on its home PC – one whose home is another CEO PC starts no turn and no
 // quiet pickup here; its due wakes go there (devices/sync/home.ts homeElsewhere, rows.ts hands them over).
+// AF-001: an agent restarting itself (wake groups of only 'retry'/'review', model.set now) is limited per window; past the
+// limit those groups wait out a cooldown, with a log entry and one chat line (restart-guard.ts). Messages are never held.
 // Owns: when and what runs – pump gates, interrupt/urgent/stop, held (paused) agents, the idle moment (slot FIFO: dispatch-slots.ts).
 // Never: runs two main-lane turns for one agent, drops wakes of a paused agent, or polls.
 
@@ -65,6 +67,7 @@ import { stopPendingSplits } from './split-stop.ts'; // B-057 S13
 import { recordShutdownRuns } from '../runs/journal.ts';
 import { pickUpQuiet, QUIET_DELAY_MS } from '../chat/quiet-pickup.ts';
 import { homeElsewhere } from '../devices/sync/home.ts';
+import { RestartGuard, automaticGroup, countRestart, holdRestarts, type RestartLimit } from './restart-guard.ts'; // AF-001
 
 const SETTLE_MS = 5000;
 
@@ -73,6 +76,8 @@ export interface DispatcherDeps extends TurnDeps {
   maxConcurrent?: number;
   /** B-059 #20: free bytes on the data volume (default fs.statfs; tests). */
   freeBytes?: (dir: string) => number | undefined;
+  /** AF-001: how many automatic restarts an agent may make per window before a cooldown (restart-guard.ts; tests). */
+  restartLimit?: Partial<RestartLimit>;
 }
 
 export class DispatcherImpl implements Dispatcher {
@@ -86,6 +91,7 @@ export class DispatcherImpl implements Dispatcher {
   private readonly stopped = new Set<string>(); // agents whose running turn the person stopped: no quiet pickup after it
   private readonly awaiting = new Map<string, Set<string>>(); // B-050: colleague → agents whose wakes wait for its running turn to end
   private readonly disk: DiskGate; // B-059 #20
+  private readonly restarts: RestartGuard; // AF-001: automatic restarts per agent and window
   private readonly live: LiveStatus;
   private readonly unsubscribe: Array<() => void> = [];
   private started = false;
@@ -97,6 +103,7 @@ export class DispatcherImpl implements Dispatcher {
     const cap = deps.maxConcurrent;
     this.maxConcurrent = cap !== undefined && Number.isFinite(cap) ? Math.max(1, Math.floor(cap)) : defaultMaxConcurrent();
     this.disk = new DiskGate(deps.services, () => queueMicrotask(() => this.resumeQueue()), deps.freeBytes);
+    this.restarts = new RestartGuard(deps.restartLimit);
     this.live = new LiveStatus(deps.services, () => this.activity());
     this.runs = new RunningTurns(deps, this.live, (agentId, split) => this.handOver(agentId, split));
     this.lanes = new SplitLanes({
@@ -248,10 +255,12 @@ export class DispatcherImpl implements Dispatcher {
   continueNow(agentId: string, runId: string, note: string): boolean {
     const entry = this.runs.get(agentId);
     if (!entry || entry.runId !== runId || entry.controller.signal.aborted || !entry.conversationId) return false;
+    if (this.restarts.holdUntil(agentId, this.deps.services().clock.now()) !== undefined) return false; // AF-001: cooling down – the new model takes the next turn
     const conversationId = entry.conversationId;
     entry.boundary.at(() => {
       if (entry.controller.signal.aborted || this.runs.get(agentId) !== entry) return;
       const services = this.deps.services();
+      countRestart(services, this.restarts, agentId, conversationId); // AF-001: a restart the agent asked for itself
       this.urgentPick.set(agentId, addPick(this.urgentPick.get(agentId), entry.taskId ? { conversationId, taskId: entry.taskId } : { conversationId }));
       services.wakes.wake({ agentId, reason: entry.reason, conversationId, taskId: entry.taskId, note, coalesceKey: `model-now:${conversationId}:${entry.taskId ?? ''}` });
       abortTurn(entry, 'Continuing on the requested model.', 'urgent', 'release');
@@ -326,7 +335,8 @@ export class DispatcherImpl implements Dispatcher {
     // B-050: what only answers colleagues' running turns goes back unannounced (release without a due time) until they end.
     const waiting = groups.filter((group) => !stale.includes(group) && this.waitsForColleagues(services, agentId, group, picks));
     if (waiting.length) services.wakes.release(wakeIds(waiting), undefined, true);
-    const live = groups.filter((group) => !stale.includes(group) && !waiting.includes(group));
+    // AF-001: while the agent cools down after too many automatic restarts, those groups wait (restart-guard.ts).
+    const live = holdRestarts(services, this.restarts, agentId, groups.filter((group) => !stale.includes(group) && !waiting.includes(group)));
     taskFacts(live, (id) => this.taskOf(services, id), services.clock.now());
     const { group, left } = nextGroup(live, picks);
     if (left.length) this.urgentPick.set(agentId, left);
@@ -336,6 +346,7 @@ export class DispatcherImpl implements Dispatcher {
     if (rest.length) services.wakes.release(wakeIds(rest), undefined, true);
     const answered = answeredNote(services.chats, agentId, group);
     if (answered) group.aware = { text: answered, at: services.clock.now() };
+    if (automaticGroup(group)) countRestart(services, this.restarts, agentId, group.conversationId); // AF-001
     this.runs.start(services, agent, group);
     return true;
   }

@@ -65,6 +65,7 @@ import { claudeDown, providerDownMessage } from '../provider-outage.ts'; // B-05
 import { ClaudeForks } from './fork.ts'; // B-057
 import { ClaudeRebuilder } from './rebuilder.ts';
 import { LEAN_ENV, LeanMemory, helperPromptArgs, hubConfig, promptArgs, promptText } from './lean.ts';
+import { agentIdentityEnv } from '../agent-token.ts'; // AF-001
 
 export { CLAUDE_MODELS } from './models.ts';
 
@@ -229,7 +230,7 @@ export class ClaudeEngine implements Engine {
     };
 
     const content = await this.content(traceRefused ? { ...input, input: [traceInput(input.trace!.calls), ...input.input] } : input, resume && !rebuilt ? input.system.volatile : undefined);
-    const env = { ...this.status.envFor(input.account), ...LEAN_ENV, ...target?.env };
+    const env = { ...this.status.envFor(input.account), ...LEAN_ENV, ...target?.env, ...(agentTurn ? agentIdentityEnv(input.agentId) : {}) }; // AF-001: the agent's wf identity in its shells
     let ran: Attempt;
     try {
       ran = await this.attempt(exe.command, await argsFor(lean), env, input, content);

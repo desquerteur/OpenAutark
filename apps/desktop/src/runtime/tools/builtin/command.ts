@@ -11,6 +11,7 @@
 import type { ToolContext, ToolOutput } from '../types.ts';
 import { WorkforceError } from '../../../shared/errors.ts';
 import { agentEnv } from '../../engines/wf-shim.ts';
+import { agentTokenEnv } from '../../engines/agent-token.ts'; // AF-001
 import { ENV_NAME, MAX_ENV, handlesIn, judgeHandles, resolveMasked, withHandles } from '../../secrets/handles.ts';
 import type { ActionDescription } from '../types.ts';
 import type { ShellSpawn } from './files.ts';
@@ -74,7 +75,8 @@ export async function runCommand(shell: ShellSpawn, ctx: ToolContext, input: { c
         resolve(exitCode);
       };
       const data = ctx.services.paths?.data;
-      const child = shell(input.command, { cwd: input.cwd, signal: controller.signal, env: { ...(data ? agentEnv(data) : process.env), ...extra } });
+      // AF-001: the agent's wf identity, so `wf send` in the command writes as this agent (engines/agent-token.ts)
+      const child = shell(input.command, { cwd: input.cwd, signal: controller.signal, env: { ...(data ? agentEnv(data) : process.env), ...agentTokenEnv(ctx.services, ctx.agent.id), ...extra } });
       child.stdout?.on('data', collect);
       child.stderr?.on('data', collect);
       child.on('error', (error) => { if (controller.signal.aborted) finish(null); else { done = true; review?.abort(); reject(error); } });
