@@ -1,4 +1,5 @@
-// A minimal, bounded ZIP reader for documents held in memory (Office files, office.ts): the end of
+// A minimal, bounded ZIP reader for documents held in memory (Office files, office.ts; skill archives,
+// skills/links/archive.ts – they also read the entries' Unix modes and the archive comment): the end of
 // central directory record, the central directory and stored/deflated entries, inflated with
 // node:zlib under a per-entry and a per-file output budget (a "zip bomb" stops at the budget, not at
 // the size the archive claims). ZIP64, encrypted entries, multi-disk archives and other methods are
@@ -36,6 +37,8 @@ export interface ZipEntry {
   size: number;
   /** Offset of the entry's local header. */
   offset: number;
+  /** The central directory's external attributes (a Unix mode in the high 16 bits: links, executable bits). */
+  external: number;
 }
 
 /** The shared inflate budget of one archive (bytes still allowed). */
@@ -76,12 +79,20 @@ export function zipEntries(buf: Buffer): Map<string, ZipEntry> {
     const nameLength = buf.readUInt16LE(at + 28);
     const extraLength = buf.readUInt16LE(at + 30);
     const commentLength = buf.readUInt16LE(at + 32);
+    const external = buf.readUInt32LE(at + 38);
     const offset = buf.readUInt32LE(at + 42);
     const name = buf.toString('utf8', at + 46, at + 46 + nameLength);
-    if (!out.has(name)) out.set(name, { name, method, flags, compressed, size: length, offset });
+    if (!out.has(name)) out.set(name, { name, method, flags, compressed, size: length, offset, external });
     at += 46 + nameLength + extraLength + commentLength;
   }
   return out;
+}
+
+/** The archive's comment (git archive writes the commit id there); '' without one. */
+export function zipComment(buf: Buffer): string {
+  if (buf.length < EOCD_MIN) throw new ZipError('not a zip archive');
+  const end = findEnd(buf);
+  return buf.toString('utf8', end + 22, Math.min(buf.length, end + 22 + buf.readUInt16LE(end + 20)));
 }
 
 /** The inflated bytes of one entry; spends them from `budget`. */

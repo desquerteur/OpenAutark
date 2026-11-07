@@ -1,7 +1,7 @@
 // Settings › Skills & memory: the memory tree (MemoryTree.tsx) and every copy of every skill with its route and description
 // (skills.list; the file is what counts, the AI and the person edit it). A click opens a memory or a skill's SKILL.md in the
 // pane's file tab; a right click offers the system's own app, the skill's folder and, for the only copy of a skill that is
-// not built in, Delete. New skill and the modes: skills-extra.tsx.
+// not built in, Delete. New skill and the modes: skills-extra.tsx; "Add from link" and the skills from links (AF-007): skill-links.tsx.
 // Owns: these rows. Never: writes a skill or a memory (the file tab does).
 
 import { useEffect, useState } from 'preact/hooks';
@@ -18,6 +18,7 @@ import { MemoryTree } from './MemoryTree.tsx';
 import { joined, openInTab } from './open-file.ts';
 import { skillRoute, skillRows } from './skill-route.ts';
 import { ModesGroup, NewSkill } from './skills-extra.tsx';
+import { AddFromLink, LinkedSkills } from './skill-links.tsx';
 
 const isManager = (agentId: string): boolean => agents.value.some((agent) => agent.managerId === agentId);
 
@@ -43,6 +44,8 @@ export function SkillsPage() {
   const open = can('files.readPath');
   const list = useAsync(() => rpc.call('skills.list', { every: open }), [open]);
   const [memory, setMemory] = useState('');
+  const [linkedVersion, setLinkedVersion] = useState(0); // AF-007: an install from a link reloads "From links" too
+  const installed = () => { void list.reload(); setLinkedVersion((version) => version + 1); };
   useEffect(() => { if (open) void rpc.call('system.root').then((root) => setMemory(joined(root.path, 'memory'))).catch(() => undefined); }, [open]);
   useEffect(() => rpc.on('skills.changed', () => void list.reload()), [list.reload]);
   const skills = skillRows(list.data ?? []);
@@ -60,12 +63,13 @@ export function SkillsPage() {
           {memory && <MemoryTree root={memory} />}
         </Group>
       )}
-      <Group title="Skills" id="settings-skills" hint={skills.length ? `${skills.length} skills` : undefined}
-        actions={open ? <>{can('skills.save') && <NewSkill onCreated={() => void list.reload()} />}<button type="button" class="button ghost small" onClick={() => void openInTab('skills', 'workspace')}>Open folder</button></> : undefined}>
+      <Group title="Skills" id="settings-skills" tour="skills" hint={skills.length ? `${skills.length} skills` : undefined}
+        actions={open ? <>{can('skills.save') && <NewSkill onCreated={() => void list.reload()} />}{can('skills.installLink') && <AddFromLink onInstalled={installed} />}<button type="button" class="button ghost small" onClick={() => void openInTab('skills', 'workspace')}>Open folder</button></> : undefined}>
         {list.error && <Row label="Unavailable" hint={list.error} reserve />}
         {list.loading && !list.data && !list.error && <Row label={<Note>Loading…</Note>} reserve />}
         {skills.map((skill) => <SkillRow key={skill.path} skill={skill} open={open} {...(deletable(skill) ? { onDelete: () => void remove(skill) } : {})} />)}
       </Group>
+      {can('skills.linked') && <LinkedSkills version={linkedVersion} onChanged={() => void list.reload()} />}
       {can('modes.list') && <ModesGroup />}
     </>
   );

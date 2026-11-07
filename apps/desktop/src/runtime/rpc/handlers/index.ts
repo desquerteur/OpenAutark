@@ -44,6 +44,7 @@ import { register as pages } from './pages.ts'; // the views in <data>/pages
 import { register as companies } from './companies.ts'; // B-072: the companies on this PC (companies.list / companies.open)
 import { register as sideTabs } from './side-tabs.ts'; // B-076: the phone's side pane (tabs.get/set) and tab view positions
 import { register as phoneUse } from './phone-use.ts'; // B-078: phoneUse.attach/reply and phone.pairLink (the owner's Android phone)
+import { register as skillLinks } from './skill-links.ts'; // AF-007: skills from a link (preview, install, update)
 import { register as session } from './session.ts';
 
 /**
@@ -51,7 +52,7 @@ import { register as session } from './session.ts';
  * then the rest (portability.ts also registers agents.export/derive and system.backup/restore),
  * then session.ts (session.info reads the finished table at call time).
  */
-export const HANDLER_MODULES: readonly HandlerModule[] = [system, org, chats, tasks, knowledge, files, filesPath, providers, security, devices, app, media, portability, bridges, browser, sideView, work, remote, relay, taskCenter, references, teamStart, calls, repair, people, providerHistory, notes, agentCore, calendar, day, chatFiles, connectedApps, feedbackInbox, splits, abilities, pages, companies, sideTabs, phoneUse, rpcMethods, session];
+export const HANDLER_MODULES: readonly HandlerModule[] = [system, org, chats, tasks, knowledge, files, filesPath, providers, security, devices, app, media, portability, bridges, browser, sideView, work, remote, relay, taskCenter, references, teamStart, calls, repair, people, providerHistory, notes, agentCore, calendar, day, chatFiles, connectedApps, feedbackInbox, splits, abilities, pages, companies, sideTabs, phoneUse, skillLinks, rpcMethods, session];
 
 export function createHandlerTable(): HandlerTable {
   const table = new HandlerTable();
