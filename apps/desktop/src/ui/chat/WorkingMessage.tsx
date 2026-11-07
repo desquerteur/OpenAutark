@@ -35,6 +35,7 @@ import { modelLine } from './live-text.ts';
 import { SplitLiveBlock } from '../splits/SplitRows.tsx'; // B-057: one live block per running split group
 import { liveGroupsOf } from '../splits/split-model.ts';
 import { groupStart } from '../splits/split-text.ts';
+import { AgentView } from '../agents/AgentView.tsx'; // AF-004: several agents at work as one tree
 
 // A stopped run's steps open on click: that state belongs to the run and survives a remount (and
 // reopening its chat). Keep at most 64 recent open ones.
@@ -96,9 +97,13 @@ export function WorkingMessage(props: { message: Message; stopped?: boolean }) {
 }
 
 /** Every live run of this chat after all rows, ordered by start: its rows that still stream (message-rows.ts liveWork).
- *  B-057: a running split group is ONE block (splits/SplitRows.tsx SplitLiveBlock), never one per split. */
+ *  B-057: a running split group is ONE block (splits/SplitRows.tsx SplitLiveBlock), never one per split.
+ *  AF-004: several agents at work (two live runs, or any running group) are ONE agent view instead (agents/AgentView.tsx). */
 export function PendingWork(props: { conversationId: string; messages: readonly Message[] }) {
-  const runs = liveWork(props.messages).map((message) => ({ at: liveStart(message), node: <WorkingMessage key={message.runId} message={message} /> }));
-  const groups = liveGroupsOf(props.conversationId).map((group) => ({ at: groupStart(group), node: <SplitLiveBlock key={`split:${group.id}`} group={group} /> }));
+  const live = liveWork(props.messages);
+  const liveGroups = liveGroupsOf(props.conversationId);
+  if (live.length > 1 || liveGroups.length) return <AgentView key="agent-view" runs={live} groups={liveGroups} />; // AF-004
+  const runs = live.map((message) => ({ at: liveStart(message), node: <WorkingMessage key={message.runId} message={message} /> }));
+  const groups = liveGroups.map((group) => ({ at: groupStart(group), node: <SplitLiveBlock key={`split:${group.id}`} group={group} /> }));
   return <>{(groups.length ? [...runs, ...groups].sort((a, b) => a.at - b.at) : runs).map((item) => item.node)}</>;
 }
