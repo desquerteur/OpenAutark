@@ -44,6 +44,7 @@ import { RegionDialog } from '../workspace/RegionDialog.tsx'; // once for both s
 import { FeedbackMenu } from '../feedback/FeedbackMenu.tsx'; // B-055 Q4: the menu under the feedback cell, "Paint over"
 import { ColumnResize } from './ColumnResize.tsx';
 import { TourDialog } from '../tour/TourDialog.tsx'; // B-055: the feedback tour (replay)
+import { CallOverlay } from '../chat/call/CallOverlay.tsx'; // AF-015: the call view (its own layer, not a panel)
 
 function useGlobalHotkeys(): void {
   useEffect(() => {
@@ -72,6 +73,7 @@ function Overlays() {
       <RememberWhyHost />
       <TourDialog />
       <RegionDialog />
+      <CallOverlay />
     </>
   );
 }

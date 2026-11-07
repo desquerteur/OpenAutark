@@ -8,8 +8,10 @@
 //   * opening the first chat makes it the listening one (the focused chat listens);
 //   * End on the second leaves one conversation; the cell's "End voice" ends the last and its line goes;
 //   * a dictation in the composer ends the running conversations first (one microphone);
-//   * each conversation is a call of this PC in its chat: one bubble "Call · <time> · running" that shows how long it ran
-//     once it ended (its row: meta.call with participant 'device:pc'); talking again is a new call;
+//   * each conversation is a call of this PC in its chat: one call card "Running" that shows how long it ran once it
+//     ended (its row: meta.call with participant 'device:pc'); talking again is a new call;
+//   * AF-015: a start opens the call view full size; Minimize shrinks it to the floating window, so the chat stays usable
+//     (test/ui/call-view-window.test.mjs covers the view itself);
 //   * the status line lies over the main zone under its header row; at phone width it stays clear of the native
 //     caption controls; screenshots light, dark and phone width; no renderer errors.
 // Real speech and realtime voice are not claimed here (unit tests: test/unit/voice/*).
@@ -107,6 +109,12 @@ test('call cell: two voice conversations, the focused chat listens, End per chat
     assert.fail(`timed out: ${what} (${JSON.stringify(await lineTexts())})`);
   };
   const headerCells = ['.chat-header [data-cell="call"]', '.chat-header .frame-header-title', '.chat-header [data-cell="browser"]', '.composer', '.message-scroller'];
+  /** AF-015: the call view opened full size; it shrinks to its floating window. */
+  const minimize = async () => {
+    await page.locator('.call-view.full').waitFor({ timeout: 10_000 });
+    await page.locator('.call-view.full button[aria-label="Minimize call"]').click();
+    await page.locator('.call-view.mini').waitFor({ timeout: 5_000 });
+  };
 
   // Talk in the first chat: the voice conversation starts; the cell turns "End voice" in its box.
   await open(plan);
@@ -115,16 +123,17 @@ test('call cell: two voice conversations, the focused chat listens, End per chat
     await talk.click();
     await endVoice.waitFor({ timeout: 20_000 });
   });
+  await minimize();
   const one = await waitLines((now) => now.length === 1 && /Launch plan · (starting|listening)/.test(now[0]), 'the first chat talks');
   assert.equal(one.length, 1);
-  // The call is one bubble in the chat, written by this PC.
-  const bubbles = page.locator('.message-scroller .call-transcript-toggle');
+  // The call is one card in the chat, written by this PC.
+  const bubbles = page.locator('.message-scroller .call-card-length');
   const titles = async () => (await bubbles.allTextContents()).map((text) => text.trim());
   const waitTitles = async (check, what) => {
     for (const end = Date.now() + 15_000; Date.now() < end; await page.waitForTimeout(200)) if (check(await titles())) return;
     assert.fail(`timed out: ${what} (${JSON.stringify(await titles())})`);
   };
-  await waitTitles((now) => now.length === 1 && /^Call · .+ · running$/.test(now[0]), 'the call bubble runs');
+  await waitTitles((now) => now.length === 1 && now[0] === 'Running', 'the call card runs');
   const callRows = async () => (await rpc.call('messages.list', { conversationId: plan.id })).filter((message) => Array.isArray(message.meta?.call?.lines));
   assert.equal((await callRows())[0]?.meta.call.participant, 'device:pc');
   await shot('call-00-one');
@@ -133,6 +142,7 @@ test('call cell: two voice conversations, the focused chat listens, End per chat
   await open(research);
   await talk.click();
   await endVoice.waitFor({ timeout: 20_000 });
+  await minimize();
   const both = await waitLines((now) => now.length === 2 && now.some((text) => /Launch plan · on hold/.test(text)), 'both chats, the older one on hold');
   assert.ok(both.some((text) => /Research · (starting|listening)/.test(text)), `the newer one listens: ${both.join(' | ')}`);
   assert.equal(await voiceLines.getByRole('button', { name: 'End', exact: true }).count(), 2, 'End per chat');
@@ -180,16 +190,18 @@ test('call cell: two voice conversations, the focused chat listens, End per chat
     await talk.waitFor({ timeout: 10_000 });
   });
   await voiceLines.first().waitFor({ state: 'detached', timeout: 10_000 });
-  await waitTitles((now) => now.length === 1 && /^Call · .+ · \d+:\d{2}$/.test(now[0]), 'the ended call shows how long it ran');
+  await waitTitles((now) => now.length === 1 && /^\d+:\d{2}$/.test(now[0]), 'the ended call shows how long it ran');
 
   // A dictation ends a running conversation first (one microphone).
   await talk.click();
+  await minimize();
   await waitLines((now) => now.length === 1, 'talking again');
   await page.locator('.composer button[aria-label="Dictate"]').click();
   await waitLines((now) => now.length === 0, 'the dictation ended the conversation');
   await page.locator('.composer button[aria-label="Stop dictation"]').click({ timeout: 10_000 }).catch(() => undefined);
   await talk.waitFor({ timeout: 15_000 });
-  await waitTitles((now) => now.length === 2 && now.every((title) => /^Call · .+ · \d+:\d{2}$/.test(title)), 'talking again was a second call, ended by the dictation');
+  await waitTitles((now) => now.length === 2 && now.every((title) => /^\d+:\d{2}$/.test(title)), 'talking again was a second call, ended by the dictation');
+  await page.locator('.call-view').waitFor({ state: 'detached', timeout: 10_000 }); // the call view closed with its call
   assert.ok((await callRows()).every((row) => typeof row.meta.call.endedAt === 'number'));
 
   assert.deepEqual(errors, [], 'no renderer errors');

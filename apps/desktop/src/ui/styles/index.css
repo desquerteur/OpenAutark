@@ -42,3 +42,4 @@
 @import "./splits.css"; /* B-057: split rows, the sidebar's split rows, a split's page, the composer's Ultra cell */
 @import "./remote.css";
 @import "./repair.css"; /* 23.10.: repair screen after a broken upgrade or a crash loop */
+@import "./call.css"; /* AF-015: the call view (full and mini) and the call card in the chat */

@@ -4,7 +4,8 @@
 // tail may still reach the microphone). Replies are read through the page's one speech output (device-speech.ts);
 // while anything is read (and its tail) the capture takes nothing. Self barge-in (`bargeIn`): with the browser's
 // echo cancellation on, a voice clearly above the reading's echo stops the reading and is taken at once
-// (ui/lib/barge-in.ts); without it the echo guard stays as it was.
+// (ui/lib/barge-in.ts); without it the echo guard stays as it was. AF-015: every block's level goes to the call view
+// (`level`), and while the call is muted (`muted`, call/call-levels.ts micGate) a block counts as silence – nothing is taken.
 // Owns: the capture's microphone/recorder lifetime. Never: the conversation loop (shared/voice/conversation.ts),
 // chat messages or reading aloud.
 
@@ -15,6 +16,7 @@ import type { Microphone, SampleListener } from '../../lib/microphone.ts';
 import { UtteranceDetector, rms } from '../../lib/pcm.ts';
 import { BargeInDetector, echoCancelled } from '../../lib/barge-in.ts';
 import { deviceSpeech } from './device-speech.ts';
+import { micBlocked, reportMicLevel } from '../call/call-levels.ts';
 
 /** After a spoken reply its tail (room echo, a slow speaker) is not taken for the person. */
 export const ECHO_TAIL_MS = 450;
@@ -44,6 +46,10 @@ export interface CaptureDeps {
   now(): number;
   /** This device reads something aloud now (or just stopped): the microphone may hear it (echo guard). */
   speaking?(): boolean;
+  /** AF-015: each block's RMS (the call view's microphone level). */
+  level?(rms: number): void;
+  /** AF-015: the call is muted (or a call signal plays): the block is silence. */
+  muted?(): boolean;
 }
 
 export const browserCapture: CaptureDeps = {
@@ -52,6 +58,8 @@ export const browserCapture: CaptureDeps = {
   upload: (blob, name) => uploadRef(blob, name),
   now: () => Date.now(),
   speaking: () => deviceSpeech.speaking(ECHO_TAIL_MS),
+  level: (value) => reportMicLevel(value),
+  muted: () => micBlocked(),
 };
 
 /** One conversation's microphone: opened first, bound to the microphone's id by the first `follow`. */
@@ -109,7 +117,10 @@ export class ConversationCapture {
     if (this.closed || !micId) return;
     const echo = this.deps.speaking?.() === true; // another reader of this device is heard aloud
     const now = this.deps.now();
-    const level = rms(samples);
+    const muted = this.deps.muted?.() === true;
+    const level = muted ? 0 : rms(samples);
+    this.deps.level?.(level);
+    if (muted) { this.discard(); this.detector.reset(); return; } // a muted call takes nothing, a take in progress is dropped
     if (this.status === 'speaking' && this.aec && this.sink.bargeIn && !this.busy && this.barge.feed(level, now) && this.sink.bargeIn(micId)) {
       this.barged = true; // talked over this device's own reading: take it now, no echo tail
       this.status = 'listening';
