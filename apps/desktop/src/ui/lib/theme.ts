@@ -10,6 +10,7 @@
 import { effect } from '@preact/signals';
 import { os, platform } from './platform.ts';
 import { preferences } from './store.ts';
+import { applyAppearance } from './appearance.ts';
 
 export function applyTheme(): void {
   const root = document.documentElement;
@@ -20,6 +21,7 @@ export function applyTheme(): void {
     window.addEventListener('blur', () => { root.dataset.focusQuiet = ''; });
     window.addEventListener('keydown', () => { delete root.dataset.focusQuiet; }, true);
   }
+  applyAppearance(); // AF-008: the person's own theme (lib/appearance.ts), under theme.css
   effect(() => {
     const prefs = preferences.value;
     root.dataset.theme = prefs.theme;

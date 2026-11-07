@@ -18,6 +18,7 @@ import { clockMinutes } from '../../shared/model/day-settings.ts';
 import { MAX_WORDS } from '../../shared/voice/vocabulary.ts';
 import { MAX_HINTS, NOTES_MAX, PATTERNS, SECTIONS, optionsOf, rangeOf } from './schema.ts';
 import { validatePersonality } from '../personality/settings-section.ts'; // AF-006
+import { validateAppearance } from './appearance-schema.ts'; // AF-010/AF-008
 
 type Plain = Record<string, unknown>;
 
@@ -127,6 +128,7 @@ export function validateSettings(s: Settings): void {
   intIn(ui.sidebarWidth, 'preferences.sidebarWidth');
   intIn(ui.workspaceWidth, 'preferences.workspaceWidth');
   for (const key of ['sidebarOpen', 'workspaceOpen', 'enterSends', 'closeToTray', 'openAtLogin', 'autoDownloadUpdates'] as const) boolean(ui[key], `preferences.${key}`);
+  validateAppearance(s.appearance); // AF-010/AF-008
 
   const n = s.notifications;
   boolean(n.enabled, 'notifications.enabled');

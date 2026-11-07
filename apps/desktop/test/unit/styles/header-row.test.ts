@@ -151,10 +151,12 @@ test('a chat\'s area opens below the chat header row in one fixed height, attach
   const sheet = css('chat-area.css');
   const area = rule(sheet, '.chat-area');
   assert.match(area, /flex:\s*none/, 'it never grows or shrinks with what it shows');
-  assert.match(area, /height:\s*clamp\(\d+px,\s*\d+%,\s*100% - \d+px\)/, 'a share of the chat column that leaves the messages and the composer their room');
+  // AF-010: the saved height (appearance.chatDock.height, set inline by ChatArea.tsx), before it is known a share
+  assert.match(area, /height:\s*clamp\(\d+px,\s*var\(--chat-dock-h,\s*\d+%\),\s*100% - \d+px\)/, 'a share of the chat column that leaves the messages and the composer their room');
   assert.doesNotMatch(area, /radius/, 'no corner of its own');
   assert.match(area, /border-bottom:\s*1px solid var\(--line\)/, 'one line to the messages');
-  assert.doesNotMatch(sheet, /border-left|::before/, 'no divider at its side');
+  assert.doesNotMatch(area, /border-left|::before/, 'no divider at its side'); // AF-010: docked right or left it has one (.dock-right, .dock-left)
+  assert.match(rule(sheet, '.chat-area.dock-right'), /border-left:\s*1px solid var\(--line\)/, 'docked right: one line to the messages');
   assert.match(rule(sheet, '.chat-column.area-full > .chat-area'), /height:\s*auto/, 'full view: the column above the composer');
   assert.match(rule(sheet, '.chat-area .browser-strip'), /background:\s*var\(--surface\)/, 'the chat\'s colour');
   assert.match(rule(css('workspace-browser.css'), '.browser-strip'), /background:\s*var\(--chrome\)/, 'the global pane\'s strip stays chrome-coloured');

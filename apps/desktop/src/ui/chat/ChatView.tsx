@@ -1,5 +1,6 @@
 // One chat: the chat header (ChatHeader.tsx) as one row over the whole view, under it the chat column
-// (the chat's area when open – ChatArea.tsx, its tabs –, message list, the important-question strip – AskStrip.tsx,
+// (the chat's area when open – ChatArea.tsx, its tabs; AF-010: docked right of it by default, else left, below, above or
+// floating, appearance.chatDock –, message list, the important-question strip – AskStrip.tsx,
 // B-078 –, composer) and the optional details panel –
 // content below the header row, so opening either moves no header cell. Loads the newest page on open and
 // marks the chat read while visible. Chats the list leaves out (agent-only rooms, the To-do chat) are
@@ -7,9 +8,10 @@
 // the list can show the "New messages" divider.
 // Owns: chat layout, read marking and the catch-up start. Never: message rendering details (MessageList/Item).
 
-import { useEffect } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { chatSpace } from '../../shared/api/workspace-browser.ts';
-import { conversationMap, ensureConversation, loadMessages, messagesFor } from '../lib/store.ts';
+import { conversationMap, ensureConversation, isMobile, loadMessages, messagesFor } from '../lib/store.ts';
+import { chatDock } from '../lib/appearance.ts';
 import { rpc } from '../lib/rpc.ts';
 import { chatAreaOpen, chatPanel, setChatPanel } from '../lib/shell-state.ts';
 import { fullView } from '../workspace/full-view.ts';
@@ -37,6 +39,18 @@ export function ChatView(props: { conversationId: string }) {
   const start = useSignal<CatchUpStart | null | undefined>(undefined);
   const panel = chatPanel.value;
   const area = chatAreaOpen.value;
+  // AF-010: a chat view too narrow for the messages beside docked tabs (under 620 px, like the details panel's rule) docks them on top
+  const view = useRef<HTMLDivElement>(null);
+  const narrow = useSignal(false);
+  useLayoutEffect(() => {
+    const element = view.current;
+    if (!element) return;
+    const measure = () => { narrow.value = element.getBoundingClientRect().width < 620; };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [Boolean(chat)]);
 
   useEffect(() => {
     loading.value = true;
@@ -82,16 +96,23 @@ export function ChatView(props: { conversationId: string }) {
     );
   }
 
+  // AF-010: where the chat's tabs dock (lib/appearance.ts); full view and the phone keep them above the messages
+  const full = area && fullView.value === chatSpace(conversationId);
+  const docked = chatDock.value.place;
+  const place = full || isMobile.value || (narrow.value && (docked === 'right' || docked === 'left')) ? 'top' : docked;
   return (
-    <div class={`chat-view${panel ? ' with-panel' : ''}`}>
+    <div ref={view} class={`chat-view${panel ? ' with-panel' : ''}`}>
       <ChatHeader chat={chat} />
-      <div class="chat-body">
-        <section class={`chat-column${area && fullView.value === chatSpace(conversationId) ? ' area-full' : ''}`} aria-label={chatTitle(chat)}>
-          {area && <ChatArea chat={chat} />}
+      <div class={`chat-body${area ? ` dock-${place}` : ''}`}>
+        {area && place === 'left' && <ChatArea chat={chat} place={place} />}
+        <section class={`chat-column${full ? ' area-full' : ''}`} aria-label={chatTitle(chat)}>
+          {area && place === 'top' && <ChatArea chat={chat} place={place} />}
           <MessageList conversationId={conversationId} loading={loading.value && !list.value.length} start={start.value ?? null} />
           <AskStrip conversationId={conversationId} />
           <Composer chat={chat} />
+          {area && place === 'bottom' && <ChatArea chat={chat} place={place} />}
         </section>
+        {area && (place === 'right' || place === 'float') && <ChatArea chat={chat} place={place} />}
         {panel && <ChatSidePanel chat={chat} panel={panel} onClose={() => setChatPanel(conversationId, null)} />}
       </div>
     </div>

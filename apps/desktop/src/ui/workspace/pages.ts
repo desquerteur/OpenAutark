@@ -317,6 +317,27 @@ export async function closeOthers(keep: string, space = GLOBAL_SPACE): Promise<v
   showIn(space, keep);
 }
 
+/**
+ * AF-010: tab `id` of `from` goes to `index` of `to` (its end without one) – a new place in its strip, or another surface
+ * (a chat's tabs ↔ the person's pane). A website keeps its page and its logins (main moves it with the layout); a moved
+ * tab is shown where it lands and its surface opens; the space it left hands its shown tab over as on a close.
+ */
+export function moveTab(id: string, from: string, to: string, index?: number): void {
+  const source = tabsNow(from);
+  const entry = source.find((tab) => tab.id === id);
+  if (!entry) return;
+  const rest = source.filter((tab) => tab.id !== id);
+  const target = from === to ? rest : tabsNow(to).filter((tab) => tab.id !== id); // an app tab there already moves, never doubles
+  const at = Math.max(0, Math.min(index ?? target.length, target.length));
+  const placed = [...target.slice(0, at), entry, ...target.slice(at)];
+  if (from === to) { setTabs(from, placed); return; }
+  const ids = source.map((tab) => tab.id);
+  const left = chosenAfterClose(ids, id, shownId(ids, spaces.peek()[from]?.shown ?? ''));
+  spaces.value = { ...spaces.peek(), [from]: { tabs: rest, shown: left ?? '' }, [to]: { tabs: placed, shown: id } };
+  opener(to);
+  if (entry.kind === 'website') void command({ action: 'list' }); // its new space in the page list
+}
+
 /** The last finished download announced per tab (so one ends with one toast). */
 const announced = new Map<string, string>();
 

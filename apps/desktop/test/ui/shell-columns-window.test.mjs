@@ -93,7 +93,7 @@ test('persistent desktop columns and real browser pane tabs', { timeout: 180_000
   await page.waitForSelector('.shell', { timeout: 60_000 });
   const info = JSON.parse(await readFile(path.join(profile, 'runtime.json'), 'utf8'));
   rpc = await connect(info.port, info.token, 'cli');
-  await rpc.call('settings.update', { onboarding: { step: 'done' } });
+  await rpc.call('settings.update', { onboarding: { step: 'done' }, appearance: { chatDock: { place: 'top' } } }); // AF-010: the chat's tabs above the messages, as this test measures them (right is the default now)
   await size(1440, 900);
   await page.locator('.day-view').waitFor();
   const workspaceCell = page.locator('.frame-workspace-cell button');

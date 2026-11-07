@@ -15,6 +15,7 @@ import { MODEL_USES, OFFABLE_USES, USE_ABOUT, USE_AUTO, USE_LABELS, type ModelUs
 import { KEY_HANDLE, PROVIDER_ID, PROVIDER_PROTOCOLS, providerNotes } from '../../shared/model/provider-entries.ts';
 import { DEFAULT_RELAY } from '../../shared/model/relay.ts';
 import { MAX_WORDS } from '../../shared/voice/vocabulary.ts';
+import { APPEARANCE_SECTION } from './appearance-schema.ts';
 import { PERSONALITY_SECTION } from '../personality/settings-section.ts'; // AF-006
 
 type Plain = Record<string, unknown>;
@@ -121,6 +122,7 @@ export const SECTIONS: readonly SectionDef[] = [
     flag('openAtLogin', 'Whether the app starts with the PC', false),
     flag('autoDownloadUpdates', 'New versions download by themselves', false),
   ] },
+  APPEARANCE_SECTION, // AF-010/AF-008: look and layout (appearance-schema.ts)
   { key: 'notifications', title: 'Notifications (to-dos for you, blockers and important messages always arrive)', keys: [
     flag('enabled', 'Desktop notifications for replies and finished work (the ones that always arrive are not affected)', true),
     flag('sound', 'A sound with each notification (one for a burst, also while the window has focus)', true),

@@ -1,18 +1,19 @@
 // A tab's icon, its right-click menu and the list of all tabs. The list (All tabs in the surface's menu, PaneMenu.tsx) is
 // a popover at the menu cell: one row per tab (TabIcon, name, ×), the shown tab marked, in reserved columns so a closed tab
 // moves nothing else; up and down move through the rows, the list closes with a choice. A tab's menu (the strip and the
-// list use the same): Keep tab for an agent's preview tab, Close, Close others, Mute, Copy address, Open in system
+// list use the same): Keep tab for an agent's preview tab, AF-010 Move to the browser pane / to this chat's tabs, Close, Close others, Mute, Copy address, Open in system
 // browser, Show download (lib/context-menu.tsx).
 // Owns: the icon, the menu and the list. Never: which tabs exist (pages.ts, tab-list.ts).
 
 import { useEffect, useRef } from 'preact/hooks';
+import { GLOBAL_SPACE, chatSpace } from '../../shared/api/workspace-browser.ts';
 import { useContextMenu } from '../lib/context-menu.tsx';
 import { openExternal } from '../lib/platform.ts';
-import { agentName } from '../lib/store.ts';
+import { activeConversationId, agentName } from '../lib/store.ts';
 import { pushToast, toastError } from '../lib/toasts.ts';
-import { AgentAvatar, Icon, IconButton, Popover, Spinner, type IconName, type MenuSection } from '../lib/ui.tsx';
+import { AgentAvatar, Icon, IconButton, Popover, Spinner, type IconName, type MenuItem, type MenuSection } from '../lib/ui.tsx';
 import { tabName, type TabInfo, type TabKind } from './browser-model.ts';
-import { closeOthers, closePage, command, selectPage } from './pages.ts';
+import { closeOthers, closePage, command, moveTab, selectPage } from './pages.ts';
 import { useSpace } from './space.ts';
 
 const KIND_ICON: Record<TabKind, IconName> = { new: 'globe', website: 'globe', day: 'sun', work: 'list-checks', activity: 'chart-bar', agent: 'browsers', notes: 'file-text', media: 'image', video: 'play', screen: 'monitor', file: 'file', folder: 'folder', page: 'app-window', remote: 'globe' };
@@ -46,10 +47,20 @@ export function tabTitle(tab: TabInfo): string {
   ].filter(Boolean).join('\n');
 }
 
+/** AF-010: a chat's tab moves to the person's pane, a pane tab into the open chat's tabs (not another PC's tabs). */
+function moveItems(tab: TabInfo, space: string): MenuItem[] {
+  if (tab.kind === 'remote') return [];
+  const open = activeConversationId.peek();
+  if (space.startsWith('chat:')) return [{ label: 'Move to the browser pane', onSelect: () => moveTab(tab.id, space, GLOBAL_SPACE) }];
+  if (space === GLOBAL_SPACE && open) return [{ label: 'Move to this chat\'s tabs', onSelect: () => moveTab(tab.id, space, chatSpace(open)) }];
+  return [];
+}
+
 /** A tab's right-click menu; `count`: how many tabs its space has. */
 export function tabMenu(tab: TabInfo, count: number, space: string): MenuSection[] {
   return [{ items: [
     ...(tab.transient ? [{ label: 'Keep tab', onSelect: () => keepTab(tab) }] : []),
+    ...moveItems(tab, space),
     { label: 'Close', onSelect: () => void closePage(tab.id, space).catch((error) => toastError(error)) },
     { label: 'Close others', disabled: count < 2, onSelect: () => void closeOthers(tab.id, space).catch((error) => toastError(error)) },
     ...(tab.kind === 'website' ? [{ label: tab.muted ? 'Unmute tab' : 'Mute tab', onSelect: () => void command({ action: 'mute', id: tab.id }) }] : []),
