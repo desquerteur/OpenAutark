@@ -18,7 +18,9 @@ import type { RpcClient, RpcNotification } from './rpc.ts';
 import { RpcError } from './rpc.ts';
 import type { CodexServer } from './server.ts';
 import { APPROVAL_METHODS, approvalResponse, declineUserInput } from './approvals.ts';
-import { turnPermissions, type TurnAccess } from './isolation.ts';
+import { accessPermissions, changePaths } from './access.ts'; // AF-013
+import { codexActions } from '../../access/classify.ts'; // AF-013
+import type { TurnAccess } from './isolation.ts';
 import { ERR, ToolNames, isRecord, num, outputImages, outputText, safeCall, str, tryJson } from '../shared.ts';
 import { normalizeCodexLimits } from '../../accounts/limits.ts';
 import { boundOutput } from '../output.ts';
@@ -142,6 +144,7 @@ export async function runCodexTurn(args: {
   let quiet: ReturnType<typeof setTimeout> | undefined; // a helper turn's cut, until the model's first sign
   let silent = false; // the cut ended the turn
   const early: RpcNotification[] = []; // notifications that arrive before turn/start answers
+  const changed = new Map<string, string[]>(); // AF-013: fileChange item id → its paths
   const code = new CodeCalls(emit, (wire) => names.ours(wire) !== undefined); // B-049 F9: exec/wait calls and nested marking
 
   let finish!: (status: string, error: unknown) => void;
@@ -178,6 +181,7 @@ export async function runCodexTurn(args: {
         if (!item) break;
         const type = str(item.type) ?? '';
         if (type === 'contextCompaction') compacted = true;
+        if (type === 'fileChange' && str(item.id)) changed.set(str(item.id)!, changePaths(item)); // AF-013: the paths an approval request is about
         if (type === 'agentMessage') {
           const id = str(item.id) ?? '';
           if (item.phase === 'commentary') commentary.add(id);
@@ -263,7 +267,12 @@ export async function runCodexTurn(args: {
         ],
       };
     }
-    if (APPROVAL_METHODS.has(method)) return approvalResponse(method, params, args.access !== 'read');
+    if (APPROVAL_METHODS.has(method)) {
+      // AF-013: with an access policy each request is judged by the agent's rules (and may wait for the person); else as before.
+      if (!input.access || args.access === 'read') return approvalResponse(method, params, args.access !== 'read');
+      const decision = await input.access.decide('codex', codexActions(method, params, input.cwd, changed.get(str(params.itemId) ?? '') ?? []), input.signal);
+      return approvalResponse(method, params, decision.allow, true); // once: the next such step is judged again
+    }
     if (method === 'item/tool/requestUserInput') return declineUserInput();
     if (method === 'mcpServer/elicitation/request') return { action: 'decline' };
     throw new RpcError(-32601, 'This action is not available.');
@@ -279,7 +288,7 @@ export async function runCodexTurn(args: {
   input.signal.addEventListener('abort', onAbort, { once: true });
   try {
     const hears = input.input.some((item) => item.type === 'audio') && await codexHearsAudioNow(rpc, input.model);
-    const params: Record<string, unknown> = { threadId, input: [...contextBlock(args.context), ...appNoteItem(args.note), ...codexInput(input.input, hears)], model: input.model, ...turnPermissions(args.access) };
+    const params: Record<string, unknown> = { threadId, input: [...contextBlock(args.context), ...appNoteItem(args.note), ...codexInput(input.input, hears)], model: input.model, ...accessPermissions(input.access, args.access ?? 'full', input.cwd) }; // AF-013: today's turnPermissions without a policy
     if (args.effort) params.effort = args.effort;
     if (args.summary) params.summary = args.summary; // D5: TurnStartParams.summary (ReasoningSummary)
     if (input.outputSchema) params.outputSchema = input.outputSchema;

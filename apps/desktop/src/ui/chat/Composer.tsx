@@ -1,7 +1,7 @@
 // The one composer: auto-growing field (to ~40 % of the window), Enter sends (setting), per-chat drafts,
 // attachments (Plus menu, drag/drop, paste), @mentions and /commands, dictation into the caret (the
 // waveform sits in the action row's spacer) and one primary button: Send, disabled without content.
-// Action row, fixed cells: [+] [spacer] [Ultra] [Model] [Mic] [Send] – nothing in it moves on a click.
+// Action row, fixed cells: [+] [Access mode] [spacer] [Ultra] [Model] [Mic] [Send] – nothing in it moves on a click (AF-013: the mode cell).
 // How a message goes out: /important, /silent, or the Plus menu's and the Send button's right-click menu's "Send as important",
 // "Send silently" (with nothing to send yet: the draft's level) and "Schedule…": that switches the composer into schedule
 // mode (composer/ScheduleBar.tsx above the text, the field taller, Send = Schedule; Esc or × leaves; text only – a draft
@@ -42,6 +42,7 @@ import { MicButton, useDictationField, waveState } from './composer/MicButton.ts
 import { DictationWave } from './composer/DictationWave.tsx';
 import { mentionsIn, targetAgent } from './composer/target.ts';
 import { composerControls } from './composer/controls.ts';
+import { AccessModeCell } from './composer/AccessModeCell.tsx'; // AF-013
 
 export function Composer(props: { chat: ConversationSummary }) {
   const { chat } = props;
@@ -264,6 +265,7 @@ export function Composer(props: { chat: ConversationSummary }) {
             makeTask: () => void makeTask(),
             ...sendActions,
           }} />
+          <AccessModeCell chat={chat} agentId={agentId} />{/* AF-013: the access mode (click / Shift+Tab) */}
           <div class="composer-spacer"><DictationWave state={waveState(chat.id)} /></div>
           <UltraCell chat={chat} on={ultra} onToggle={(next) => updateDraft(chat.id, { ultra: next || undefined })} />
           <ModelChip chat={chat} agentId={agentId} openSignal={modelSignal} />

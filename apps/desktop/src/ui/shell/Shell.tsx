@@ -24,6 +24,7 @@ import { bridge } from '../lib/platform.ts';
 import { hotkey } from '../lib/hotkeys.ts';
 import { toggleSettings } from '../lib/router.ts';
 import { ConfirmHost } from '../lib/dialog.tsx';
+import { AccessRequestHost } from './AccessRequestDialog.tsx'; // AF-013: approval requests
 import { RememberWhyHost } from '../chat/RememberWhy.tsx';
 import { Spinner } from '../lib/ui.tsx';
 import { newChatOpen, paletteOpen } from '../lib/shell-state.ts';
@@ -69,6 +70,7 @@ function Overlays() {
       <NewChatDialog />
       <FeedbackMenu />
       <ConfirmHost />
+      <AccessRequestHost />
       <RememberWhyHost />
       <TourDialog />
       <RegionDialog />

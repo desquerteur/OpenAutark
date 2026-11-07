@@ -11,7 +11,9 @@
 // Releasing a lease aborts its in-flight calls; the token is rejected afterwards (401).
 // The 2026-07-28 stateless core works too: nothing here depends on initialize.
 // Owns: leases, the JSON-RPC/MCP method handling, version negotiation.
-// Never: runs a tool outside ToolRegistry.call, accepts an unknown token, logs tokens or tool
+// AF-013: a turn that is not unlimited also lists access.prompt, Claude Code's permission prompt tool, which the hub answers
+// itself (access/prompt-tool.ts) – the one call that does not go through ToolRegistry.call.
+// Never: runs an agent's tool outside ToolRegistry.call, accepts an unknown token, logs tokens or tool
 // arguments, opens SSE streams or sends server-initiated requests.
 
 import { randomBytes } from 'node:crypto';
@@ -23,6 +25,7 @@ import { classify, clip, isRecord, RPC_ERROR, rpcError, rpcResult, type JsonRpcI
 import { errorResult, toCallResult, toMcpTool } from './convert.ts';
 import { McpToolNames } from './names.ts';
 import { engineOffer } from '../tools/learned.ts'; // B-049 F4
+import { ACCESS_PROMPT, ACCESS_PROMPT_SPEC, answerPrompt, promptToolWanted } from '../access/prompt-tool.ts'; // AF-013
 
 export const SUPPORTED_PROTOCOL_VERSIONS = ['2025-03-26', '2025-06-18', '2025-11-25', '2026-07-28'] as const;
 export const DEFAULT_PROTOCOL_VERSION = '2025-06-18';
@@ -210,6 +213,7 @@ export class Mcp implements McpHub {
     // learned tools are its parent chat's (split-turn.ts offerScope), so a forked session gets the parent's exact list.
     const scope = lease.ctx.conversationId ?? lease.ctx.split?.parentConversationId;
     lease.specs = engineOffer(services, lease.ctx.agent, mode, { ownTools: true, via: 'mcp' }, scope);
+    if (promptToolWanted(services, lease.ctx)) lease.specs = [...lease.specs, ACCESS_PROMPT_SPEC]; // AF-013: Claude Code's permission prompts
     return lease.specs;
   }
 
@@ -227,6 +231,7 @@ export class Mcp implements McpHub {
     lease.inflight.set(key, call);
     try {
       const signal = AbortSignal.any([lease.controller.signal, call.signal]);
+      if (name === ACCESS_PROMPT) return rpcResult(id, toCallResult(await answerPrompt(services, lease.ctx, args, signal))); // AF-013: a protocol hook, not an agent tool
       const output = await services.tools.call(name, args, { ...lease.ctx, signal, status: () => {} }, `mcp-${++this.callSeq}`);
       return rpcResult(id, toCallResult(output));
     } catch (error) {

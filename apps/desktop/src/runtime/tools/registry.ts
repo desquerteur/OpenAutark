@@ -2,7 +2,8 @@
 // secrets.run start in the CLI engines' env (builtin/command.ts → engines/wf-shim.ts agentEnv), so `wf` is the app's
 // client for API-key and local agents too.
 // Owns: registration (remote tools get the optional `device` argument), the per-agent/per-mode offer (deterministic
-// order for prompt caching) and the one call path: validate → place (device → linked PC, placement.ts) → run here or
+// order for prompt caching) and the one call path: validate → place (device → linked PC, placement.ts) → AF-013 the agent's
+// access (runtime/access: allowed, refused, or waiting for the person's approval) → run here or
 // on a linked device → redact/truncate (outputs.ts) → journal (journal.ts) with an idempotency key (a resend of a running call id gets its result; one cut off before
 // its result is told so). Each call with an id is reported to the turn's tool boundary (onCall start/end).
 // A tool is offered when its mode fits: the mode's tool patterns, or EVERY_MODE, or anyMode (a connector's tools and a few like spend.note);
@@ -32,6 +33,7 @@ import { CALL_TOOL, coreNames } from './core-sets.ts'; // B-049 F4
 import { noteLearned } from './learned.ts'; // B-049 F4
 import { callRefusal, callTarget } from './builtin/tools-meta.ts'; // B-049 F4
 import { withoutSecretValues } from '../secrets/guard.ts';
+import '../contracts/access.ts'; // AF-013: services.access
 
 export { resolveDevice, withDeviceArg, type DeviceTarget } from './placement.ts';
 
@@ -179,7 +181,8 @@ export class Registry implements ToolRegistry {
     // The turn's tool boundary follows this call under its id from here (a resend above is the same call).
     const report = (on: boolean) => { if (callId) { try { this.options.onCall?.({ agentId: ctx.agent.id, runId: ctx.runId, callId }, on); } catch { /* bookkeeping only */ } } };
     report(true);
-    const call = this.invoke(services, { tool, args: input, action, ctx, company: placedIn.target }, callId, idemKey, target?.name);
+    // AF-013: the agent's access mode and rules first – an 'ask' waits for the person inside this call, so a resend waits with it.
+    const call = this.admitted(services, tool, input, ctx).then((refused) => refused ? failure(refused) : this.invoke(services, { tool, args: input, action, ctx, company: placedIn.target }, callId, idemKey, target?.name));
     this.running.set(idemKey, call);
     try { return await call; } finally { this.running.delete(idemKey); report(false); }
   }
@@ -199,6 +202,16 @@ export class Registry implements ToolRegistry {
       if (!base.split && !coreNames(services.modes.get(base.mode)).has(target.name)) noteLearned(services, base.agent.id, base.conversationId, target.name); // B-057 S9: a split learns no tools
     } catch { /* unknown mode or no store: nothing learned, the call still runs */ }
     return this.call(target.name, target.args, base, callId, target.company);
+  }
+
+  /** AF-013: undefined = the agent's access lets this call run (runtime/access/service.ts gateTool), else the refusal its turn reads. */
+  private async admitted(services: RuntimeServices, tool: ToolDef, input: Record<string, unknown>, ctx: ToolContext): Promise<string | undefined> {
+    if (!services.access) return undefined;
+    try {
+      return await services.access.gateTool(tool, input, { agentId: ctx.agent.id, conversationId: ctx.conversationId, runId: ctx.runId, ...(ctx.split?.cwd ? { cwd: ctx.split.cwd } : {}) }, ctx.signal);
+    } catch (error) {
+      return `My access could not be checked (${toErrorData(error).message}), so this step did not run.`;
+    }
   }
 
   /** run → journal, for a call id that has not started before. */

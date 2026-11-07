@@ -834,7 +834,22 @@ simpler: the separate gardener is gone, the subconscious's brains decide, and th
 ## 6. Engines, accounts, routing, decisions
 
 **Agents run without asking** on every engine: Claude Code with `--permission-mode bypassPermissions`, Codex with
-`approvalPolicy: 'never'`, ACP permission requests answered allow.
+`approvalPolicy: 'never'`, ACP permission requests answered allow – unless the agent has an access mode (AF-013, below).
+
+**Access modes (AF-013, `runtime/access/*`, `shared/model/access.ts`)**: per agent `<data>/agents/<id>/access.json`
+(`access.set`; no file = full access, the behaviour above), a chat can override the mode (`access.setChatMode`, the
+composer's mode cell `chat/composer/AccessModeCell.tsx`, click or Shift+Tab), a run too (`access.setRunMode`). Modes: `read`
+(reads and read-only commands; changes denied), `ask` (every change, command and outside tool asks the person), `project`
+(changes and commands inside the turn's folder run, outside asks), `full`. Rules: write/denied folders, command allow/deny
+patterns, network, connector/MCP tools, money (deny > allow > mode; `access/rules.ts`, `access/commands.ts`). An `ask` waits
+in `access/approvals.ts` for the person's dialog (`shell/AccessRequestDialog.tsx`: Allow once · Always for <agent> – adds
+the rule – · Deny; 30 min, a stopped turn or Escape refuse). Enforcement per engine: the tool registry judges the app's own
+tools on every engine (the only check for API and local models); Claude Code gets its own permission mode, disallowed
+tools and `--permission-prompt-tool` answered by the hub (`engines/claude/access.ts`, `access/prompt-tool.ts`); Codex
+gets a sandbox and approval policy, each approval request judged (`engines/codex/access.ts`); ACP permission requests are
+judged (`engines/acp/turn.ts`). Not enforced: Claude Code's reads (Read/Glob/Grep never prompt), what a command does once
+it runs on engines without an OS sandbox (Claude Code, ACP, `shell.exec`: the command text is judged), browser/computer
+clicks beyond their tool's category.
 
 | Engine | How it runs (`runtime/engines`) |
 |---|---|
@@ -944,7 +959,8 @@ simpler: the separate gardener is gone, the subconscious's brains decide, and th
 validate → place → run → redact → journal.** Validation checks the arguments against the schema (`validate.ts`);
 placement decides the company on this PC (`company`, §5) and the PC (`placement.ts`, §8); the output is redacted and bounded (`outputs.ts`); the journal
 (`journal.ts`) records the call with an idempotency key (a resend of a running call id gets its result). There is no
-permission, approval or judgment step. Every string argument first passes the secrets leak guard
+permission, approval or judgment step – except the agent's access mode and rules (AF-013, §6), which the registry
+checks before a call runs. Every string argument first passes the secrets leak guard
 (`secrets/guard.ts`): a stored secret value becomes its handle, so it never lands in a note, file or message.
 
 A tool is offered when its mode's patterns match, when it is in `EVERY_MODE` (asking the person, delegation,
@@ -1476,7 +1492,7 @@ area). On the phone, files open with the system app.
   pin). The + menu (`composer/PlusMenu.tsx`: Files & folders, Photos & screenshots, Secret – the composer's secret mode,
   §7.4 –, Task, then the send items of `composer/slash.ts`) and the Send button's right-click (Send as important, Send
   silently, **Schedule…**) never grey an entry out: with nothing to send a level sets the draft's level and Task fills
-  "/task ". No permission chip. **Schedule
+  "/task ". Beside Plus the access mode cell (AF-013, §6). **Schedule
   mode** (§4.6): one settings block over the text inside the frame, the text area grows, and the bottom edge of the
   composer, Plus, Ultra, the model chip, Send and the header do not move (the window test measures them in light, dark,
   640×480 and phone width, and that the block's boxes do not change when switching Once/Repeat); Send turns into a round
