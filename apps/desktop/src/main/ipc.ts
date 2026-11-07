@@ -49,6 +49,8 @@ export interface IpcDeps {
   };
   clipboardWrite(text: string): Promise<void>;
   openExternal(url: string): Promise<void>;
+  /** AF-014: the Explorer entry ('state' | 'on' | 'off', checked in explorer-menu.ts); resolves whether it is on. */
+  explorerMenu?(action: unknown): Promise<boolean>;
   /** The UI's layout for the native caption controls (main/title-bar.ts). */
   titleBarLayout?(layout: TitleBarLayout): void;
   /** B-044: the app window's network came back (navigator 'online'); main pushes host power 'online' to the runtime. */
@@ -150,6 +152,7 @@ export function registerIpc(ipc: IpcMainLike, deps: IpcDeps): void {
   handle(IPC.captureScreen, () => deps.capture.screen());
   handle(IPC.filesPick, kind => deps.files.pick(args.pickKind(kind)));
   handle(IPC.filesPickFolder, purpose => deps.files.pickFolder(purpose));
+  handle(IPC.explorerMenu, action => deps.explorerMenu ? deps.explorerMenu(action) : false); // AF-014
   handle(IPC.filesOpen, (id, reveal) => deps.files.open(args.fileId(id), args.optionalFlag(reveal)));
   handle(IPC.clipboardWrite, text => deps.clipboardWrite(args.clipboardText(text)));
   handle(IPC.openExternal, url => {

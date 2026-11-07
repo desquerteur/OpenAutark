@@ -10,7 +10,7 @@
 // Owns: IPC calls/listeners (incl. the window's 'online' event, B-044), envelope unwrapping and the lease. Never: holds business state,
 // logic or secrets – every action is checked again in main (sender trust + argument validation).
 
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import type { IpcRendererEvent } from 'electron';
 import { IPC, PORT_MESSAGE, TITLE_BAR_HEIGHT } from '../shared/api/desktop.ts';
 import type { IpcResult, NavigateRequest, PickKind, RuntimeStatus, WorkforceDesktopApi } from '../shared/api/desktop.ts';
@@ -148,10 +148,12 @@ const api: WorkforceDesktopApi = {
   files: {
     pick: (kind: PickKind) => invoke<FileRef[]>(IPC.filesPick, kind),
     pickFolder: purpose => invoke<string | null>(IPC.filesPickFolder, purpose),
+    pathOf: (file: unknown) => { try { return webUtils.getPathForFile(file as File); } catch { return ''; } }, // AF-014: a dropped folder
     openPath: (fileId, reveal) => invoke<void>(IPC.filesOpen, fileId, reveal === true),
   },
   clipboard: { writeText: text => invoke<void>(IPC.clipboardWrite, text) },
   openExternal: url => invoke<void>(IPC.openExternal, url),
+  explorerMenu: action => invoke<boolean>(IPC.explorerMenu, action), // AF-014
   onNavigate: listener => listen<[NavigateRequest]>(IPC.navigate, listener),
 };
 

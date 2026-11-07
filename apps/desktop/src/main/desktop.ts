@@ -27,6 +27,8 @@ import { desktopIpcDeps } from './desktop-ipc.ts';
 import { hiddenWindows } from './hidden-windows.ts';
 import { HostServices } from './host-services.ts';
 import { registerIpc } from './ipc.ts';
+import { ensureExplorerMenu, explorerMenuAction, type MenuDeps } from './explorer-menu.ts'; // AF-014
+import { runCommand } from './launcher-tasks.ts'; // AF-014: reg.exe for the Explorer entry
 import { applyLauncher, launcherDeps } from './launcher-tasks.ts';
 import { armDueStart } from './launcher-windows.ts';
 import { RunStateMarks } from './launcher.ts';
@@ -64,6 +66,8 @@ export interface DesktopOptions {
 
 export interface Desktop {
   show(): void;
+  /** AF-014: the Explorer's "Create Autark agent from this folder" – the window opens the dialog with that folder. */
+  agentFromFolder(folder: string): void;
 }
 
 function errorText(error: unknown): string {
@@ -79,6 +83,8 @@ export async function startDesktop(options: DesktopOptions): Promise<Desktop> {
   guardAllContents(app);
 
   const paths = appPaths({ appPath: app.getAppPath(), userData: app.getPath('userData') });
+  // AF-014: the Explorer entry starts this executable (unpackaged: Electron plus the app folder) with the folder.
+  const explorerDeps: MenuDeps = { platform, exe: process.execPath, prefix: app.isPackaged ? [] : [app.getAppPath()], run: runCommand, dir: app.getPath('userData') };
   const log = openMainLog(paths.logs, !app.isPackaged);
   const runMarks = new RunStateMarks(paths.data, line => log.line(line)); // B-044: every deliberate quit is marked (launcher.ts)
   log.line(`starting ${app.getVersion()}${app.isPackaged ? '' : ' (development)'}${testMode ? ' (test data)' : ''}`);
@@ -324,6 +330,7 @@ export async function startDesktop(options: DesktopOptions): Promise<Desktop> {
     clipboardWrite: text => clipboard.writeText(text),
     openExternal: url => shell.openExternal(url),
     titleBarLayout: layout => mainWindow.setTitleBarLayout(layout),
+    explorerMenu: action => explorerMenuAction(action, explorerDeps), // AF-014
     log: line => log.line(line),
   }));
 
@@ -379,5 +386,9 @@ export async function startDesktop(options: DesktopOptions): Promise<Desktop> {
   desktopUpdates.start();
   if (!company) settleAfterStart({ dataDir: paths.data, version: app.getVersion(), launcher, log: line => log.line(line) }); // the rename's and updates' leftovers
   if (!options.background) mainWindow.show();
-  return { show: () => mainWindow.show() };
+  if (!company && !options.testData) void ensureExplorerMenu({ ...explorerDeps, packaged: app.isPackaged }); // AF-014: this user's Explorer entry, once
+  return {
+    show: () => mainWindow.show(),
+    agentFromFolder: (folder) => { mainWindow.show(); renderer.sendWhenLoaded(IPC.navigate, { agentFromFolder: folder }); },
+  };
 }

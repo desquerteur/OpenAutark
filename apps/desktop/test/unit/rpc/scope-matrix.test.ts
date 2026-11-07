@@ -120,6 +120,10 @@ const PC_LOCAL: Record<string, string> = {
   'access.setRunMode': 'a running run\'s access mode on this PC (AF-013)',
   'access.pending': 'the approval requests the person answers on this PC (AF-013)',
   'access.answer': 'answers an agent\'s approval request on this PC (AF-013)',
+  // AF-014: an agent made from a folder of this PC.
+  'folderAgents.find': 'reads a folder of this PC for an agent\'s name, role, instruction files and skills (AF-014)',
+  'folderAgents.create': 'hires an agent whose home project is a folder of this PC (AF-014)',
+  'folderAgents.homes': 'the home project folders of this PC\'s agents (AF-014)',
 };
 
 /** The spec's tier lists (DEV2). */

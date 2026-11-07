@@ -851,6 +851,16 @@ judged (`engines/acp/turn.ts`). Not enforced: Claude Code's reads (Read/Glob/Gre
 it runs on engines without an OS sandbox (Claude Code, ACP, `shell.exec`: the command text is judged), browser/computer
 clicks beyond their tool's category.
 
+**Agent from folder (AF-014, `runtime/folder-agents/*`, `ui/team/FolderAgentDialog.tsx`)**: a folder chosen in the dialog
+(Team › Add › Agent from folder…), dropped on the Team list or sent by the Explorer's right-click entry "Create Autark agent
+from this folder" (`main/explorer-menu.ts`: HKCU `Directory\shell` and `Directory\Background\shell`, registered at the
+packaged app's first start, removable in the dialog, deleted by the uninstaller; `--agent-from-folder <folder>` reaches a
+running app as a second instance → navigate `agentFromFolder`) becomes a new agent's home project. `folderAgents.find`
+suggests name and role (package.json, pyproject.toml, Cargo.toml, go.mod, README) and lists the instruction files, skills and
+other tools' settings; `folderAgents.create` hires the agent with an own part that follows those files and uses those skills
+(they reach every turn through "Home project", §5.1), sets the home and the access mode `project`. Several agents per folder
+are fine; Team › Add › "Group agents by folder" groups the list by `folderAgents.homes`.
+
 | Engine | How it runs (`runtime/engines`) |
 |---|---|
 | Codex | One long-lived `codex app-server` per account home (`CODEX_HOME`), persistent threads with our dynamic tools; workspace `.codex` config and the person's own MCP servers are not loaded (`isolation.ts`, `own-mcp.ts`); the finder picks the `codex.exe` that has `codex-code-mode-host.exe` beside it first (`accounts/executables.ts`; without that file no tool call of an agent can run); lean helper threads, cut after 8 model requests (`turn.ts`, `HELPER_REQUESTS`) and, with a structured output, after 90 s without a sign of the model once `turn/start` answered (`HELPER_SILENT_MS`; the app-server's echo of the turn's input is no sign); that cut and a thread – helper or agent, start, resume or fork – the app-server does not open within `THREAD_OPEN_MS` (120 s, `helper-thread.ts`; B-075: a cold app-server on a large `CODEX_HOME` needed ~65 s) end as the turn's own timeout, which cools no account (`accounts/failure.ts`; a chat's redelivery retries it), and the turn's signal (a Stop, a helper call's own limit) ends an open too (`untilStopped`); every new agent thread (`thread/start`, `thread/fork`, the rebuild and its probe) is stored with `threadSource: 'chatgpt_hidden'` (`HIDDEN_THREAD`, never on `thread/resume`), which the Codex desktop app leaves out of its sidebar, search and notifications – the server only stores the label (B-075); code mode (one `exec` tool, `code-mode.ts`); native fork; the app note (`app-note.ts`: one text item in the first turn of a thread, after Codex's own multi-agent note – §5.1); limit reads and banked resets |

@@ -159,5 +159,8 @@
     ${Loop}
     FindClose $2
     DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "com.teydralab.workforce"
+    ; AF-014: the Explorer entry "Create Autark agent from this folder" (main/explorer-menu.ts, this user only)
+    DeleteRegKey HKCU "Software\Classes\Directory\shell\AutarkAgentFromFolder"
+    DeleteRegKey HKCU "Software\Classes\Directory\Background\shell\AutarkAgentFromFolder"
   ${endIf}
 !macroend
