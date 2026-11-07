@@ -116,6 +116,16 @@ test('access modes: the mode cell, read only refuses a write, ask opens the appr
   await section.waitFor({ timeout: 20_000 });
   assert.match(await section.textContent(), /Mode[\s\S]*Reads files and the web, changes nothing/);
   await shot('access-agent-page-light');
+  // The rules dialog saves its rules (access.json).
+  await section.getByRole('button', { name: 'Edit' }).click();
+  const rulesDialog = page.locator('dialog.access-rules');
+  await rulesDialog.waitFor({ state: 'visible', timeout: 10_000 });
+  await rulesDialog.locator('textarea').nth(2).fill('npm test');
+  await shot('access-rules-light');
+  await rulesDialog.getByRole('button', { name: 'Save' }).click();
+  await until('the rule is kept', async () => (await rpc.call('access.get', { agentId: manager.id })).rules.commands?.allow?.includes('npm test'));
+  await until('the rules row counts it', async () => /1 rule(?!s)/.test(await section.textContent()));
+  assert.deepEqual(JSON.parse(await readFile(path.join(profile, 'agents', manager.id, 'access.json'), 'utf8')).rules, { commands: { allow: ['npm test'] } });
 
   // Dark and phone width.
   await page.evaluate((id) => { location.hash = `#/chat/${id}`; }, chat.id);

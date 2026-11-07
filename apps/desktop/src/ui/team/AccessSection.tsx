@@ -90,7 +90,7 @@ function RulesDialog(props: { agent: Agent; rules: AccessRules; onClose: () => v
         </div>
         <DialogActions message={error}>
           <button type="button" class="button secondary" onClick={props.onClose}>Cancel</button>
-          <button type="submit" class="button primary" disabled={busy}>Save</button>
+          <button type="button" class="button primary" disabled={busy} onClick={() => void save()}>Save</button>
         </DialogActions>
       </form>
     </Dialog>
