@@ -1,0 +1,62 @@
+# Owns: building the Mac (universal DMG/ZIP) and Linux (x64 AppImage) packages of this fork straight from its sources
+# and attaching them to an existing release of this repository (Windows and Android are built on the release PC).
+# Never: signs or notarizes, creates or publishes a release, or touches another repository.
+name: Build Mac and Linux packages
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag (vX.Y.Z) to attach the packages to
+        type: string
+        required: true
+      platform:
+        description: Platform to build
+        type: choice
+        options: [all, mac, linux]
+        default: all
+permissions:
+  contents: write
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.platform == 'mac' && '[{"os":"macos-15","arguments":"--mac --universal"}]' || inputs.platform == 'linux' && '[{"os":"ubuntu-24.04","arguments":"--linux --x64"}]' || '[{"os":"macos-15","arguments":"--mac --universal"},{"os":"ubuntu-24.04","arguments":"--linux --x64"}]') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.2'
+      - name: Check the tag and the package version
+        shell: bash
+        run: |
+          [[ "${{ inputs.tag }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Use a vX.Y.Z tag'; exit 1; }
+          [[ "$(node -p 'require("./package.json").version')" == "${{ inputs.tag }}" ]] && exit 0
+          [[ "v$(node -p 'require("./package.json").version')" == "${{ inputs.tag }}" ]] || { echo 'Package and tag versions differ'; exit 1; }
+      - name: Install the pinned package dependencies
+        run: npm ci --no-fund --no-audit
+      - name: Add the native voice add-on for both Mac architectures
+        if: runner.os == 'macOS'
+        run: |
+          version=$(node -p 'require("sherpa-onnx-node/package.json").version')
+          npm install --no-save --force --no-fund --no-audit "sherpa-onnx-darwin-x64@$version" "sherpa-onnx-darwin-arm64@$version"
+      - name: Package
+        run: npm run package -- ${{ matrix.arguments }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Attach the packages to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(dist/*.dmg dist/*.zip dist/*.AppImage dist/*.blockmap dist/latest-mac.yml dist/latest-linux.yml)
+          ls -la "${files[@]}"
+          gh release upload "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
