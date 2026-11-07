@@ -87,7 +87,7 @@ function layoutProblems() {
   // Boxes that do not scroll: their children stay inside (scrollWidth would also count the phone's invisible 44 px hit
   // rings – mobile.css ::after – around the last button of a row); row lists may hang 4 px to the left, so their hover
   // background runs past the text that lines up (chat.css .live-steps, splits.css).
-  for (const sel of ['.agent-column', '.split-rows', '.split-facts', '.split-live', '.composer', '.composer-actions']) {
+  for (const sel of ['.agent-column', '.split-rows', '.split-facts', '.split-live', '.agents-view', '.agents-row', '.composer', '.composer-actions']) {
     for (const el of document.querySelectorAll(sel)) {
       if (!shown(el)) continue;
       const box = el.getBoundingClientRect();
@@ -97,7 +97,7 @@ function layoutProblems() {
       }
     }
   }
-  for (const head of document.querySelectorAll('.split-row-head, .team-split-row, .run-item.split-step > .run-item-head, .split-live > .message-author, .split-branch-line')) {
+  for (const head of document.querySelectorAll('.split-row-head, .team-split-row, .run-item.split-step > .run-item-head, .split-live > .message-author, .agents-row, .agents-row-main, .split-branch-line')) {
     if (!shown(head)) continue;
     const box = head.getBoundingClientRect();
     const kids = [...head.children].filter((kid) => shown(kid) && kid.getBoundingClientRect().width > 0);
@@ -108,7 +108,7 @@ function layoutProblems() {
       if (next && next.top < r.bottom - 0.5 && r.right > next.left + 0.5) out.push(`${kid.className} overlaps ${kids[index + 1].className} in ${head.className}`);
     });
   }
-  for (const el of document.querySelectorAll('.split-row-model, .split-row-time, .team-split-time, .team-split-count, .split-live .working-model, .split-page-name, .split-facts dd, .split-branch, .split-branch-cell, .run-item.split-step .run-item-target')) {
+  for (const el of document.querySelectorAll('.split-row-model, .split-row-time, .team-split-time, .team-split-count, .split-live .working-model, .agents-row-time, .agents-row-steps, .agents-view-title, .split-page-name, .split-facts dd, .split-branch, .split-branch-cell, .run-item.split-step .run-item-target')) {
     if (shown(el) && el.scrollWidth > el.clientWidth + 1) out.push(`${el.className || el.tagName} cut: "${el.textContent?.trim()}" (${el.scrollWidth} > ${el.clientWidth})`);
   }
   return out;
@@ -247,38 +247,46 @@ test('splits: step line, live block, sidebar rows, split page, worktree merge an
   await theme('light');
   await expectStable(page, [...fixed, stepId], async () => { await stepHead.click(); await step.locator('.split-row').first().waitFor({ state: 'detached', timeout: 5_000 }); });
 
-  // The running group: ONE live block, its slots: spinner, done, waiting; a row opens its own steps.
-  const live = page.locator(`.working-message.split-live[data-group-id="${g3.id}"]`);
-  await live.waitFor({ timeout: 15_000 });
-  assert.equal(await page.locator('.working-message.split-live').count(), 1, 'one live block per running group');
-  assert.equal((await live.locator('.working-model').textContent())?.trim(), '1 of 3 parts working');
-  assert.deepEqual(await live.locator('.split-icon').evaluateAll((icons) => icons.map((i) => i.className.replace('split-icon ', ''))), ['running', 'done', 'waiting']);
-  assert.equal(await live.locator('.split-icon.running .spinner').count(), 1);
-  // The running part names the model it runs on (the live activity's – its run row gets the model only when it ends).
-  await page.waitForFunction((sel) => /^\S.* · High$/.test(document.querySelector(`${sel} .split-row:nth-child(1) .split-row-model`)?.textContent ?? ''),
-    `.working-message.split-live[data-group-id="${g3.id}"]`, { timeout: 10_000 });
-  const models = (await live.locator('.split-row-model').allTextContents()).map((s) => s.trim());
-  assert.equal(models[0].split(' · ')[0], models[1].split(' · ')[0], `the same model name in every row (${models.join(' | ')})`);
+  // The running group: ONE agent view (AF-004) – the Manager waits for its parts, one row per part under it with the
+  // spinner / done / waiting state; a part's row opens its own steps (tool calls start folded).
+  const live = page.locator('.agents-view');
+  await live.locator(`.agents-item[data-key="split:${g3.splits[0].id}"]`).waitFor({ timeout: 15_000 });
+  assert.equal(await page.locator('.agents-view').count(), 1, 'one agent view for the chat');
+  assert.equal(await live.getAttribute('data-tour'), 'agent-view');
+  const managerItem = live.locator(`.agents-item[data-key="agent:${manager.id}"]`);
+  assert.match((await managerItem.locator(':scope > .agents-row .agents-row-activity').textContent()) ?? '', /^Waiting for its parts · Write the landing page$/);
+  const partRows = managerItem.locator(':scope > .agents-children > .agents-item');
+  assert.deepEqual(await partRows.evaluateAll((rows) => rows.map((row) => row.className.match(/state-(\w+)/)?.[1])), ['running', 'done', 'waiting']);
+  assert.equal(await partRows.locator('.agents-state.running .spinner').count(), 1);
+  assert.deepEqual((await partRows.locator('.agents-row-name').allTextContents()).map((s) => s.trim()),
+    ['#1 Draft the landing copy', '#2 Collect the screenshots', '#3 Review the draft']);
+  assert.equal(await live.locator('.agents-row-body').count(), 0, 'tool calls start folded');
+  // The running part names the model it runs on in its tooltip (the live activity's – its run row gets it only when it ends).
+  await page.waitForFunction((id) => / · High$/.test(document.querySelector(`.agents-view .agents-item[data-key="split:${id}"] > .agents-row .agents-row-main`)?.getAttribute('title') ?? ''),
+    g3.splits[0].id, { timeout: 10_000 });
   await live.scrollIntoViewIfNeeded();
-  const liveId = `.working-message.split-live[data-group-id="${g3.id}"]`;
-  // The live block is the list's last entry and the list sticks to its end (MessageList.tsx): what opens there pushes
-  // the block up by its height – the frame stays, and the opened row stays in view.
+  const liveId = '.agents-view';
+  // The view is the list's last entry and the list sticks to its end (MessageList.tsx): what opens there pushes
+  // the view up by its height – the frame stays, and the opened row stays in view.
+  const doneMain = partRows.nth(1).locator(':scope > .agents-row .agents-row-main');
   await expectStable(page, fixed, async () => {
-    await live.locator('.split-row-head').nth(1).click();
-    await live.locator('.split-row-body .run-items').waitFor({ timeout: 15_000 });
+    await doneMain.click();
+    await partRows.nth(1).locator('.agents-row-body .run-items').waitFor({ timeout: 15_000 });
   });
-  const inView = await page.evaluate((sel) => {
-    const head = document.querySelector(`${sel} .split-row:nth-child(2) > .split-row-head`).getBoundingClientRect();
+  const inView = await page.evaluate((id) => {
+    const head = document.querySelector(`.agents-view .agents-item[data-key="split:${id}"] > .agents-row`).getBoundingClientRect();
     const list = document.querySelector('.message-scroller').getBoundingClientRect();
     return head.top >= list.top - 0.5 && head.bottom <= list.bottom + 0.5;
-  }, liveId);
+  }, g3.splits[1].id);
   assert.ok(inView, 'the opened part row stays in view');
-  await noProblems('live block 1280×800');
+  const rowHeights = await live.locator('.agents-row').evaluateAll((list) => list.map((h) => Math.round(h.getBoundingClientRect().height)));
+  assert.ok(rowHeights.every((h) => h === 28), `fixed 28 px rows (${rowHeights})`);
+  await noProblems('agent view 1280×800');
   await shot('splits-04-chat-live-light');
   await theme('dark');
   await shot('splits-05-chat-live-dark');
   await theme('light');
-  await live.locator('.split-row-head').nth(1).click();
+  await doneMain.click();
 
   // (d) Ultra (owner 30.10.2026): suggested for the next message – the labelled switch beside the model chip, on and
   // off, every composer cell keeps its box; the sent message carries it (meta.ultra) and shows the marker, the switch is

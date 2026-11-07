@@ -1,0 +1,79 @@
+/* AF-004 – the chat's agent view (agents/AgentView.tsx), like Claude Code's list of running agents: a muted headline, then
+   one fixed 28 px row per agent and part – caret cell, state icon, name, one line of activity, steps and run time in
+   fixed right-aligned slots, a reserved Stop cell – parts indented one step (22 px) under their agent with a hairline
+   guide from the agent's caret down; an open row's steps below it on the same hairline as the chat's "Worked …" list.
+   No frame and no card: the rows lie on the chat's surface, separated by space and type alone, the same in light and
+   dark (tokens only). Every slot keeps its box whatever it shows (a state, a count, a time arriving moves nothing).
+   Owns: these classes. Never: colours outside tokens.css, or the step lines themselves (team.css .run-item). */
+
+.agents-view {
+  --agent-indent: 22px; --agent-row-h: 28px; --agent-time-w: 52px; --agent-steps-w: 56px;
+  container: agents-view / inline-size; margin: 0 0 var(--msg-gap); font-size: 13px; line-height: 20px;
+}
+.agents-view-head { display: flex; align-items: center; height: 24px; margin: 0 0 2px; padding: 0 4px; }
+.agents-view-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; font-weight: 500; }
+.agents-tree, .agents-children { margin: 0; padding: 0; list-style: none; }
+.agents-children { position: relative; }
+/* the guide: under the parent's caret, down along its parts */
+.agents-children::before {
+  content: ""; position: absolute; top: 0; bottom: 6px; left: calc(var(--depth, 0) * var(--agent-indent) + 11px);
+  width: 1px; background: var(--line); pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- a row */
+.agents-row {
+  display: grid; grid-template-columns: 16px minmax(0, 1fr) var(--agent-time-w) 22px; align-items: center; column-gap: 4px;
+  height: var(--agent-row-h); margin-left: calc(var(--depth, 0) * var(--agent-indent)); padding: 0 0 0 4px; border-radius: 6px;
+}
+.agents-row:hover { background: var(--hover); }
+.agents-row-caret { display: grid; place-items: center; width: 16px; height: 16px; }
+.agents-caret { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; color: var(--muted); }
+.agents-caret:hover { color: var(--text); }
+.agents-caret:focus-visible, .agents-row-main:focus-visible, .agents-stop:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.agents-row-main {
+  display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; padding: 0 4px 0 2px; border-radius: 6px;
+  color: var(--text); text-align: left;
+}
+.agents-row-main[aria-expanded=true] .agents-row-steps { color: var(--text); }
+.agents-state { display: inline-grid; flex: none; place-items: center; width: 16px; height: 16px; color: var(--secondary); }
+.agents-state > .spinner { opacity: .85; }
+.agents-state.waiting, .agents-state.stopped { color: var(--muted); }
+.agents-state.done { color: var(--success); }
+.agents-state.failed { color: var(--danger); }
+.agents-row-name { flex: 0 1 auto; min-width: 0; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.kind-split > .agents-row .agents-row-name, .kind-group > .agents-row .agents-row-name { font-weight: 500; }
+.kind-group > .agents-row .agents-row-name { color: var(--secondary); }
+.agents-row-activity { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--secondary); }
+.state-waiting > .agents-row .agents-row-activity, .state-stopped > .agents-row .agents-row-activity, .state-done > .agents-row .agents-row-activity { color: var(--muted); }
+.state-failed > .agents-row .agents-row-activity { color: var(--danger); }
+.agents-row-steps, .agents-row-time { flex: none; overflow: hidden; white-space: nowrap; color: var(--muted); font-size: 12px; text-align: right; }
+.agents-row-steps { width: var(--agent-steps-w); }
+.agents-row-time { padding-right: 2px; }
+
+/* the reserved Stop cell: a small square, quiet until the row is pointed at */
+.agents-row-stop { display: grid; place-items: center; width: 22px; height: 22px; }
+.agents-stop { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; color: var(--secondary); opacity: .6; }
+.agents-row:hover .agents-stop, .agents-stop:focus-visible { opacity: 1; }
+.agents-stop:hover { background: var(--selected); color: var(--danger); }
+.agents-stop:disabled { opacity: var(--disabled-opacity); }
+.agents-stop-square { width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+
+/* ---------------------------------------------------------------- an open row's steps */
+.agents-row-body { padding: 0 0 4px calc(var(--depth, 0) * var(--agent-indent) + 11px); }
+.agents-row-body > .run-items.agents-steps { margin: 0; padding: 2px 0 2px 18px; border-left: 1px solid var(--line); }
+.agents-row-note { margin: 0; padding: 2px 0 4px 18px; border-left: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.agents-row-note.error { color: var(--danger); overflow-wrap: anywhere; }
+.agents-row-loading { display: flex; padding: 4px 0 4px 18px; border-left: 1px solid var(--line); }
+
+/* a narrow column (a phone, a slim chat): the steps slot goes, the name keeps less room – the activity still reads */
+@container agents-view (max-width: 480px) {
+  .agents-row-steps { display: none; }
+  .agents-row-name { max-width: 58%; }
+  .agents-tree { --agent-indent: 16px; }
+}
+@media (pointer: coarse) {
+  .agents-view { --agent-row-h: 36px; }
+  .agents-stop { width: 32px; height: 32px; }
+  .agents-row { grid-template-columns: 16px minmax(0, 1fr) var(--agent-time-w) 32px; }
+  .agents-row-stop { width: 32px; height: 32px; }
+}
