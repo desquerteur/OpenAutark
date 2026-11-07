@@ -19,6 +19,7 @@ import { IconButton, Spinner } from '../lib/ui.tsx';
 import { focusVoice, stopVoice } from '../chat/composer/voice.ts';
 import { realtimeChat, stopRealtime } from '../chat/call/realtime-call.ts';
 import { registerAiNotice } from '../onboarding/ai-notice.ts';
+import { registerSetupNotice } from '../onboarding/setup-reminder.ts'; // AF-002: setup not finished, away from My day
 import { registerSpeechPullNotice } from '../settings/speech-models.ts';
 import { registerComputerNotice } from './computer-notice.ts';
 import { NOTICE_PRIORITY, connectionNotice, registerNotice, visibleNotices } from './notices.ts';
@@ -86,6 +87,7 @@ export function registerShellNotices(): () => void {
     registerComputerNotice(),
     registerNotice(toastNotices),
     registerAiNotice(),
+    registerSetupNotice(),
     registerSpeechPullNotice(),
   ];
   return () => off.forEach((unregister) => unregister());

@@ -61,7 +61,7 @@ export function teamNavHeader(): HeaderProps {
   const state = search.value;
   return {
     title: 'Team',
-    cells: [{ id: 'add', icon: 'plus', label: 'Add', menu: addMenu() }],
+    cells: [{ id: 'add', icon: 'plus', label: 'Add', menu: addMenu(), tour: 'agent-create' }],
     search: {
       label: 'Search the team', open: state.open, query: state.query,
       onQuery: (query) => { search.value = { ...search.peek(), query }; },

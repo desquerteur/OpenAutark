@@ -44,6 +44,7 @@ import { RegionDialog } from '../workspace/RegionDialog.tsx'; // once for both s
 import { FeedbackMenu } from '../feedback/FeedbackMenu.tsx'; // B-055 Q4: the menu under the feedback cell, "Paint over"
 import { ColumnResize } from './ColumnResize.tsx';
 import { TourDialog } from '../tour/TourDialog.tsx'; // B-055: the feedback tour (replay)
+import { SpotlightHost } from '../tour/Spotlight.tsx'; // AF-002: the spotlight tour and first-visit hints
 
 function useGlobalHotkeys(): void {
   useEffect(() => {
@@ -71,6 +72,7 @@ function Overlays() {
       <ConfirmHost />
       <RememberWhyHost />
       <TourDialog />
+      <SpotlightHost />
       <RegionDialog />
     </>
   );

@@ -1493,9 +1493,12 @@ area). On the phone, files open with the system app.
   stream still re-read the items when the agent's live note changes (at most every 2 s, `useRunItems`).
 * **Rail** (`shell/Rail.tsx`): My day · Work · Chats · Team; from the bottom: profile (`ProfileMenu.tsx`: the
   companies, "New company", Settings – §3), plan quotas, update. Command palette: Ctrl/Cmd+K.
-* **First run** (`ui/onboarding`, `ui/tour`): the tour (video with a play button; "Connect to my other PC" beside Skip
-  opens the connect card, §8) → the AI card (the model setup; one usable AI is needed to continue) → About you (name and
-  company only). `onboarding.start` then posts one fixed line as the person into the Manager's chat
+* **First run** (`ui/onboarding`, AF-002): the setup assistant on My day (`#/home` and `#/day`; elsewhere the status line
+  says "Setup is not finished yet." with Continue setup, `setup-reminder.ts`) – "Step n of 4", each step with one
+  sentence on what it is for and a Skip: About you (language, name, company; "Connect to my other PC" opens the connect
+  card, §8) → Connect an AI (the model setup with its key test; Continue needs a model that answers, "Skip for now" asks
+  once) → Connect your tools (the rows of Settings › Apps) → Your first agent (the Manager, optionally one more hire).
+  Steps of older versions read as `profile` (`settings/validate.ts`). Start calls `onboarding.start`, which posts one fixed line as the person into the Manager's chat
   (`prompts/onboarding.md`, fallback `onboarding/brief.ts`), an ordinary message wake on the strongest model. B-076
   (owner 05.11.: the 0.3.2 start made the agent stop and ask how far it may go, then wait): the line says what just
   happened ("I just installed Autark, entered <name> and <company> and clicked Start. You are my first AI colleague."),
@@ -1504,6 +1507,15 @@ area). On the phone, files open with the system app.
   what you ask me is your call"); the browsers' passwords belong in the secrets catalog (exported, imported unread) and
   the models (work, decisions, search by meaning) can likely be better. No "ask me first", no language order (the PC's
   language is a fact in the prompt), nothing to store as a permission; no technical switch stands behind any of it.
+* **Spotlight tour** (`ui/tour/spotlight*.ts`, `Spotlight.tsx`, AF-002): after Start the tour goes through the app – a
+  modal `<dialog>` dims the window and cuts out one element at a time (SVG mask), with a bubble (progress "n / total",
+  1–2 sentences, Skip / Back / Next; → ← Enter Esc; a sheet in the phone layout). Steps hang on `data-tour` names (the
+  agreed list in `spotlight-steps.ts` `TOUR_NAMES`) and open their place themselves (a route, the Manager's chat or page,
+  the side pane); a step whose element this build lacks is skipped silently. `settings.onboarding.tour` / `tourStep` /
+  `hints` keep its state (a tour left part way goes on at the next start); after it was closed or finished, an area opened
+  for the first time shows a one-step hint. Settings › General › Getting started (and the palette) show it again and run
+  the setup again. The feedback video (`TourPlayer.tsx`) plays only in its dialog now (Settings › Feedback, the palette,
+  the tour's feedback step).
 * **Rich answers** (`shared/blocks`, `ui/blocks`): agents write Markdown with ```mermaid, ```ui blocks from one catalog
   (`shared/blocks/catalog.ts`; validated forgivingly) and ```app mini-tools that run in sandboxed frames
   (`wf-sandbox://`, a small live-frame budget). Ask blocks become to-dos (§4.3).
@@ -1647,7 +1659,7 @@ All paths below `code/apps/desktop/src` unless stated.
 | Voice, calls, media | `ui/lib/dictation.ts`, `shared/voice/*`, `runtime/voice/*`, `runtime/calls/*` (`call-log.ts` a call's row, `wiring.ts` start-up and shutdown), `shared/model/call.ts`, `runtime/media/*`, `main/media-*.ts`, UI `ui/chat/composer/*`, `ui/chat/call/*` |
 | Browser | `main/workspace-*.ts` (one shown tab per space `workspace-shown.ts`, preview marks `workspace-marks.ts`), `main/side-driver/*`, `runtime/browser/*`, UI `ui/workspace/*`, `ui/chat/ChatArea.tsx`, `ui/team/AgentBrowser.tsx` |
 | Shell, header, menus, settings | `ui/shell/*`, `ui/lib/{header,header-model,context-menu,dialog}.tsx`, `ui/settings/*`, `ui/styles/*`, `main/title-bar.ts` |
-| First run, feedback, repair | `ui/onboarding/*`, `ui/tour/*`, `runtime/onboarding/*`, `ui/feedback/*`, `runtime/feedback/*`, `runtime/repair/*`, `ui/repair/*` |
+| First run, spotlight tour, feedback, repair | `ui/onboarding/*`, `ui/tour/*` (spotlight tour: `ui/tour/spotlight*`), `runtime/onboarding/*`, `ui/feedback/*`, `runtime/feedback/*`, `runtime/repair/*`, `ui/repair/*` |
 | Rich answers | `shared/blocks/*`, `ui/blocks/*`, `ui/sandbox/wf.ts` |
 | Updates, launcher, tray | `main/updates/*`, `main/updates-wiring.ts`, `main/launcher*.ts`, `main/tray.ts` |
 | wf terminal client | `runtime/wf-cli/*`, the agents' shim `runtime/engines/wf-shim.ts` |

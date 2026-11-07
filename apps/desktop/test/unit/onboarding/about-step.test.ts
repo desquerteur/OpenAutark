@@ -1,6 +1,7 @@
-// The first run's team card became "About you" (OnboardingStep 'about'). An install that stopped on the old
-// team card has 'team' stored: it reads as 'about' – the rest of the onboarding section stays (a refused value
-// would have reset the whole section to its defaults), and the first run goes on there.
+// AF-002: the setup assistant starts at 'profile' (About you). An install that stopped on a step of an older first run
+// – the feedback tour ('tour'), the old About you ('about'), the team or voice card – has that stored: it reads as
+// 'profile', the rest of the onboarding section stays (a refused value would have reset the whole section to its
+// defaults), and the assistant goes on there.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,11 +11,18 @@ import { clock, memoryDb, recordingBus } from '../store/helpers.ts';
 
 const env = { locale: 'en-US', timezone: 'UTC' };
 
-test("a stored 'team' step reads as 'about'; completed and the other sections stay", () => {
-  const db = memoryDb();
-  db.run(`INSERT INTO settings (key, value, updated_at) VALUES ('onboarding', ?, 0)`, [JSON.stringify({ completed: true, step: 'team' })]);
-  const settings = new SettingsStore({ db, bus: recordingBus().bus, clock: clock(), env });
-  assert.deepEqual(settings.get().onboarding, { completed: true, step: 'about' });
-  for (const step of ['tour', 'ai', 'about', 'done'] as const) assert.ok(ONBOARDING_STEPS.includes(step), step);
+for (const old of ['tour', 'about', 'team', 'voice']) {
+  test(`a stored '${old}' step reads as 'profile'; completed and the other sections stay`, () => {
+    const db = memoryDb();
+    db.run(`INSERT INTO settings (key, value, updated_at) VALUES ('onboarding', ?, 0)`, [JSON.stringify({ completed: true, step: old })]);
+    const settings = new SettingsStore({ db, bus: recordingBus().bus, clock: clock(), env });
+    const { completed, step } = settings.get().onboarding;
+    assert.deepEqual({ completed, step }, { completed: true, step: 'profile' });
+  });
+}
+
+test('the step list is the assistant\'s four steps and done; anything else is refused', () => {
+  assert.deepEqual(ONBOARDING_STEPS, ['profile', 'ai', 'connectors', 'agent', 'done']);
+  const settings = new SettingsStore({ db: memoryDb(), bus: recordingBus().bus, clock: clock(), env });
   assert.throws(() => settings.update({ onboarding: { step: 'start' as never } }), /onboarding\.step/);
 });

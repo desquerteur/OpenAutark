@@ -76,11 +76,20 @@ export interface RoutingSettings {
 }
 
 /**
- * The first run (ui/onboarding): the tour, the AI card, then About you; 'done' once it is through. A stored 'team'
- * or 'voice' (older cards) reads as 'about'. "Set up team again" starts at 'ai'.
+ * The first run (ui/onboarding, AF-002): the setup assistant's steps – profile (language, name, company), ai (one model
+ * that answers, or skipped on purpose), connectors (optional) and agent (meet the Manager or hire a first agent) – then
+ * 'done'. Steps of older versions read on (settings/validate.ts): 'tour', 'about', 'team' and 'voice' as 'profile'.
+ * "Set up again" starts at 'profile'.
  */
-export type OnboardingStep = 'tour' | 'ai' | 'about' | 'done';
-export const ONBOARDING_STEPS: readonly OnboardingStep[] = ['tour', 'ai', 'about', 'done'];
+export type OnboardingStep = 'profile' | 'ai' | 'connectors' | 'agent' | 'done';
+export const ONBOARDING_STEPS: readonly OnboardingStep[] = ['profile', 'ai', 'connectors', 'agent', 'done'];
+
+/**
+ * AF-002: the app's spotlight tour (ui/tour/spotlight*.ts): new = not shown yet, started = left part way (it goes on at
+ * onboarding.tourStep), done = seen to the end, skipped = closed with Skip. Restarting it is always possible.
+ */
+export type TourState = 'new' | 'started' | 'done' | 'skipped';
+export const TOUR_STATES: readonly TourState[] = ['new', 'started', 'done', 'skipped'];
 
 export interface Settings {
   profile: Profile;
@@ -92,7 +101,11 @@ export interface Settings {
    * `step`: the first-run layer's card – 'done' once it is through (installs finished before it existed read
    * 'done', migration 69); `completed`: the Manager finished the setup interview.
    */
-  onboarding: { completed: boolean; step: OnboardingStep };
+  onboarding: {
+    completed: boolean; step: OnboardingStep;
+    /** AF-002: the spotlight tour's state, the step id it goes on at ('' = the start) and the areas whose first-visit hint was shown. */
+    tour?: TourState; tourStep?: string; hints?: string[];
+  };
   /**
    * Where reports go is the team's receiver shipped with the build (resources/feedback/receiver.json, B-055), never a
    * setting: the old repo/privateRepo/endpoint values were removed (migration 55, 23.10.2026).

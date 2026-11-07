@@ -1,10 +1,10 @@
-// Electron window check of the first run (Umbau Einfachheit: tour → AI → About you) with the demo engine in an
+// Electron window check of the setup assistant (AF-002: About you → AI → tools → first agent) with the demo engine in an
 // isolated test profile:
-//   * a new profile opens on Home's place (My day) with the first-run layer (.first-run-view) at the feedback tour
-//     (its poster; tour-window.test.mjs covers the player) – Skip leads to the AI card ("Step 1 of 2"), the sidebar
-//     and the frame's header row where they always are;
-//   * beside Skip, "Connect to my other device" opens the Connect card (this PC's Remote ID with "only this network", the
-//     "Connect a PC" row of Settings › Devices) without writing a step; the frame does not move; Back returns to the tour;
+//   * a new profile opens on Home's place (My day) with the assistant (.first-run-view) at About you ("Step 1 of 4",
+//     the step names, one sentence on what it is for), the sidebar and the frame's header row where they always are;
+//   * on that step "Connect to my other device" opens the Connect card (this PC's Remote ID with "only this network", the
+//     "Connect a PC" row of Settings › Devices) without writing a step; the frame does not move; Back returns to the step;
+//   * About you: language, name and company (typing moves nothing); Continue saves them and leads to the AI step;
 //   * the AI card is the model setup (settings/ModelSetup.tsx): the rows Claude Code and Codex, the four fixed buttons
 //     Claude plan · Codex plan · API key · Local server, the reserved "Open sign-in page" cell and one status line;
 //     the scan only fills the rows (nothing moves); API key opens its form inline under the buttons (they stay);
@@ -14,10 +14,12 @@
 //     in its reserved cell → the account event → "Codex account signed in"; clicking again adds another account;
 //     no accounts.try or accounts.login call is sent, even with an existing account. A failed
 //     Claude Code install says why in the same line; busy shows on the pressed button only; nothing moves; the flow
-//     survives the remount across the phone layout; Continue is disabled while no model can answer (no Skip);
-//   * About you: name and company only (typing moves nothing); Start saves the profile, creates nobody, completes the
-//     onboarding and opens the Manager's chat with the app's start text as the person's own line (once, before the
-//     Manager's answer);
+//     survives the remount across the phone layout; Continue is disabled while no model can answer, and "Skip for now"
+//     asks first (Cancel stays);
+//   * Connect your tools (the rows of Settings › Apps) is skipped; Your first agent shows the Manager; Start creates
+//     nobody, completes the onboarding and opens the Manager's chat with the app's start text as the person's own line
+//     (once, before the Manager's answer) – and the spotlight tour starts (spotlight-tour-window.test.mjs covers it; Skip
+//     here);
 //   * My day after the first run while no model can answer: the status line says so with Connect → Settings › Models,
 //     which shows the same four buttons; the line goes as soon as a model can answer;
 //   * screenshots light, dark, 640×480 and phone width; no horizontal scroll; no renderer errors.
@@ -103,18 +105,23 @@ test('first run: tour → AI (model setup, plan flow) → About you → the star
   const settings = () => rpc.call('settings.get');
   const manager = (await rpc.call('agents.list')).find((agent) => agent.template === 'manager' && !agent.archivedAt);
   assert.ok(manager, 'a fresh profile has the seed Manager');
-  assert.deepEqual((await settings()).onboarding, { completed: false, step: 'tour' }, 'the tour first');
+  const first = await settings();
+  assert.deepEqual([first.onboarding.completed, first.onboarding.step, first.onboarding.tour], [false, 'profile', 'new'], 'About you first, the tour not shown yet');
   const agentsBefore = (await rpc.call('agents.list')).filter((agent) => !agent.archivedAt).length;
 
   // The layer in Home's place, inside the frame.
   const layer = page.locator('.first-run-view');
   await layer.waitFor({ timeout: 20_000 });
   assert.ok(await page.locator('.sidebar').isVisible(), 'the frame stays');
-  await layer.locator('.tour-player[data-phase="poster"]').waitFor({ timeout: 10_000 });
+  const profileCard = layer.locator('.first-run-card[data-card="first-run-profile"]');
+  await profileCard.waitFor({ timeout: 10_000 });
+  assert.equal((await layer.locator('.first-run-step').textContent())?.trim(), 'Step 1 of 4');
+  assert.deepEqual(await layer.locator('.first-run-step-name').allTextContents(), ['About you', 'Connect an AI', 'Connect your tools', 'Your first agent']);
+  assert.match(await profileCard.locator('.first-run-purpose').textContent(), /^Your agents speak with you in this language/);
 
-  // "Connect to my other device" beside Skip: the Connect card in the cards' column; Back returns to the tour.
-  const connectButton = layer.locator('.tour-top').getByRole('button', { name: 'Connect to my other device' });
-  assert.ok(await connectButton.isVisible(), 'the text button beside Skip');
+  // "Connect to my other device" on the first step: the Connect card in the cards' column; Back returns to the step.
+  const connectButton = profileCard.getByRole('button', { name: 'Connect to my other device' });
+  assert.ok(await connectButton.isVisible(), 'the text button in the first step\'s action row');
   const connectCard = page.locator('.first-run-card[data-card="first-run-connect"]');
   await expectStable(page, ['.first-run-view > .frame-header', '.sidebar'], async () => {
     await connectButton.click();
@@ -124,7 +131,7 @@ test('first run: tour → AI (model setup, plan flow) → About you → the star
   await connectCard.locator('.set-row-hint', { hasText: 'only this network (meeting server off)' }).waitFor({ timeout: 10_000 });
   assert.equal(await connectCard.locator('.remote-connect-row').getByRole('textbox', { name: 'Remote ID or address of the other PC' }).count(), 1);
   assert.equal(await connectCard.getByRole('button', { name: 'Copy' }).count(), 1);
-  assert.equal((await settings()).onboarding.step, 'tour', 'opening the card writes no step');
+  assert.equal((await settings()).onboarding.step, 'profile', 'opening the card writes no step');
   await shot('first-run-00a-connect-light');
   await page.emulateMedia({ colorScheme: 'dark' });
   await shot('first-run-00b-connect-dark');
@@ -139,11 +146,31 @@ test('first run: tour → AI (model setup, plan flow) → About you → the star
   await size(1280, 820);
   await page.waitForTimeout(400);
   await connectCard.getByRole('button', { name: 'Back' }).click();
-  await layer.locator('.tour-player[data-phase="poster"]').waitFor({ timeout: 10_000 });
-  await layer.getByRole('button', { name: 'Skip' }).click();
-  await layer.locator('.first-run-step').waitFor({ timeout: 10_000 });
+  await profileCard.waitFor({ timeout: 10_000 });
+
+  // About you: language, name and company; typing moves nothing; Continue saves them.
+  await expectStable(page, ['.first-run-card', '.first-run-actions'], async () => {
+    await profileCard.getByLabel('Your name').fill('Test Person');
+    await profileCard.getByLabel('Company').fill('Test GmbH');
+  });
+  assert.equal(await profileCard.locator('textarea').count(), 0, 'no first-request field');
+  await shot('first-run-00d-profile-light');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await shot('first-run-00e-profile-dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  for (const [width, height, label] of [[640, 480, '640x480'], [420, 860, 'phone']]) {
+    await size(width, height);
+    await page.waitForTimeout(500);
+    await shot(`first-run-00f-profile-${label}`);
+    await noScroll(`profile ${label}`);
+  }
+  await size(1280, 820);
+  await page.waitForTimeout(400);
+  await profileCard.getByRole('button', { name: 'Continue' }).click();
+  await layer.locator('.first-run-card[data-card="first-run-ai"]').waitFor({ timeout: 10_000 });
   assert.equal((await settings()).onboarding.step, 'ai');
-  assert.equal((await page.locator('.first-run-step').textContent())?.trim(), 'Step 1 of 2');
+  assert.deepEqual([(await settings()).profile.name, (await settings()).profile.company], ['Test Person', 'Test GmbH'], 'saved on Continue');
+  assert.equal((await page.locator('.first-run-step').textContent())?.trim(), 'Step 2 of 4');
 
   // AI card: the model setup – rows, the four buttons, the reserved link cell and the status line; the scan fills the
   // rows without moving anything.
@@ -184,7 +211,14 @@ test('first run: tour → AI (model setup, plan flow) → About you → the star
   await page.waitForTimeout(800); // the scan's account list and models are in
   await ai.locator('.first-run-actions button.primary:disabled').waitFor({ timeout: 5_000 }); // nothing can answer: Continue waits
   assert.equal(await continueButton.isDisabled(), true, 'one usable provider is needed');
-  assert.equal(await ai.getByRole('button', { name: /Skip/ }).count(), 0, 'no Skip');
+  // AF-002: skipping the AI is possible only on purpose – one confirm; Cancel stays on the step.
+  await ai.getByRole('button', { name: 'Skip for now' }).click();
+  const skipAsk = page.getByRole('dialog', { name: 'Go on without an AI?' });
+  await skipAsk.waitFor({ timeout: 5_000 });
+  await shot('first-run-03-skip-ai-confirm');
+  await skipAsk.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await skipAsk.waitFor({ state: 'hidden', timeout: 5_000 });
+  assert.equal((await settings()).onboarding.step, 'ai', 'Cancel keeps the AI step');
   await shot('first-run-03-no-model-light');
   const release = (method, reply) => page.evaluate(([m, r]) => { const answer = window.__planFake.held[m]; delete window.__planFake.held[m]; answer(r); }, [method, reply]);
   const pushEvent = (event, data) => page.evaluate(([e, d]) => window.__planFake.event(e, d), [event, data]);
@@ -279,39 +313,48 @@ test('first run: tour → AI (model setup, plan flow) → About you → the star
   await page.evaluate(() => { window.__planFake.on = false; });
   await page.waitForTimeout(300);
 
-  // Continue → About you.
+  // Continue → Connect your tools (the rows of Settings › Apps) → Skip → Your first agent.
   await continueButton.click();
-  const about = page.locator('.first-run-card[data-card="first-run-about"]');
+  const tools = page.locator('.first-run-card[data-card="first-run-connectors"]');
+  await tools.waitFor({ timeout: 15_000 });
+  assert.equal((await settings()).onboarding.step, 'connectors');
+  assert.equal((await page.locator('.first-run-step').textContent())?.trim(), 'Step 3 of 4');
+  await tools.locator('#settings-apps').waitFor({ timeout: 10_000 });
+  await shot('first-run-05-tools-light');
+  await tools.getByRole('button', { name: 'Skip', exact: true }).click();
+  const about = page.locator('.first-run-card[data-card="first-run-agent"]');
   await about.waitFor({ timeout: 15_000 });
-  assert.equal((await settings()).onboarding.step, 'about');
-  assert.equal((await page.locator('.first-run-step').textContent())?.trim(), 'Step 2 of 2');
-  // Name and company only: typing moves nothing.
-  await expectStable(page, ['.first-run-card', '.first-run-actions'], async () => {
-    await about.getByLabel('Your name').fill('Test Person');
-    await about.getByLabel('Company').fill('Test GmbH');
-  });
-  assert.equal(await about.locator('textarea').count(), 0, 'no first-request field');
-  t.diagnostic(`card heights: AI ${aiHeight}px, About ${await cardHeight()}px`);
-  await shot('first-run-05-about-light');
+  assert.equal((await settings()).onboarding.step, 'agent');
+  assert.equal((await page.locator('.first-run-step').textContent())?.trim(), 'Step 4 of 4');
+  assert.match(await about.locator('.first-run-agent.lead .first-run-agent-name').textContent(), /^Manager/, 'the Manager is introduced');
+  t.diagnostic(`card heights: AI ${aiHeight}px, first agent ${await cardHeight()}px`);
+  await shot('first-run-06-agent-light');
   await page.emulateMedia({ colorScheme: 'dark' });
-  await shot('first-run-06-about-dark');
+  await shot('first-run-06-agent-dark');
   await page.emulateMedia({ colorScheme: 'light' });
   for (const [width, height, label] of [[640, 480, '640x480'], [420, 860, 'phone']]) {
     await size(width, height);
     await page.waitForTimeout(500);
-    await shot(`first-run-07-about-${label}`);
+    await shot(`first-run-07-agent-${label}`);
     await noScroll(label);
   }
   await size(1280, 820);
   await page.waitForTimeout(400);
 
-  // Start: the profile is saved, nobody is created, the Manager's chat opens with the start text and it answers.
+  // Start: the profile is saved, nobody is created, the Manager's chat opens with the start text and it answers; the
+  // spotlight tour starts (Skip here – spotlight-tour-window.test.mjs goes through it).
   await about.getByRole('button', { name: 'Start' }).click();
+  await page.locator('dialog.spotlight[data-step="welcome"]').waitFor({ timeout: 20_000 });
+  await page.locator('dialog.spotlight .spotlight-skip').click();
+  await page.locator('dialog.spotlight').waitFor({ state: 'detached', timeout: 10_000 });
+  // After a skipped tour each area shows a first-visit hint once (spotlight-tour-window.test.mjs checks them): here they
+  // count as shown, so the checks below meet no hint.
+  await rpc.call('settings.update', { onboarding: { hints: ['day', 'tasks', 'chats', 'chat', 'team', 'settings', 'apps', 'skills', 'secrets', 'devices', 'pane'] } });
   await page.waitForFunction(() => location.hash.startsWith('#/chat/'), undefined, { timeout: 20_000 });
   const chatId = await page.evaluate(() => decodeURIComponent(location.hash.slice('#/chat/'.length)));
   const done = await settings();
   assert.deepEqual([done.profile.name, done.profile.company], ['Test Person', 'Test GmbH']);
-  assert.deepEqual(done.onboarding, { completed: true, step: 'done' });
+  assert.deepEqual([done.onboarding.completed, done.onboarding.step, done.onboarding.tour], [true, 'done', 'skipped']);
   assert.equal((await rpc.call('agents.list')).filter((agent) => !agent.archivedAt).length, agentsBefore, 'only the Manager: nobody was created');
   await page.locator('article.message.agent').first().waitFor({ timeout: 90_000 }); // the Manager's turn
   const messages = await rpc.call('messages.list', { conversationId: chatId, limit: 20 });

@@ -143,7 +143,7 @@ export function ChatList() {
   const main = section('main');
 
   return (
-    <div class="chat-list">
+    <div class="chat-list" data-tour="chat-list">
       {canStartChat() && (
         <button type="button" class="sidebar-action" onClick={() => { newChatOpen.value = {}; }}>
           <Icon name="plus" size={18} /> New chat

@@ -223,13 +223,13 @@ export function Composer(props: { chat: ConversationSummary }) {
   };
   const sendMenu = useContextMenu(() => [{ items: sendMenuItems(sendActions) }]);
   // Schedule mode: the same round cell with a clock (a wider label would move Ultra, the model and the mic)
-  const primary = <button type="button" class="send-button" aria-label={scheduling ? 'Schedule' : 'Send'} title={scheduling ? 'Schedule' : undefined} {...sendMenu}
+  const primary = <button type="button" class="send-button" data-tour="composer-send" aria-label={scheduling ? 'Schedule' : 'Send'} title={scheduling ? 'Schedule' : undefined} {...sendMenu}
     disabled={(scheduling ? !scheduleReady || transcribingHere : controls.primary === 'send-disabled') || sending || uploading.length > 0}
     onClick={() => void (scheduling ? scheduleNow() : send())}><Icon name={scheduling ? 'clock' : 'arrow-up'} size={19} /></button>;
 
   return (
     <div class="composer-area">
-      <div class={`composer${dragOver ? ' drag-over' : ''}${level === 'important' ? ' important' : ''}${scheduling ? ' scheduling' : ''}`}
+      <div data-tour="composer" class={`composer${dragOver ? ' drag-over' : ''}${level === 'important' ? ' important' : ''}${scheduling ? ' scheduling' : ''}`}
         onDragOver={(event) => { if (event.dataTransfer?.types.includes('Files')) { event.preventDefault(); setDragOver(true); } }}
         onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
         <SuggestionList items={visibleItems} active={suggest.active} onPick={accept} onHover={suggest.setActive} />

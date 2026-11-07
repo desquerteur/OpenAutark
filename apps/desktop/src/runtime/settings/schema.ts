@@ -7,7 +7,7 @@
 // Owns: the definitions, both texts and how the text is read. Never: reads or writes files, decides what applies.
 
 import type { Settings } from '../../shared/model/system.ts';
-import { ONBOARDING_STEPS } from '../../shared/model/system.ts';
+import { ONBOARDING_STEPS, TOUR_STATES } from '../../shared/model/system.ts';
 import { DEFAULT_DAY_SETTINGS, MAX_BUFFER_MIN } from '../../shared/model/day-settings.ts';
 import { DEFAULT_RETENTION, MAX_RETENTION_DAYS } from '../../shared/model/lifecycle.ts';
 import { localSpeechIds } from '../../shared/model/local-speech-models.ts';
@@ -74,7 +74,12 @@ export const PATTERNS = {
   language: '^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$',
   provider: '^[a-z][a-z0-9-]{1,39}$',
   googleClientId: '^[A-Za-z0-9._-]{1,200}$',
+  /** AF-002: a tour step or area id (onboarding.tourStep, onboarding.hints). */
+  tourStep: '^[a-z0-9-]{0,40}$',
 } as const;
+
+/** AF-002: the most area hints onboarding.hints keeps. */
+export const MAX_HINTS = 40;
 
 const flag = (key: string, about: string, value: boolean): KeyDef => ({ key, about, type: 'boolean', options: [true, false], default: value });
 const choice = (key: string, about: string, options: readonly string[], value: string): KeyDef => ({ key, about, type: 'string', options, default: value });
@@ -174,7 +179,12 @@ export const SECTIONS: readonly SectionDef[] = [
   ] },
   { key: 'onboarding', title: 'First run', keys: [
     flag('completed', 'Whether the first run is finished', false),
-    choice('step', 'The first-run card on screen (done = finished)', ONBOARDING_STEPS, 'tour'),
+    choice('step', 'The setup assistant\'s step on screen (done = finished)', ONBOARDING_STEPS, 'profile'),
+    // AF-002: the spotlight tour through the app (Settings › General › Getting started shows it again)
+    choice('tour', 'The app tour: new = not shown yet, started = stopped part way, done = seen to the end, skipped = closed with Skip', TOUR_STATES, 'new'),
+    text('tourStep', 'The app tour\'s step it goes on at', 'a step id, or "" (the start)', { pattern: PATTERNS.tourStep, default: '' }),
+    { key: 'hints', about: 'The areas whose short first-visit hint was shown', type: 'array', allowed: `a list of up to ${MAX_HINTS} area ids`,
+      default: [], schema: { maxItems: MAX_HINTS, items: { type: 'string', pattern: PATTERNS.tourStep } } },
   ] },
 ];
 

@@ -47,7 +47,7 @@ test("B-044: onboarding.start posts the start text in the Manager's first chat a
   const { client } = runtime;
   const manager = (await client.call('agents.list')).find((agent) => agent.template === 'manager');
   assert.ok(manager);
-  assert.equal((await client.call('settings.get')).onboarding.step, 'tour', 'a new installation starts with the first-run layer (B-055 Q5: the feedback tour first)');
+  assert.equal((await client.call('settings.get')).onboarding.step, 'profile', 'a new installation starts with the setup assistant (AF-002: About you first)');
   await client.call('events.subscribe', { topics: ['chats'] });
   const { conversationId } = await client.call('onboarding.start');
   await client.call('events.subscribe', { topics: [`chat:${conversationId}`] });

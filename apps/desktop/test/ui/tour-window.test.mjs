@@ -1,14 +1,14 @@
 // Electron window check of the feedback tour (B-055 Q5) with the demo engine in an isolated test profile:
-//   * a fresh profile shows the first-run layer at its tour step: the poster (the filled example scene with a
-//     big Play button), the title row with "Connect to my other device" and Skip (both on screen down to phone width),
-//     the caption line and the control bar – no "Step n of 3"; the replay dialog has × and no Connect;
+//   * AF-002: the setup assistant no longer starts with this video – it plays in its dialog (the command palette's
+//     "Watch how it works", Settings › Feedback, the spotlight tour's feedback step): the poster (the filled example
+//     scene with a big Play button), × and no Connect, the caption line and the control bar;
 //   * Play runs it (the time grows); nothing in the player moves while it plays (expectStable); Space pauses
 //     (the time stands still – nothing runs), → steps 5 s, Home goes back to the start;
 //   * seeking on the scrubber shows each part at once: the menu under the feedback cell with the cursor's tip on
 //     the cell, the slim waveform with the menu shut, the transcript in the field, the Screenshot tooltip, the
 //     "Paint over" editor whose black stroke covers the e-mail and the phone number, "Sent – thank you.";
-//   * End shows the end card; Continue writes step 'ai' and shows the AI card ("Step 1 of 2");
-//   * the command palette's "Watch how it works" (openTour) replays the same player in a dialog; Esc closes it;
+//   * End shows the end card; Continue closes the dialog and changes no setting;
+//   * opening it again starts at the poster; Esc closes it;
 //   * screenshots light, dark, 640×480 and phone width; no horizontal page scroll; no renderer errors.
 // Run: npm run test:ui   (needs a fresh build)   SCREENSHOTS=<dir> keeps the screenshots.
 
@@ -26,7 +26,7 @@ import { DURATION, PAINT_SPAN, SCREENSHOT_TIP, firstOn } from '../../src/ui/tour
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const electronPath = path.join(root, 'node_modules', 'electron', 'dist', process.platform === 'win32' ? 'electron.exe' : 'electron');
 
-test('feedback tour: poster → play → seek through every part → Continue → AI card; replay in a dialog', { timeout: 300_000 }, async (t) => {
+test('feedback tour: poster → play → seek through every part → Continue closes; replay in a dialog', { timeout: 300_000 }, async (t) => {
   const profile = await mkdtemp(path.join(os.tmpdir(), 'workforce-tour-'));
   const shots = process.env.SCREENSHOTS ? path.resolve(process.env.SCREENSHOTS) : path.join(profile, 'shots');
   await mkdir(shots, { recursive: true });
@@ -55,21 +55,23 @@ test('feedback tour: poster → play → seek through every part → Continue �
   };
   const info = JSON.parse(await readFile(path.join(profile, 'runtime.json'), 'utf8'));
   rpc = await connect(info.port, info.token, 'cli');
-  assert.deepEqual((await rpc.call('settings.get')).onboarding, { completed: false, step: 'tour' }, 'a new install starts with the tour');
+  assert.equal((await rpc.call('settings.get')).onboarding.step, 'profile', 'AF-002: a new install starts with the setup assistant, not this video');
+  await rpc.call('settings.update', { onboarding: { step: 'done' } });
+  await page.locator('.first-run-view').waitFor({ state: 'detached', timeout: 15_000 });
+  const openFromPalette = async () => {
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+    await page.locator('.palette-input').fill('Watch how');
+    await page.locator('.palette-row', { hasText: 'Watch how it works' }).first().click();
+  };
+  await openFromPalette();
 
-  // The poster: the layer in Home's place, the filled scene, the big Play – no card, no step line.
-  const player = page.locator('.first-run-view .tour-player');
+  // The poster in its dialog: the filled scene, the big Play, × and no Connect.
+  const player = page.locator('dialog.tour-dialog[open] .tour-player');
   await player.waitFor({ timeout: 20_000 });
   assert.equal(await player.getAttribute('data-phase'), 'poster');
-  assert.ok(await page.locator('.first-run-view > .frame-header').isVisible(), 'the frame keeps its header row');
-  assert.equal(await page.locator('.first-run-step').count(), 0, 'no "Step n of 3" for the tour');
-  assert.equal(await page.locator('.first-run-card').count(), 0);
   assert.ok(await player.getByRole('button', { name: 'Play' }).first().isVisible());
-  assert.ok(await player.getByRole('button', { name: 'Skip' }).isVisible());
-  const connectButton = player.locator('.tour-top').getByRole('button', { name: 'Connect to my other device' });
-  assert.ok(await connectButton.isVisible(), 'the text button beside Skip');
-  const [connectBox, skipBox] = [await connectButton.boundingBox(), await player.getByRole('button', { name: 'Skip' }).boundingBox()];
-  assert.ok(connectBox.x + connectBox.width <= skipBox.x + 1 && Math.abs((connectBox.y + connectBox.height / 2) - (skipBox.y + skipBox.height / 2)) < 2, 'left of Skip, on its line');
+  assert.ok(await player.getByRole('button', { name: 'Close' }).isVisible(), 'the dialog has ×');
+  assert.equal(await player.getByRole('button', { name: 'Connect to my other device' }).count(), 0, 'the video only plays');
   assert.ok(await player.locator('.tour-scene > .tour-app .tour-feedback-cell').isVisible(), 'the scene shows the feedback cell');
   assert.match(await player.locator('.tour-scene').textContent(), /anna\.meyer@example\.com/, 'example private details in the scene');
   await shot('tour-01-poster-light');
@@ -79,7 +81,7 @@ test('feedback tour: poster → play → seek through every part → Continue �
 
   // Play: the time runs; nothing in the player moves.
   const time = async () => Number(await player.getAttribute('data-time'));
-  const frame = ['.tour-top', '.tour-connect', '.tour-skip', '.tour-stage-box', '.tour-caption', '.tour-controls', '.tour-time', '.tour-scrubber', '.tour-control'];
+  const frame = ['.tour-top', '.tour-close', '.tour-stage-box', '.tour-caption', '.tour-controls', '.tour-time', '.tour-scrubber', '.tour-control'];
   await expectStable(page, frame, async () => {
     await player.locator('.tour-play').click();
     await page.waitForTimeout(1500);
@@ -183,29 +185,16 @@ test('feedback tour: poster → play → seek through every part → Continue �
   assert.equal(await player.locator('.tour-editor').count(), 0, 'Done closed the editor');
   await shot('tour-11-sent-light');
 
-  // 640×480 and phone width: the scene scales into its box, the controls stay on screen, nothing scrolls sideways;
-  // crossing into the phone layout mounts the layer again – the player keeps its place.
-  const before = await time();
+  // 640×480 and phone width: the scene scales into its box, the controls stay on screen, nothing scrolls sideways.
   for (const [width, height, label] of [[640, 480, '640x480'], [420, 860, 'phone']]) {
     await size(width, height);
     await page.waitForTimeout(500);
-    if (label === '640x480') {
-      assert.notEqual(await player.getAttribute('data-phase'), 'poster', 'the remounted player is not back at its poster');
-      assert.equal(await time(), before, 'and keeps its place');
-    }
+    await player.waitFor({ timeout: 5_000 }); // the dialog stays open across the layouts
     const reachable = await page.evaluate(() => [...document.querySelectorAll('.tour-controls > *')].every((element) => {
       const box = element.getBoundingClientRect();
       return element.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
     }));
     assert.ok(reachable, `every control is on screen and uncovered at ${label}`);
-    const top = await page.evaluate(() => {
-      const bar = document.querySelector('.first-run-view .tour-top')?.getBoundingClientRect();
-      return ['.tour-connect', '.tour-skip'].every((selector) => {
-        const box = document.querySelector(`.first-run-view ${selector}`)?.getBoundingClientRect();
-        return Boolean(bar && box && box.left >= bar.left - 1 && box.right <= bar.right + 1 && box.top >= bar.top - 1 && box.bottom <= bar.bottom + 1);
-      });
-    });
-    assert.ok(top, `Connect and Skip stay inside the title row at ${label}`);
     await seek((PAINT_SPAN.start + PAINT_SPAN.end) / 2);
     assert.ok(await player.locator('.tour-editor').isVisible(), `the scrubber seeks at ${label}`);
     const stage = await player.locator('.tour-stage-box').boundingBox();
@@ -221,7 +210,7 @@ test('feedback tour: poster → play → seek through every part → Continue �
   await size(1280, 820);
   await page.waitForTimeout(400);
 
-  // End: the end card with Continue; Continue → the AI card.
+  // End: the end card with Continue; Continue closes the dialog.
   await player.locator('.tour-scrubber').focus();
   await page.keyboard.press('End');
   await player.locator('.tour-end').waitFor({ timeout: 2_000 });
@@ -232,16 +221,10 @@ test('feedback tour: poster → play → seek through every part → Continue �
   await shot('tour-14-end-dark');
   await page.emulateMedia({ colorScheme: 'light' });
   await player.getByRole('button', { name: 'Continue' }).click();
-  await page.locator('.first-run-card[data-card="first-run-ai"]').waitFor({ timeout: 15_000 });
-  assert.equal((await page.locator('.first-run-step').textContent())?.trim(), 'Step 1 of 2');
-  assert.equal((await rpc.call('settings.get')).onboarding.step, 'ai');
-  await shot('tour-15-ai-card-light');
+  await page.locator('dialog.tour-dialog').waitFor({ state: 'detached', timeout: 5_000 });
 
-  // Replay from the command palette ("Watch how it works" – Settings › Feedback went): the same player in a dialog;
-  // Esc closes it.
-  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
-  await page.locator('.palette-input').fill('Watch how');
-  await page.locator('.palette-row', { hasText: 'Watch how it works' }).first().click();
+  // Opening it again starts at the poster; Esc closes it.
+  await openFromPalette();
   const dialog = page.locator('dialog.tour-dialog[open]');
   await dialog.waitFor({ timeout: 5_000 });
   assert.equal(await dialog.locator('.tour-player').getAttribute('data-phase'), 'poster', 'each opening starts at the poster');
@@ -260,7 +243,7 @@ test('feedback tour: poster → play → seek through every part → Continue �
   await size(1280, 820);
   await page.keyboard.press('Escape');
   await dialog.waitFor({ state: 'detached', timeout: 5_000 });
-  assert.equal((await rpc.call('settings.get')).onboarding.step, 'ai', 'the replay changes no setting');
+  assert.equal((await rpc.call('settings.get')).onboarding.step, 'done', 'the video changes no setting');
 
   t.diagnostic(`screenshots: ${shots}`);
   const relevant = errors.filter((text) => !/Autofill|DevTools|Electron Security Warning/i.test(text));

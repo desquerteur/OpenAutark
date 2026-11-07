@@ -34,6 +34,9 @@ export function settingsNavHeader(): HeaderProps {
   };
 }
 
+/** AF-002: the spotlight tour's names of Settings pages (tour/spotlight-steps.ts); every row also carries data-page. */
+const NAV_TOUR: Partial<Record<string, string>> = { models: 'accounts', skills: 'skills' };
+
 export function SettingsNav() {
   // The phone's list shows only while no page is open: nothing is highlighted there.
   const current = route.value.view === 'settings' && !isMobile.value ? resolveVisibleSection(route.value.section, can).id : null;
@@ -43,7 +46,7 @@ export function SettingsNav() {
       <ul class="settings-nav-list">
         {matches.map((section) => (
           <li key={section.id}>
-            <button type="button" class={`settings-nav-item${section.id === current ? ' selected' : ''}`} aria-current={section.id === current ? 'page' : undefined}
+            <button type="button" class={`settings-nav-item${section.id === current ? ' selected' : ''}`} aria-current={section.id === current ? 'page' : undefined} data-page={section.id} data-tour={NAV_TOUR[section.id]}
               onClick={() => navigate({ view: 'settings', section: section.id }, { replace: route.value.view === 'settings' })}>
               <Icon name={section.icon} size={18} />
               <span>{section.title}</span>
