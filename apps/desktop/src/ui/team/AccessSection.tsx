@@ -115,7 +115,7 @@ export function AccessSection(props: { agent: Agent }) {
     <section class="agent-section" aria-label="Access">
       <div class="agent-section-head"><h3 class="agent-section-title">Access</h3></div>
       <div class="agent-row">
-        <span class="agent-row-text"><span class="agent-row-label">Mode</span><small class="agent-row-hint">{ACCESS_MODE_LABELS[mode].description}{access.project ? ` Project: ${access.project}` : ''}</small></span>
+        <span class="agent-row-text"><span class="agent-row-label">Mode</span><small class="agent-row-hint" title={access.project}>{ACCESS_MODE_LABELS[mode].description}{access.project ? ` Project folder: ${access.project.split(/[\\/]/).filter(Boolean).pop() ?? access.project}` : ''}</small></span>
         <Select label="Access mode" value={mode} options={MODE_OPTIONS} disabled={!owner} onChange={(next) => void save(next)} />
       </div>
       <div class="agent-row">
