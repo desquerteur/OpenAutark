@@ -14,9 +14,9 @@ test('the one action says Send only where this build can send, Save while unknow
 });
 
 test('the result line: sent, received, or saved on the PC (a phone names "your PC")', () => {
-  assert.equal(doneText('sent', true, true), 'Sent.');
+  assert.equal(doneText('sent', true, true), 'Sent to the team.');
   assert.equal(doneText('received', true, false), 'Received.');
-  assert.equal(doneText('local', true, true), 'Saved on this PC.', 'an unconfirmed attempt keeps the saved text');
+  assert.equal(doneText('local', true, true), 'Not sent. Your report is saved on this PC.', 'AF-003: an unconfirmed attempt says Not sent first');
   assert.equal(doneText('local', false, true), 'Saved on this PC – sending is not set up.');
   assert.equal(doneText('local', false, false), 'Saved on your PC – sending is not set up.');
 });

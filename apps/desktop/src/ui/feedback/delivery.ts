@@ -2,13 +2,15 @@
 // release's receiver), else "Save" (also while that is still unknown: a click never sends more than its label said)
 // – and one result line. A report is always saved on the PC first; sending is one feedback.send on top. When that
 // send was not confirmed (the report is only saved), the result's one action cell says "Send again" instead of
-// Close and sends the same saved report (its text and screenshot stay in it).
+// Close and sends the same saved report (its text and screenshot stay in it). AF-003: a delivered report shows its
+// number ("Report no. 668FC8DE"), the same one the team's inbox shows.
 // Owns: the can-we-send answer, the button's label and the result line. Never: publishes without a click or
 // opens a browser.
 
 import { signal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
 import type { FeedbackReport } from '../../shared/model/system.ts';
+import { reportNumber } from '../../shared/model/feedback-delivery.ts';
 import { bridge } from '../lib/platform.ts';
 import { rpc } from '../lib/rpc.ts';
 import { session } from '../lib/session.ts';
@@ -55,10 +57,18 @@ export const SHOT_LABEL = 'Screenshot';
 export const SHOT_HINT = 'Paint over anything private.';
 export const SHOT_MISSING = 'The window could not be captured.';
 
-/** The result line after Send/Save. `here`: the desktop window (else a phone: "your PC"). */
+/**
+ * The result line after Send/Save. `here`: the desktop window (else a phone: "your PC"). AF-003: a send that was not
+ * confirmed says "Not sent" first (the reason is the line beside the action), so it never reads like a success.
+ */
 export function doneText(status: FeedbackReport['status'], sending: boolean, here = Boolean(bridge)): string {
-  if (status === 'sent') return 'Sent.';
+  if (status === 'sent') return 'Sent to the team.';
   if (status === 'received') return 'Received.';
-  const saved = here ? 'Saved on this PC' : 'Saved on your PC';
-  return sending ? `${saved}.` : `${saved} – sending is not set up.`;
+  const where = here ? 'this PC' : 'your PC';
+  return sending ? `Not sent. Your report is saved on ${where}.` : `Saved on ${where} – sending is not set up.`;
+}
+
+/** AF-003: the confirmation under "Sent to the team." – the report's number (shared with the team's inbox), or '' without a receipt. */
+export function receiptText(report: Pick<FeedbackReport, 'status' | 'receiptId'>): string {
+  return report.status === 'sent' && report.receiptId ? `Report no. ${reportNumber(report.receiptId)}` : '';
 }

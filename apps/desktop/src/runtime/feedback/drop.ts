@@ -16,6 +16,16 @@ export const DOCUMENT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 export const NOT_SET_UP = 'Sending feedback is not set up in this version. Your report is saved on this PC.';
 const RETRY = 'Feedback could not be sent right now. Your report is saved on this PC; try again later.';
 const REFUSED = 'The feedback mailbox refused this report. It is saved on this PC.';
+// AF-003: why a send failed, in the one line the form shows (and `details.reason` for the runtime log).
+const OFFLINE = 'Feedback could not be sent right now: the feedback server is not reachable. Check the internet connection. Your report is saved on this PC; try again later.';
+const SLOW = 'Feedback could not be sent right now: the feedback server did not answer in time. Your report is saved on this PC; try again later.';
+
+/** Why a send failed (AF-003): no connection, no answer in time, the server failed, or the mailbox refused it. */
+export type DropFailure = 'offline' | 'timeout' | 'server' | 'refused';
+
+function failed(reason: DropFailure, message: string, status?: number): WorkforceError {
+  return new WorkforceError('unavailable', message, { details: { reason, ...(status ? { status } : {}) } });
+}
 
 /** The documents URL of the mailbox (`endpoint`: a local fake in tests). */
 export function documentsUrl(config: Pick<ReceiverConfig, 'project' | 'endpoint'>): string {
@@ -34,11 +44,13 @@ export async function dropSealed(config: ReceiverConfig, id: string, sealed: Uin
   let status: number;
   try {
     ({ status } = await request(run, url, { method: 'POST', headers: { 'content-type': 'application/json' }, body }, 0));
-  } catch {
-    throw new WorkforceError('unavailable', RETRY);
+  } catch (error) {
+    const name = error instanceof Error ? error.name : '';
+    if (name === 'TimeoutError' || name === 'AbortError') throw failed('timeout', SLOW);
+    throw failed('offline', OFFLINE);
   }
   if (status >= 200 && status < 300) return 'created';
   if (status === 409) return 'exists';
-  if (status === 400 || status === 403 || status === 404) throw new WorkforceError('unavailable', REFUSED);
-  throw new WorkforceError('unavailable', RETRY);
+  if (status === 400 || status === 403 || status === 404) throw failed('refused', REFUSED, status);
+  throw failed('server', RETRY, status);
 }

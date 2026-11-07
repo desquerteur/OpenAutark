@@ -57,6 +57,13 @@ body:has(.mobile-shell) .popover.feedback-menu { padding: 6px 16px calc(16px + e
   -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--danger); font-size: 12px; line-height: 16px;
 }
 .feedback-done { margin: 0; color: var(--text); line-height: 1.6; }
+/* AF-003: the kind (Bug | Idea) above the field, "Not sent." in the danger colour with its whole reason, and the
+   delivered report's number (selectable, with Copy) */
+.feedback-kind { justify-self: start; }
+.feedback-done.failed { color: var(--danger); }
+.feedback-panel.done .feedback-message { max-height: 64px; -webkit-line-clamp: 4; }
+.feedback-receipt { display: flex; align-items: center; gap: 8px; margin: -6px 0 0; color: var(--secondary); font-size: 13px; }
+.feedback-receipt-number { font-variant-numeric: tabular-nums; user-select: text; -webkit-user-select: text; }
 .feedback-privacy-note { height: 48px; margin: 0; color: var(--muted); font-size: 11px; line-height: 16px; }
 .feedback-privacy-note button { margin: 0 0 0 4px; padding: 0; border: 0; background: none; color: var(--secondary); font: inherit; text-decoration: underline; cursor: pointer; }
 .feedback-privacy-details p { margin: 0 0 14px; }

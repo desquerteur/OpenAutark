@@ -96,7 +96,7 @@ export async function deliver(s: RuntimeServices, report: FeedbackReport, diagno
   run?: typeof fetch): Promise<FeedbackReport> {
   const kv = new KvRepo(s.db);
   let entry = refuseOlder(s, kv, report);
-  if (!config) throw new WorkforceError('unavailable', NOT_SET_UP);
+  if (!config) throw new WorkforceError('unavailable', NOT_SET_UP, { details: { reason: 'not_set_up' } });
   if (!entry?.deliveredAt) {
     // An older build may already have uploaded its text-only envelope before losing the answer. A new id is
     // needed to include the screenshot; do not turn that earlier attempt into a successful complete delivery.
