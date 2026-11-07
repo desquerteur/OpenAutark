@@ -108,6 +108,8 @@ export interface ToolDef<A = Record<string, unknown>> extends ToolSpec {
   audience?: 'http' | 'mcp';
   /** Offered in every mode regardless of the mode's tool patterns (a connector's tools, runtime/apps/tools.ts; spend.note; devices.send_file). */
   anyMode?: true;
+  /** AF-005: offered to (and callable by) only the agents this answers true for – a connector's "agents" list (runtime/apps/agent-access.ts). */
+  forAgent?(agent: Pick<Agent, 'id' | 'name'>): boolean;
   /** The journal's one-line summary; without it the journal shows the tool's name. */
   describe?(args: A, ctx: ToolContext): ActionDescription;
   run(args: A, ctx: ToolContext): Promise<ToolOutput>;

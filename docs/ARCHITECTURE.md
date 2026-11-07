@@ -970,8 +970,10 @@ via Bing; DuckDuckGo, Mojeek, Startpage and Brave answered every query with a bo
 ### 7.2 Connectors are files plus a skill
 
 * `<data>/connectors/mcp.json` – `{"mcpServers": {"<name>": {"url", "headers"} | {"command", "args", "env", "cwd"}}}`
-  (the map Claude Code, Cursor and Codex use; `"disabled": true` turns one off). `mail.json` – mailboxes (address,
-  password, agent, optional imap/smtp). Any value may be a `secret://<id>` handle, resolved only at connect time.
+  (the map Claude Code, Cursor and Codex use; `"disabled": true` turns one off; AF-005: `"agents": [<id or name>…]` gives its
+  tools to those agents only – `apps/agent-access.ts`, `ToolDef.forAgent` checked by the registry's offer and call; left out
+  of the fingerprint, so a changed list connects nothing again). `mail.json` – mailboxes (address,
+  password, agent, optional imap/smtp, `agents`). Any value may be a `secret://<id>` handle, resolved only at connect time.
 * `apps/service.ts` applies the files at start and on every change, connects lazily (`apps/connections.ts`), registers
   `app.<id>.<tool>` for every agent, caches tool lists (a start needs no server), runs the MCP OAuth sign-in
   (`apps/oauth/*`; the browser opens only for a new or changed entry or `apps.reconnect`) and writes `status.json`.
@@ -1461,7 +1463,11 @@ area). On the phone, files open with the system app.
   `runtime/accounts/provider-file.ts` reconciles them into accounts; protocols `openai-chat`, `openai-responses`,
   `anthropic`, `decision`; a cell names the model that runs, never "Auto" (§6); account rows have Move up/down and no plan
   roles), **Voice**, **Calendar**, **Secrets** (the inline band, §7.4),
-  **Apps**, **Skills & memory** (skills with their route, the memory tree, click opens the file tab), **Devices** (§8),
+  **Connectors** (AF-005, page id `apps`, nav `data-tour="connectors"`: the connected rows with status, Test, on/off and a ⋯
+  menu – tools, Agents…, token, file, Remove –; the catalog with GitHub, Google, Notion, Slack, Discord …; "Own MCP server"
+  (HTTP with headers or stdio with arguments and variables, every value into Secrets) and "Paste JSON" (the `mcpServers` of
+  Claude Desktop / Claude Code, checked by `settings/mcp-import.ts`), all written into `connectors/mcp.json`),
+  **Skills & memory** (skills with their route, the memory tree, click opens the file tab), **Devices** (§8),
   **Feedback**, **About** (version and update, back up and restore, data folder). Everything else is a file the AI edits.
 * **Browser surfaces**: the global pane, each chat's area above its messages and each agent's area on its page, with
   Chrome-like tabs for pages and panels – §10.

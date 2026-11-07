@@ -36,6 +36,7 @@ const PAGE_OF: Readonly<Record<string, SettingsPage>> = {
   voice: 'models', speech: 'models', // B-078: the Voice page joined Models
   knowledge: 'skills', memory: 'skills',
   permissions: 'secrets',
+  connectors: 'apps', integrations: 'apps', mcp: 'apps', // AF-005: the Connectors page
   remote: 'devices', phone: 'devices', android: 'devices',
   profile: 'general', appearance: 'general', notifications: 'general', customize: 'general',
   advanced: 'about', updates: 'about', privacy: 'about', backup: 'about',

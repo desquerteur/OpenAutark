@@ -32,7 +32,7 @@ import { MODEL_USES, USE_LABELS } from '../../src/shared/model/models-uses.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const electronPath = path.join(root, 'node_modules', 'electron', 'dist', process.platform === 'win32' ? 'electron.exe' : 'electron');
-const PAGES = ['General', 'Models', 'Calendar', 'Secrets', 'Apps', 'Skills & memory', 'Devices', 'Feedback', 'About'];
+const PAGES = ['General', 'Models', 'Calendar', 'Secrets', 'Connectors', 'Skills & memory', 'Devices', 'Feedback', 'About']; // AF-005: Apps is Connectors
 
 test('settings: the pages, their nav and the use rows', { timeout: 300_000 }, async (t) => {
   const profile = await mkdtemp(path.join(os.tmpdir(), 'workforce-settings-pages-'));
@@ -270,7 +270,7 @@ test('settings: the pages, their nav and the use rows', { timeout: 300_000 }, as
   const mcpFile = path.join(profile, 'connectors', 'mcp.json');
   const mcp = async () => JSON.parse(await readFile(mcpFile, 'utf8')).mcpServers;
   await open('apps');
-  await row('#apps-add', 'Add by address').getByRole('button', { name: 'Add', exact: true }).click();
+  await row('#apps-add', 'Own MCP server').getByRole('button', { name: 'Add', exact: true }).click(); // AF-005: was "Add by address"
   await dialog.locator('#apps-address').fill('http://127.0.0.1:9/mcp');
   await dialog.locator('#apps-name').fill('Local test');
   await dialog.locator('#apps-server-token').fill('token-never-in-a-file');
