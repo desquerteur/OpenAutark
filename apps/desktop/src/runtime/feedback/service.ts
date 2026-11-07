@@ -1,6 +1,9 @@
 // Owns: local human/agent reports, redaction, deduplication, whether this build can send (`status`: a receiver
 // shipped in resources/feedback/receiver.json) and explicit delivery (delivery.ts: sealed for the team, B-055), plus
 // the team side on the PC holding the team's key (inbox.ts, setup.ts).
+// AF-003: one runtime log line for every step – at start whether this build can send (and which receiver file it
+// reads), each saved report, a report that stays on the PC because sending is not set up, each delivery and each
+// failed send with its reason – ids, kinds and reasons only, never the report's text or screenshot.
 // Never: opens an issue form, publishes anything (every report is sealed for the team; `visibility` is ignored) or
 // claims delivery before the mailbox answered. Older browser drafts ('queued', with their stored url) stay readable.
 
@@ -17,7 +20,7 @@ import { FeedbackRepo } from '../store/feedback.ts';
 import { redactText } from './redact.ts';
 import { deliver } from './delivery.ts';
 import { FeedbackInbox } from './inbox.ts';
-import { readReceiver, type ReceiverConfig } from './receiver.ts';
+import { readReceiver, receiverPath, type ReceiverConfig } from './receiver.ts';
 import { setupReceiver, type SetupInput } from './setup.ts';
 
 const KINDS: readonly FeedbackKind[] = ['bug', 'idea', 'change', 'praise'];
@@ -61,6 +64,16 @@ export interface FeedbackDeps {
   tokenUrl?: string;
 }
 
+/** The log fields of a failed send: the report, the error's code and reason (offline, timeout, server, refused, not_set_up) and its user-safe text. */
+export function sendFailure(id: string, error: unknown): Record<string, unknown> {
+  if (error instanceof WorkforceError) {
+    const reason = typeof error.details?.reason === 'string' ? error.details.reason : undefined;
+    const status = typeof error.details?.status === 'number' ? error.details.status : undefined;
+    return { id, code: error.code, ...(reason ? { reason } : {}), ...(status ? { status } : {}), error: error.message };
+  }
+  return { id, code: 'internal', error: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) };
+}
+
 /** Comparison key for "the same report": case and whitespace do not matter. */
 function sameTextKey(text: string): string {
   return text.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -79,8 +92,9 @@ export class FeedbackService implements FeedbackApi {
     this.inbox = new FeedbackInbox({ services: deps.services, fetch: deps.fetch, firestore: deps.firestore, tokenUrl: deps.tokenUrl });
   }
 
-  /** Once at app start: on the team's PC one inbox fetch shortly after (no timer after it). */
+  /** Once at app start: one log line whether this build can send; on the team's PC one inbox fetch shortly after (no timer after it). */
   start(): void {
+    this.logSending();
     const timer = setTimeout(() => {
       if (!this.inbox.receiving()) return;
       this.inbox.fetch().catch((error: unknown) => this.deps.services().log.warn('feedback inbox fetch failed', { error: error instanceof Error ? error.message : String(error) }));
@@ -131,6 +145,8 @@ export class FeedbackService implements FeedbackApi {
     if (!report.context.runId) delete report.context.runId;
     this.repo(s).save(report);
     s.bus.emit('feedback.upserted', report);
+    s.log.info('feedback saved', { id: report.id, kind: report.kind, by: author === HUMAN_ID ? 'human' : 'agent', screenshot: Boolean(report.annotationFileId ?? report.screenshotFileId) });
+    if (!this.receiver(s)) s.log.warn('feedback stays on this PC: sending is not set up in this build', { id: report.id, receiverFile: this.receiverFile(s) });
     return report;
   }
 
@@ -158,7 +174,15 @@ export class FeedbackService implements FeedbackApi {
     if (!active) {
       // B-078 (D17): every report carries the redacted log tail; feedback.includeDiagnostics is no longer read.
       active = deliver(s, report, this.diagnostics(s), this.receiver(s), this.deps.fetch)
-        .then((sent) => { repo.save(sent); s.bus.emit('feedback.upserted', sent); return sent; })
+        .then((sent) => {
+          repo.save(sent);
+          s.bus.emit('feedback.upserted', sent);
+          s.log.info('feedback sent', { id, receipt: sent.receiptId });
+          return sent;
+        }, (error: unknown) => {
+          s.log.warn('feedback send failed', sendFailure(id, error)); // AF-003: the form shows the message, the log keeps why
+          throw error;
+        })
         .finally(() => { this.sending.delete(id); });
       this.sending.set(id, active);
     }
@@ -183,6 +207,22 @@ export class FeedbackService implements FeedbackApi {
   /** The team's receiver this build sends to (undefined = sending is not set up). */
   private receiver(s: RuntimeServices): ReceiverConfig | undefined {
     return this.deps.receiver === undefined ? readReceiver(s) : this.deps.receiver ?? undefined;
+  }
+
+  /** The receiver file this app reads (for the log; tests that hand in a receiver have none). */
+  private receiverFile(s: RuntimeServices): string | undefined {
+    return this.deps.receiver === undefined ? receiverPath(s) : undefined;
+  }
+
+  /** AF-003: at start, one line whether reports can leave this PC – so "it does not send" is visible in the log. */
+  private logSending(): void {
+    try {
+      const s = this.deps.services();
+      const config = this.receiver(s);
+      const receiverFile = this.receiverFile(s);
+      if (config) s.log.info('feedback sending is set up', { project: config.project, ...(config.endpoint ? { endpoint: config.endpoint } : {}), receiverFile });
+      else s.log.warn('feedback sending is not set up: reports stay on this PC (no valid receiver.json)', { receiverFile });
+    } catch { /* logging never blocks the start */ }
   }
 
   private repo(s: RuntimeServices): FeedbackRepo {

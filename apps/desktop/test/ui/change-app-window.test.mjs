@@ -86,7 +86,7 @@ test('app-change entry points are removed; feedback publishes marked images dire
   await page.waitForFunction(() => document.querySelector('.feedback-menu .feedback-thumb img')?.getAttribute('src')?.startsWith('data:image/jpeg'));
   assert.equal(await dialog.getByRole('button', { name: 'Connect GitHub', exact: true }).count(), 0);
   await dialog.getByRole('button', { name: 'Send', exact: true }).click();
-  await dialog.locator('.feedback-done', { hasText: 'Sent.' }).waitFor();
+  await dialog.locator('.feedback-done', { hasText: 'Sent to the team.' }).waitFor();
   const saved = (await rpc.call('feedback.list')).find((report) => report.text === 'The sidebar width needs attention');
   assert.ok(saved.screenshotFileId); assert.equal(saved.annotationFileId, undefined, 'B-055: only the painted image'); assert.equal(saved.status, 'sent');
   assert.equal((await delivery.records()).reports.length, 1);
@@ -120,9 +120,9 @@ test('app-change entry points are removed; feedback publishes marked images dire
   const retry = page.locator('.popover.feedback-menu');
   await retry.getByRole('textbox', { name: 'Your feedback' }).fill('Keep my report after an unconfirmed response');
   await retry.getByRole('button', { name: 'Send', exact: true }).click();
-  await retry.locator('.feedback-done', { hasText: 'Saved on this PC.' }).waitFor();
+  await retry.locator('.feedback-done', { hasText: 'Not sent. Your report is saved on this PC.' }).waitFor();
   await retry.locator('.feedback-message').filter({ hasText: /\S/ }).waitFor(); // the reason, in the form's reserved line
-  assert.equal(await retry.getByText('Sent.', { exact: true }).count(), 0);
+  assert.equal(await retry.getByText('Sent to the team.', { exact: true }).count(), 0);
   await shot('feedback-unconfirmed');
   const kept = (await rpc.call('feedback.list')).find((report) => report.text === 'Keep my report after an unconfirmed response');
   assert.ok(kept, 'the report is kept'); assert.notEqual(kept.status, 'sent');

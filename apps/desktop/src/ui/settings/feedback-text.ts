@@ -2,6 +2,7 @@
 // whether a report can still be sent, what the last start did with a restore.
 // Owns: these texts. Never: RPC or rendering.
 
+import { reportNumber } from '../../shared/model/feedback-delivery.ts';
 import type { RestoreStatus } from '../../shared/model/restore.ts';
 import type { FeedbackReport } from '../../shared/model/system.ts';
 import { fullDate, listTime } from '../lib/format.ts';
@@ -16,13 +17,13 @@ export function reportsHint(sending: boolean | undefined, where = 'this PC'): st
   return sending ? `Reports are encrypted on ${where}. Only the Teydra team can read them.` : `Sending is not set up in this version. Reports are saved on ${where}.`;
 }
 
-/** A report's line: kind, who, how often, state, time. */
-export function reportLine(report: Pick<FeedbackReport, 'kind' | 'author' | 'status' | 'sentAt' | 'createdAt' | 'count' | 'deliveryWarning' | 'url'>, who: (id: string) => string, when: (at: number) => string = listTime, where = 'this PC'): string {
+/** A report's line: kind, who, how often, state (AF-003: with the number of a delivered report), time. */
+export function reportLine(report: Pick<FeedbackReport, 'kind' | 'author' | 'status' | 'sentAt' | 'createdAt' | 'count' | 'deliveryWarning' | 'url'> & Partial<Pick<FeedbackReport, 'receiptId'>>, who: (id: string) => string, when: (at: number) => string = listTime, where = 'this PC'): string {
   const state = report.status === 'sent' ? (report.url ? 'Published on GitHub' : report.deliveryWarning ? 'Sent to the team without the screenshot' : 'Sent to the team')
     : report.status === 'received' ? 'Received earlier' : report.status === 'local' || report.status === 'draft' ? `Saved on ${where}` : '';
   return [
     KIND[report.kind], report.author === 'human' ? '' : `${who(report.author)} · Unverified`, report.count && report.count > 1 ? `Reported ${report.count} times` : '',
-    state, when(report.sentAt ?? report.createdAt),
+    state, report.status === 'sent' && !report.url && report.receiptId ? `No. ${reportNumber(report.receiptId)}` : '', when(report.sentAt ?? report.createdAt),
   ].filter(Boolean).join(' · ');
 }
 

@@ -1270,7 +1270,10 @@ area, the sync between two real PCs, the employee push and the HTTPS route via `
   summary and full `FeedbackPrivacy.tsx` notice before Send. Canvas export keeps the flattened JPEG within
   600,000 image bytes; an oversized complete envelope stays local rather than dropping its screenshot. A send that is not
   confirmed leaves the report saved on the PC, and the form's action cell then reads "Send again" (the same saved
-  report with its screenshot goes out again).
+  report with its screenshot goes out again). AF-003: the form has Bug | Idea; a delivered report shows "Report no."
+  (the first eight characters of its mailbox id, `reportNumber`, also in the team inbox); a failed send reads "Not sent."
+  with its reason (`details.reason`: offline, timeout, server, refused, not_set_up); runtime.log has a line at start
+  (can this build send – receiver.json found?), per saved, sent and failed report (ids and reasons, never the text).
 
 ## 10. Browser, the global pane and the areas
 

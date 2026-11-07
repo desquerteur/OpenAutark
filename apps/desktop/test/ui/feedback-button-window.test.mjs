@@ -3,7 +3,7 @@
 // right-aligned under it and a second click closes it, moving no neighbour (expectStable); Escape
 // closes, Enter/Space toggle; the window shot is taken before the menu appears (the menu's region
 // in the shot equals a capture without it, while a capture with the menu differs) and includes
-// the side browser's native view; the "Screenshot" box is checked by default; no categories; the
+// the side browser's native view; the "Screenshot" box is checked by default; Bug | Idea (AF-003, Bug first); the
 // Profile menu has no Feedback item, the command palette opens the menu; the draft survives closing;
 // painting a box in "Paint over" and Save creates a report whose one image is the painted JPEG
 // (≤ 1600 px, the box black) and no second image; light, dark, 640×480 and phone width, where the
@@ -133,7 +133,8 @@ test('the feedback cell: one place in every view, a stable menu, the shot before
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')), 'Your feedback', 'the field has the focus');
   assert.equal(await menu.getByRole('checkbox', { name: 'Screenshot' }).isChecked(), true, 'checked by default');
   await menu.getByText('Paint over anything private.', { exact: true }).waitFor();
-  assert.equal(await menu.locator('[role=radiogroup], .chip').count(), 0, 'no categories');
+  assert.deepEqual(await menu.getByRole('radiogroup', { name: 'Kind of feedback' }).getByRole('radio').allTextContents(), ['Bug', 'Idea'], 'AF-003: Bug or Idea');
+  assert.equal(await menu.getByRole('radio', { name: 'Bug', exact: true }).getAttribute('aria-checked'), 'true', 'Bug by default');
   assert.equal(await menu.getByRole('button', { name: 'Save', exact: true }).count(), 1, 'sending is not set up: Save');
   assert.equal(await menu.getByRole('button', { name: 'Send', exact: true }).count(), 0);
   assert.equal(await button.getAttribute('aria-expanded'), 'true');
@@ -147,7 +148,9 @@ test('the feedback cell: one place in every view, a stable menu, the shot before
   const menuDiff = await regionDiff(page, withMenu, withoutMenu, opened);
   t.diagnostic(`menu region, pixels changed: shot vs no menu ${shotDiff.toFixed(2)} %, menu vs no menu ${menuDiff.toFixed(2)} %`);
   assert.ok(menuDiff > 3, 'the comparison sees a menu');
-  assert.ok(shotDiff < 0.5 && shotDiff < menuDiff / 10, 'the screenshot was taken before the menu appeared');
+  // AF-003: the Bug | Idea row makes the menu one row taller, so its region covers more of the animated tour below
+  // (0.32 % → 0.50 % on a 125 % display); the relative bound still requires the shot to be ten times closer.
+  assert.ok(shotDiff < 1 && shotDiff < menuDiff / 10, 'the screenshot was taken before the menu appeared');
 
   // ---- Escape closes (focus back on the cell), Enter and Space toggle
   await button.click(); await menu.waitFor();
