@@ -67,6 +67,13 @@
   --shadow-panel: -6px 0 20px #00000012; /* a drawer lying over content (Work's detail, side panels): visible, still soft */
   --shadow-raised: 0 1px 2px #00000014; /* selected segment, switch knob */
   --shadow-sheet: 0 -6px 28px #0000001f; /* phone bottom sheets */
+  /* AF-015: the call view (call.css) is dark in both themes, like a phone's call screen – one set, no dark variant */
+  --call-bg: #121519; --call-bg-2: #1c2128; --call-fg: #f2f4f7; --call-muted: #a9b0b9;
+  --call-agent: #5fc48c; --call-person: #8db3ff; --call-quiet: #ffffff26;
+  --call-control: #ffffff1a; --call-control-hover: #ffffff2e; --call-danger: #d9473f; --call-danger-hover: #e8584f; --call-danger-fg: #fff;
+  --call-tint: #ffffff0f; --call-tint-strong: #ffffff1f; --call-hover: #ffffff0d; --call-edge: #ffffff14;
+  --call-backdrop: radial-gradient(120% 80% at 50% 28%, #1c2128, #121519 70%);
+  --call-shadow-face: 0 8px 30px #0006; --call-shadow-mini: 0 10px 34px #0000004d;
 
   /* counters (rail/tab badge, unread) and fixed light surfaces */
   --badge-bg: #009fe3;

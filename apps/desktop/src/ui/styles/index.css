@@ -46,3 +46,4 @@
 @import "./agent-view.css"; /* AF-004: the chat's agent view – several agents and their parts as one tree */
 @import "./remote.css";
 @import "./repair.css"; /* 23.10.: repair screen after a broken upgrade or a crash loop */
+@import "./call.css"; /* AF-015: the call view (full and mini) and the call card in the chat */

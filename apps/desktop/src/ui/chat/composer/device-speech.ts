@@ -8,7 +8,8 @@
 // B-047 D14: with a local voice chosen on the PC (settings.voice.localTts) and voice.speak allowed here, a
 // line is read by the PC's own voice model instead – split into sentences, each one asked of voice.speak
 // while the one before plays (Web Audio), so speaking starts after the first sentence; speechSynthesis
-// reads whatever the local voice cannot (no voice chosen, a failed call, audio output not allowed yet).
+// reads whatever the local voice cannot (no voice chosen, a failed call, audio output not allowed yet). AF-015: the local
+// voice plays through the call view's output meter, and the system voice's word boundaries pulse it (call/call-levels.ts).
 // Owns: the queue, the line tokens, the speaking state, the speechSynthesis engine with the reading
 // voice and profile language, and the local voice engine in front of it. Never: decides what
 // is read or when (the readers do).
@@ -19,6 +20,7 @@ import { pcm16ToFloat } from '../../lib/pcm.ts';
 import { rpc } from '../../lib/rpc.ts';
 import { can } from '../../lib/session.ts';
 import { settings } from '../../lib/store.ts';
+import { outputMeter, speechPulse } from '../call/call-levels.ts';
 
 export interface SpeechOutput {
   /** Reads `text` aloud; `done` runs once when it finished, failed or was cut by someone else (not after this channel's own cancel). */
@@ -102,6 +104,8 @@ export function synthesisEngine(): SpeechEngine {
       const wanted = reading.voice?.ttsVoice;
       const chosen = wanted ? speechSynthesis.getVoices().find((entry) => entry.name === wanted) : undefined;
       if (chosen) { utterance.voice = chosen; utterance.lang = chosen.lang; }
+      utterance.onstart = () => speechPulse();
+      utterance.onboundary = () => speechPulse(); // each word: the call view's ring (the system voice gives no audio to measure)
       utterance.onend = () => ended();
       // Failed, interrupted or canceled: the line is over either way (DeviceSpeech ignores the end of a line it cut itself).
       utterance.onerror = () => ended();
@@ -221,7 +225,7 @@ const browserLocalVoice: LocalVoiceDeps = {
     buffer.getChannelData(0).set(samples);
     const source = output.createBufferSource();
     source.buffer = buffer;
-    source.connect(output.destination);
+    source.connect(outputMeter(output));
     let done = false;
     source.onended = () => { if (!done) { done = true; ended(); } };
     source.start();

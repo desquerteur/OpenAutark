@@ -5,6 +5,9 @@
 // chat's voice conversation takes over (composer/voice.ts startVoice). With 'off' the voice conversation directly.
 // Both are this device's one call in the chat (its bubble, runtime/calls/call-log.ts): the voice conversation joins the call
 // a realtime session opened, and End ends it. Only its icon, label and tone change – nothing beside it moves.
+// AF-015: a start opens the call view (call-session.ts openCall: full size, start signal) before the engine starts, End
+// is the view's hang-up; the cell carries data-tour="call-button". With the mock engine asked for on this device
+// (call-session.ts mockRequested: tests and demos) the mock carries the call instead – no microphone, no key.
 // Owns: the cell's states and what a tap starts. Never: the voice loop (voice.ts) or realtime audio (realtime-call.ts).
 
 import { useState } from 'preact/hooks';
@@ -15,6 +18,7 @@ import { settings } from '../../lib/store.ts';
 import { toastError } from '../../lib/toasts.ts';
 import { conversationAvailable, startVoice, stopVoice } from '../composer/voice.ts';
 import { discardRealtimeOutput, prepareRealtimeOutput, realtimeChat, startRealtime, stopRealtime } from './realtime-call.ts';
+import { callFailed, callOpenIn, callUi, engineStarting, hangUp, mockRequested, openCall } from './call-session.ts';
 
 /** The call cell's id (`.frame-header [data-cell="call"]`). */
 export const CALL_CELL = 'call';
@@ -26,26 +30,37 @@ export function callable(chat: ConversationSummary): boolean {
 
 /** Voice or realtime voice runs in this chat on this device. */
 export function talking(conversationId: string): boolean {
-  return realtimeChat.value === conversationId || voiceSessions.value.some((chat) => chat.conversationId === conversationId);
+  return realtimeChat.value === conversationId || voiceSessions.value.some((chat) => chat.conversationId === conversationId)
+    || (callUi.value?.mock === true && callUi.value.conversationId === conversationId);
 }
 
 /** Starts the chat's voice mode from the tap: realtime voice when it is on, else (or when it fails) the voice conversation. */
 async function startCall(conversationId: string): Promise<void> {
-  if (settings.peek()?.voice?.realtime !== 'auto') { await startVoice(conversationId); return; }
+  if (mockRequested()) { openCall(conversationId, { mock: true }); return; }
+  openCall(conversationId); // inside the tap: the start signal plays now
+  const started = await engineStarting(startEngine(conversationId)).catch(() => false);
+  if (!started) callFailed(conversationId);
+}
+
+/** The engine: realtime voice when it is on (falling back to the voice conversation), else the voice conversation. */
+async function startEngine(conversationId: string): Promise<boolean> {
+  if (settings.peek()?.voice?.realtime !== 'auto') return startVoice(conversationId);
   const output = prepareRealtimeOutput(); // inside the tap: mobile browsers keep a later one suspended
   try {
     await startRealtime(conversationId, (reason) => {
       if (reason) toastError(new Error(reason), 'Realtime voice ended');
-      void startVoice(conversationId); // the call goes on in the chat's voice conversation
+      void engineStarting(startVoice(conversationId)); // the call goes on in the chat's voice conversation
     }, undefined, output);
+    return true;
   } catch {
     discardRealtimeOutput(output);
-    await startVoice(conversationId); // no realtime model here (or it failed): the voice conversation
+    return startVoice(conversationId); // no realtime model here (or it failed): the voice conversation
   }
 }
 
 /** Ends the chat's voice mode on this device. */
 function endCall(conversationId: string): void {
+  if (callOpenIn(conversationId)) { hangUp(); return; } // the view's hang-up: the end signal, the view closes
   if (realtimeChat.peek() === conversationId) stopRealtime();
   void stopVoice(conversationId);
 }
@@ -55,11 +70,11 @@ export function useCallCell(chat: ConversationSummary): HeaderCell {
   const [busy, setBusy] = useState(false);
   if (!callable(chat)) return { id: CALL_CELL, placeholder: true };
   if (talking(chat.id)) {
-    return { id: CALL_CELL, icon: 'phone-disconnect', label: 'End voice', tone: 'danger', class: 'call-cell call-leave', onClick: () => endCall(chat.id) };
+    return { id: CALL_CELL, icon: 'phone-disconnect', label: 'End voice', tone: 'danger', class: 'call-cell call-leave', tour: 'call-button', onClick: () => endCall(chat.id) };
   }
   const start = () => {
     setBusy(true);
     void startCall(chat.id).catch((error: unknown) => toastError(error)).finally(() => setBusy(false));
   };
-  return { id: CALL_CELL, icon: 'phone', label: 'Talk', busy, class: 'call-cell call-start', onClick: start };
+  return { id: CALL_CELL, icon: 'phone', label: 'Talk', busy, class: 'call-cell call-start', tour: 'call-button', onClick: start };
 }
