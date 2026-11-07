@@ -88,6 +88,8 @@
 }
 .send-button:hover:not(:disabled) { opacity: .86; }
 .send-button:disabled { opacity: .3; }
+/* AF-012: Stop in the same cell while an agent works – a filled square */
+.stop-button .stop-square { width: 12px; height: 12px; border-radius: 3px; background: currentColor; }
 @keyframes wf-live { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--text) 8%, transparent); } }
 
 /* attachments being added (chips above the field) */

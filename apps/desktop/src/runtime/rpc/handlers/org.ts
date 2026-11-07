@@ -10,6 +10,8 @@
 // agents.archive takes an optional successorId (org/service.ts: the successor takes over role, place, reports, tasks).
 // B-057: agents.runs lists the agent's own turns only (its splits' runs are under their groups, splits.list); runs.items
 // judges a split's run as its group's parent run – the rule of splits.list/get (people/events.ts splitPlace).
+// AF-012: runs.cancel stops any running run by its id – a main-lane turn through the dispatcher, a split's run as the
+// person's Stop of that split (splits.stop) – the Stop per sub-agent of the agent view.
 // Wave 3: agents.update `base.instructions` = the text an editor started from; instructions changed meanwhile
 // (SYSTEM.md taken over, another edit) refuse the edit as a conflict (root/text-doc.ts staleBase).
 
@@ -117,13 +119,24 @@ export function register(table: HandlerTable): void {
   }, CHAT);
   table.add('runs.cancel', async (params, ctx) => {
     const runId = id(input(params), 'runId');
-    const run = ctx.services.runs.get(runId) ?? notFound('Run', { runId });
+    // AF-012: a turn the dispatcher has started (agent.activity names it) but not yet journaled stops by its id too.
+    const known = ctx.services.runs.get(runId);
+    if (!known) {
+      const early = ctx.services.dispatcher.activity().find((item) => item.runId === runId && !item.split);
+      if (early?.conversationId) ctx.services.promptQueue?.pause(early.conversationId, 'stop'); // AF-016
+      if (await ctx.services.dispatcher.cancelRun?.(runId)) return { ok: true };
+    }
+    const run = known ?? notFound('Run', { runId });
     // Finished runs have nothing to stop; the call stays idempotent. Stopping by run id never
     // hits another turn of the same agent (interrupt() without a chat stops whatever runs).
     if (run.status === 'running' || run.status === 'queued') {
       if (run.conversationId && !run.taskId && !run.splitId) clearChatRetry(ctx.services, run.agentId, run.conversationId);
-      const { dispatcher } = ctx.services;
-      if (dispatcher.cancelRun) await dispatcher.cancelRun(runId);
+      const { dispatcher, splits } = ctx.services;
+      if (run.conversationId && !run.splitId) ctx.services.promptQueue?.pause(run.conversationId, 'stop'); // AF-016: its chat's queue waits
+      // AF-012: a split's run is the person's Stop of that one part (the split service ends it as stopped – never retried):
+      // the agent view's Stop per sub-agent. Every other run stops through the dispatcher, by its id.
+      if (run.splitId && splits) splits.stop({ splitId: run.splitId }, HUMAN_ID);
+      else if (dispatcher.cancelRun) await dispatcher.cancelRun(runId);
       else await dispatcher.interrupt(run.agentId, run.conversationId);
     }
     return { ok: true };

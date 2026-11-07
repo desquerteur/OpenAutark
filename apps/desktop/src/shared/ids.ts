@@ -7,6 +7,7 @@ export type IdPrefix =
   | 'ag' // agent
   | 'ch' // conversation (chat)
   | 'msg' // message
+  | 'pq' // AF-016: a queued prompt (shared/model/prompt-queue.ts)
   | 'task'
   | 'sch' // schedule
   | 'wk' // wake

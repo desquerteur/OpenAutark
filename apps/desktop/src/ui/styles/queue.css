@@ -1,0 +1,54 @@
+/* AF-016: the composer's prompt queue – a compact card right above the composer (ui/chat/composer/QueueList.tsx), joined
+   to it by its lower edge, and the Send button's split caret (composer/SendSplit.tsx). Rows keep one height; a long list
+   scrolls inside the card, so the composer never moves. Owns: these components. Never: colours outside tokens.css. */
+
+.queue-list {
+  margin: 0 10px -1px; padding: 6px 6px 4px; border: 1px solid var(--line); border-bottom: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0; background: color-mix(in srgb, var(--hover) 35%, var(--surface));
+}
+.queue-head { display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 4px 4px; color: var(--secondary); font-size: 12px; }
+.queue-title { font-weight: 500; color: var(--text); }
+.queue-count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--hover); text-align: center; line-height: 18px; }
+.queue-paused { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--warn); }
+.queue-spacer { flex: 1 1 auto; }
+.queue-toggle {
+  display: inline-flex; align-items: center; gap: 4px; flex: none; min-height: 24px; padding: 0 8px; border-radius: 12px;
+  color: var(--secondary); font-size: 12px;
+}
+.queue-toggle:hover { background: var(--hover); color: var(--text); }
+.queue-list.paused .queue-toggle { color: var(--text); background: var(--hover); }
+
+.queue-rows { display: flex; flex-direction: column; gap: 2px; max-height: min(176px, 28vh); margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; }
+.queue-row {
+  display: flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 2px 0 0; border-radius: var(--r-md);
+  background: var(--surface); font-size: 13px;
+}
+.queue-row:hover, .queue-row:focus-within { background: color-mix(in srgb, var(--hover) 60%, var(--surface)); }
+.queue-row.dragging { box-shadow: var(--shadow-popover); background: var(--surface); }
+.queue-row.editing { align-items: flex-start; padding-block: 4px; }
+.queue-grip {
+  display: grid; place-items: center; flex: none; width: 22px; height: 28px; border-radius: 6px; color: var(--muted);
+  cursor: grab; touch-action: none;
+}
+.queue-grip:hover, .queue-grip:focus-visible { color: var(--text); background: var(--hover); }
+.queue-row.dragging .queue-grip { cursor: grabbing; }
+.queue-index { flex: none; width: 16px; color: var(--muted); font-size: 12px; text-align: right; }
+.queue-text {
+  flex: 1 1 auto; min-width: 0; padding: 4px 6px; overflow: hidden; border-radius: 6px; color: var(--text);
+  text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: text;
+}
+.queue-edit {
+  flex: 1 1 auto; min-width: 0; padding: 4px 6px; border: 1px solid color-mix(in srgb, var(--focus) 55%, var(--line)); border-radius: 6px;
+  background: var(--surface); color: var(--text); font: inherit; line-height: 20px; resize: none; outline: none;
+}
+.queue-badge { display: inline-flex; align-items: center; gap: 2px; flex: none; color: var(--secondary); font-size: 11px; }
+.queue-badge.important { color: var(--warn); font-weight: 600; }
+.queue-actions { display: flex; flex: none; gap: 0; opacity: .7; }
+.queue-row:hover .queue-actions, .queue-row:focus-within .queue-actions { opacity: 1; }
+.queue-actions .icon-button.small { width: 28px; height: 28px; }
+
+/* the split caret right of Send: narrow, always there (nothing in the row moves) */
+.composer-actions .icon-button.send-split { width: 18px; margin-left: -2px; border-radius: 6px; color: var(--secondary); }
+.composer-actions .icon-button.send-split:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.composer-actions .icon-button.send-split:disabled { opacity: .3; }
+@media (pointer: coarse) { .queue-actions { opacity: 1; } .queue-grip { width: 32px; height: 36px; } .queue-row { min-height: 40px; } }

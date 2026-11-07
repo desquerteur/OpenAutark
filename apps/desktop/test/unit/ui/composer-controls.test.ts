@@ -1,9 +1,8 @@
 // 21.10. 17:09 in the composer and the shell (src/ui/chat/composer/controls.ts, src/ui/shell/work-stop.ts):
-// agents at work never change the composer's controls – no Stop; Send with content, the conversation
-// (voice) mode with an empty field as the round button and beside the microphone over a draft (not
-// while a dictation holds the microphone), End while talking. Who may press the emergency stop's Stop /
+// Send with content, disabled without; AF-012: while an agent works in the chat an empty draft turns the cell into
+// Stop (a draft keeps Send, so a message still reaches the running agent). Who may press the emergency stop's Stop /
 // Resume, from the real handler table (a To-do-only phone may brake, not resume).
-// Owns: these assertions only (the window checks: test/ui/composer-no-stop-window.test.mjs).
+// Owns: these assertions only (the window checks: test/ui/composer-no-stop-window.test.mjs, composer-stop-window.test.mjs).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,6 +19,13 @@ test('the composer only sends: empty drafts and pending transcriptions cannot be
   assert.deepEqual(composerControls({ hasContent: false, transcribing: false }), { primary: 'send-disabled' });
   assert.deepEqual(composerControls({ hasContent: true, transcribing: false }), { primary: 'send' });
   assert.deepEqual(composerControls({ hasContent: true, transcribing: true }), { primary: 'send-disabled' });
+});
+
+test('AF-012: an agent at work turns an empty composer cell into Stop; a draft or a pending dictation keeps Send', () => {
+  assert.deepEqual(composerControls({ hasContent: false, transcribing: false, working: true }), { primary: 'stop' });
+  assert.deepEqual(composerControls({ hasContent: true, transcribing: false, working: true }), { primary: 'send' }, 'a draft still goes to the running agent');
+  assert.deepEqual(composerControls({ hasContent: false, transcribing: true, working: true }), { primary: 'send-disabled' }, 'the dictated words are on their way');
+  assert.deepEqual(composerControls({ hasContent: false, transcribing: false, working: false }), { primary: 'send-disabled' });
 });
 
 const table = createHandlerTable();

@@ -76,6 +76,7 @@ import { WorkStop, bindWorkStop } from '../agents/work-stop.ts';
 import { createCalls } from '../calls/wiring.ts';
 import { createCalendar } from './calendar.ts'; // B-041 My day: calendar, sources, estimates, day service, morning run
 import { createSplits } from './splits.ts'; // B-057: an agent split into parallel workers (services.splits)
+import { createPromptQueues } from './prompt-queue.ts'; // AF-016: the chats' prompt queues (services.promptQueue)
 import { Mcp } from '../mcp/hub.ts';
 import '../contracts/apps.ts'; // RuntimeServices.apps
 import { createApps } from '../apps/index.ts'; // connectors: MCP servers and mailboxes from <data>/connectors
@@ -293,6 +294,7 @@ export async function createCore(options: CoreOptions): Promise<Core> {
   const workStop = new WorkStop({ services });
   bindWorkStop(s, workStop);
   workStop.restore();
+  createPromptQueues(s); // AF-016: the chats' prompt queues – after the dispatcher and the work stop (compose/prompt-queue.ts)
   createCalls(s); // realtime voice and the call talker in chats (stop: compose/lifecycle.ts 'calls')
   createCalendar(s); // B-041 My day (compose/calendar.ts; stopCalendar at shutdown)
   // Outages end with an event (T04): an account that becomes usable or a model that becomes
