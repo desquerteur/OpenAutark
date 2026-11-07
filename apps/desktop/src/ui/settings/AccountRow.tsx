@@ -5,6 +5,8 @@
 // another account (a plan with its own sign-in profile), Enable / Disable, Claude Code's Delete histories, Remove.
 // B-072: no plan roles or rotation switch here – the order decides, and rotation stays an account field the AI sets on
 // request (accounts.update, skill ai-providers).
+// AF-009: the account's picture before its name (lib/account-avatar.tsx: the provider's logo, else its avatar, else its
+// initials) and its kind in the hint ("Max subscription", "API key", "Local server", lib/account-face.ts kindText).
 // Owns: the row. Never: shows tokens or invents limits (unknown = '–').
 
 import '../../shared/api/methods-provider-history.ts'; // privacy.purgeProviderHistory (module augmentation)
@@ -23,6 +25,8 @@ import { Button } from '../lib/ui.tsx';
 import { act, ActionButton, Row, useBusy } from './controls.tsx';
 import { inTerminal, recheckOnFocus, removeText, repairText, signInStarted, startLogin } from './account-actions.ts';
 import { needsSignIn, PROVIDER_NAMES, SIGN_IN, SIGN_OUT, stateLabel } from './providers.ts';
+import { AccountAvatar } from '../lib/account-avatar.tsx';
+import { kindText } from '../lib/account-face.ts';
 
 /** The plans accounts.add gives another sign-in profile (cli-homes.ts); the login found on this PC is one of them too. Gemini CLI and Copilot CLI have one per PC. */
 const OWN_HOMES: ReadonlySet<string> = new Set(['codex', 'claude', 'kimi-cli']);
@@ -82,7 +86,7 @@ function hintOf(account: Account, repair: string | undefined, count: number): st
   const barsSayWhen = plan && account.limits?.windows.some((window) => PLAN_SLOTS.includes(window.name) && window.usedPercent >= 100 && (window.resetsAt ?? 0) > now);
   return [
     account.label.toLocaleLowerCase().includes(providerName.toLocaleLowerCase()) ? undefined : providerName,
-    repair, account.plan, account.email, account.baseUrl && !cli ? account.baseUrl : undefined,
+    repair, kindText(account), account.email, account.baseUrl && !cli ? account.baseUrl : undefined,
     account.auth === 'env' && !repair ? `Key from ${account.envVar}` : undefined, account.detected ? 'found on this PC' : undefined,
     account.state === 'cooling' && account.coolingUntil && !barsSayWhen ? `Available again ${resetClock(account.coolingUntil, now)}` : undefined,
     count ? `${count} model${count === 1 ? '' : 's'}` : undefined,
@@ -161,7 +165,7 @@ export function AccountRow(props: { account: Account; siblings: readonly Account
   return (
     <Row
       class={`account-row provider-${account.provider}${plan ? ' plan' : ''}`} menu={menu}
-      label={<><span>{account.label}</span> <span class={`state-chip ${account.state}`}>{stateLabel(account)}</span></>}
+      label={<><AccountAvatar provider={account.provider} name={account.label} service={serviceOfAccount(account)?.id} size={20} /><span>{account.label}</span> <span class={`state-chip ${account.state}`}>{stateLabel(account)}</span></>}
       hint={<>
         <div class="account-hint" title={hint}>{hint}</div>
         {plan && <LimitBars account={account} />}

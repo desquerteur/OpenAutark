@@ -1,14 +1,20 @@
 // Quota badges in the rail (B-078, D17 – owner 06.11.2026: a circle, the 5-hour limit as the ring, the weekly share as the
 // number, minutes to the 5-hour reset, the plan's name, the provider by colour only, smaller so four fit). One compact badge
 // per plan, every part in a fixed slot so a reading that comes or goes moves nothing:
-//   a ring – only when the plan reports a 5-hour window (lib/limits.ts fiveHourOf; some plans have none) – whose arc is the
-//   5-hour share left in the provider's colour (the track alone once that reset passed), with the weekly % left in its
-//   middle in the same colour; without a 5-hour window the number stands alone in the same spot;
-//   one line with the minutes to the 5-hour reset ("42m", "2h 5m"; reserved and empty without one);
+//   the plan's picture (AF-009, below) and round it a ring – only when the plan reports a 5-hour window (lib/limits.ts
+//   fiveHourOf; some plans have none) – whose arc is the 5-hour share left in the provider's colour (the track alone once
+//   that reset passed);
+//   one line with the weekly % left in the same colour;
+//   one line with the minutes to the 5-hour reset ("42m", "2h 5m"), else the weekly reset (AF-009; empty with neither);
 //   one line with the plan's name (the runtime's UsageSummary.name – a label of the person's own, else the e-mail's local
 //   part, shared/model/plan-names.ts – else the label).
+// AF-009 (owner 07.11.2026: where a picture belongs a plan without a 5-hour window showed an empty circle, only the % and
+// the name): the ring goes round the plan's picture (lib/account-avatar.tsx: the provider's logo, else the account's
+// avatar, else its initials – never empty), the weekly % has its own line, and the wait line shows the weekly reset
+// ("2d 5h") when the plan has no 5-hour reset to count down. The stack is the tour's `accounts` target.
 // Active rotation plan first, then by weekly share; max 4 + "+n". A stale reading dims the badge.
-// Details on hover/focus/click: every limit window with bar, share left and "resets in 42 min", the next rotation plan and
+// Details on hover/focus/click: the picture, the plan's name and kind ("Max subscription"), every limit window with bar, share
+// left and "resets in 42 min", the next rotation plan and
 // – B-044 – a Codex plan's banked resets with the next one's expiry (labels and shares from the shared helper, lib/limits.ts).
 // Opening the details asks the runtime for fresh readings (lib/usage-refresh.ts: usage.list refresh – with
 // the Codex reset details; the runtime's account monitor shares its 15 s Codex / 60 s Claude cadence;
@@ -20,11 +26,13 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { UsageSummary } from '../../shared/model/providers.ts';
 import { Popover } from '../lib/ui.tsx';
-import { usage } from '../lib/store.ts';
+import { accounts, usage } from '../lib/store.ts';
 import { PROVIDER_NAMES } from '../settings/providers.ts';
 import { rpc } from '../lib/rpc.ts';
 import { can } from '../lib/session.ts';
-import { countdown, fiveHourOf, leftOf, nextCredit, resetCount, resetsAvailableText, shortWait, windowLabel } from '../lib/limits.ts';
+import { countdown, fiveHourOf, leftOf, nextCredit, railWait, resetCount, resetsAvailableText, windowLabel } from '../lib/limits.ts';
+import { AccountAvatar } from '../lib/account-avatar.tsx';
+import { kindText } from '../lib/account-face.ts';
 import { USAGE_REFRESH_MS, refreshUsage } from '../lib/usage-refresh.ts';
 
 let signalledAt = 0;
@@ -76,9 +84,18 @@ function Details(props: { entry: UsageSummary; next?: UsageSummary }) {
   const limits = entry.limits;
   const now = Date.now();
   const resets = resetCount(limits?.resets);
+  const name = planName(entry);
+  // the rail lists plans only (accounts/monitor.ts usageSummaries): a CLI sign-in; the tier comes from the account when it is loaded
+  const account = accounts.value.find((row) => row.id === entry.accountId);
   return (
     <div class={`usage-card provider-${providerClass(entry.provider)}`}>
-      <h4>{planName(entry)}</h4>
+      <div class="usage-card-head">
+        <AccountAvatar provider={entry.provider} name={name} size={28} />
+        <div class="usage-card-title">
+          <h4>{name}</h4>
+          <p class="usage-kind">{kindText({ provider: entry.provider, auth: account?.auth ?? 'cli', plan: account?.plan })}</p>
+        </div>
+      </div>
       {limits?.windows.map((window) => {
         const left = leftOf(window, now);
         return (
@@ -115,10 +132,11 @@ function Badge(props: { entry: UsageSummary; next?: UsageSummary }) {
   const now = Date.now();
   const weekly = weeklyOf(entry, now);
   const five = fiveHourOf(entry.limits, now);
-  const wait = five?.resetsAt !== undefined ? shortWait(five.resetsAt, now) : undefined;
+  const weeklyReset = weekly !== undefined && entry.weeklyResetsAt !== undefined && entry.weeklyResetsAt > now ? entry.weeklyResetsAt : undefined;
+  const wait = railWait(five?.resetsAt, weeklyReset, now);
   const name = planName(entry);
   const label = [
-    `${name}: ${weekly === undefined ? 'weekly share unknown' : `${weekly}% weekly left`}`,
+    `${name}: ${weekly === undefined ? 'weekly share unknown' : `${weekly}% weekly left${weeklyReset ? `, weekly resets ${countdown(weeklyReset, now)}` : ''}`}`,
     five ? (five.left === undefined ? '5-hour limit reset' : `${five.left}% of the 5-hour limit left${five.resetsAt ? `, resets ${countdown(five.resetsAt, now)}` : ''}`) : '',
     entry.limits?.stale ? 'stale reading' : '',
   ].filter(Boolean).join(', ');
@@ -140,8 +158,9 @@ function Badge(props: { entry: UsageSummary; next?: UsageSummary }) {
       >
         <span class="usage-dial">
           {five && <Ring left={five.left} />}
-          <span class="usage-value tabular">{weekly === undefined ? '–' : `${weekly}%`}</span>
+          <AccountAvatar provider={entry.provider} name={name} size={20} />
         </span>
+        <span class="usage-value tabular">{weekly === undefined ? '–' : `${weekly}%`}</span>
         <span class="usage-wait tabular">{wait ?? ''}</span>
         <span class="usage-name">{name}</span>
       </button>
@@ -166,7 +185,7 @@ export function QuotaRail() {
   const rest = list.length - visible.length;
   const next = list.find((entry) => !entry.active);
   return (
-    <div class="usage-stack">
+    <div class="usage-stack" data-tour="accounts">
       {visible.map((entry) => <Badge key={entry.accountId} entry={entry} next={next} />)}
       {rest > 0 && <span class="usage-more tabular" title={list.slice(VISIBLE).map(planName).join(', ')}>+{rest}</span>}
     </div>

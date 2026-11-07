@@ -1,0 +1,34 @@
+/* AF-009: an account's picture (lib/account-avatar.tsx) – a round slot that is never empty: the provider's mark on a quiet
+   disk in the slot's colour, the account's own avatar, or its initials in the avatar palette (tokens.css --av-*); in the
+   quota rail inside the 5-hour ring and at the head of the details card, in Settings › Models before an account's name.
+   Owns: these looks. Never: the badge's slots (shell.css) or the row grammar (settings.css, accounts.css). */
+
+.account-face {
+  display: inline-grid; place-items: center; flex: none; box-sizing: border-box; overflow: hidden; border-radius: 50%;
+  font-weight: 600; line-height: 1; letter-spacing: -.2px; user-select: none;
+}
+.account-face[data-face=logo] { background: var(--surface); color: var(--face-fg, var(--text)); box-shadow: inset 0 0 0 1px var(--line); }
+.account-face[data-face=logo] > svg { display: block; width: 62%; height: 62%; }
+.account-face[data-face=avatar] > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.account-face[data-face=initials] { background: var(--av-0-bg); color: var(--av-0-fg); }
+.account-face[data-face=initials]::before { content: attr(data-initials); } /* not in the row's text (copy, tests, find) */
+.account-face[data-face=initials][data-color="1"] { background: var(--av-1-bg); color: var(--av-1-fg); }
+.account-face[data-face=initials][data-color="2"] { background: var(--av-2-bg); color: var(--av-2-fg); }
+.account-face[data-face=initials][data-color="3"] { background: var(--av-3-bg); color: var(--av-3-fg); }
+.account-face[data-face=initials][data-color="4"] { background: var(--av-4-bg); color: var(--av-4-fg); }
+.account-face[data-face=initials][data-color="5"] { background: var(--av-5-bg); color: var(--av-5-fg); }
+/* the marks' own colours outside the rail (Anthropic's terracotta, Gemini's blue; the others in the text colour) */
+.account-face[data-logo=anthropic] { --face-fg: var(--provider-claude); }
+.account-face[data-logo=gemini] { --face-fg: var(--provider-codex); }
+
+/* the quota rail: the mark in the plan's colour, like its ring and %; the ring is its frame, so no line of its own */
+:is(.usage-badge, .usage-card) .account-face { --face-fg: var(--plan); }
+.usage-badge .account-face[data-face=logo] { box-shadow: none; }
+.usage-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.usage-card-title { min-width: 0; }
+.usage-card .usage-card-head h4 { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usage-kind { margin: 1px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+
+/* Settings › Models: the picture hangs before the name, so the hint and the bars stay aligned under the name */
+.set-row.account-row > .set-row-text { position: relative; padding-left: 30px; }
+.set-row.account-row .set-row-label > .account-face { position: absolute; top: 0; left: 0; }

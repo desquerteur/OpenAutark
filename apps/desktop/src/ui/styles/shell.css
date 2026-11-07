@@ -219,9 +219,10 @@
 .update-popover .muted { margin-top: 2px; font-size: 12px; }
 .update-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
-/* plan quotas (B-078, shell/QuotaRail.tsx): one compact badge per plan, every part in a fixed slot – the 5-hour ring
-   (only for a plan with a 5-hour window) with the weekly % in its middle, both in the provider's colour (no provider
-   name in text), the minutes to the 5-hour reset, the plan's name; 10 px is the rail's smallest text; details on hover */
+/* plan quotas (B-078, shell/QuotaRail.tsx): one compact badge per plan, every part in a fixed slot – the plan's picture
+   (AF-009, account-face.css) inside the 5-hour ring (only for a plan with a 5-hour window), the weekly % below it, both
+   in the provider's colour (no provider name in text), the wait to the next reset, the plan's name; 10 px is the rail's
+   smallest text; details on hover */
 .usage-stack {
   display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 1 auto; min-height: 0;
   max-height: min(45vh, 300px); overflow: hidden auto; scrollbar-width: none;
@@ -229,7 +230,7 @@
 .usage-badge {
   --plan: var(--provider-codex); --plan-bar: var(--provider-codex-bar);
   display: flex; flex-direction: column; align-items: center; flex: none;
-  width: 46px; height: 50px; padding: 0 1px; border-radius: var(--r-sm); color: var(--text); /* 28 + 11 + 11: every slot whole */
+  width: 46px; height: 61px; padding: 0 1px; border-radius: var(--r-sm); color: var(--text); /* 28 + 11 + 11 + 11: every slot whole */
 }
 .usage-badge.provider-claude, .usage-card.provider-claude { --plan: var(--provider-claude); --plan-bar: var(--provider-claude-bar); }
 .usage-badge.other-0, .usage-card.other-0 { --plan: var(--provider-other-0); --plan-bar: var(--provider-other-0); }
@@ -243,8 +244,8 @@
 .usage-ring circle { fill: none; stroke-width: 2.5; }
 .usage-ring-track { stroke: var(--line); }
 .usage-ring-arc { stroke: var(--plan-bar); stroke-linecap: round; }
-.usage-value { position: relative; color: var(--plan); font-size: 9.5px; font-weight: 600; line-height: 11px; letter-spacing: -.2px; }
-.usage-wait, .usage-name { display: block; flex: none; align-self: stretch; height: 11px; overflow: hidden; font-size: 10px; line-height: 11px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.usage-value { color: var(--plan); font-weight: 600; letter-spacing: -.2px; }
+.usage-value, .usage-wait, .usage-name { display: block; flex: none; align-self: stretch; height: 11px; overflow: hidden; font-size: 10px; line-height: 11px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .usage-wait { color: var(--secondary); }
 .usage-name { color: var(--muted); }
 .usage-more { flex: none; color: var(--muted); font-size: 11px; line-height: 16px; cursor: default; }
