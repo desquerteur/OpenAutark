@@ -17,6 +17,8 @@ export interface SectionInfo {
   requires: readonly MethodName[];
   /** The file or folder behind the page, relative to the data folder (or the workspace), and how the header names it. */
   file: { path: string; label: string; base?: 'workspace' };
+  /** The nav entry's data-tour name (the spotlight tour), when it has one. */
+  tour?: string;
 }
 
 const SETTINGS_FILE = { path: 'settings.json', label: 'Open settings.json' };
@@ -26,6 +28,11 @@ export const SECTIONS: readonly SectionInfo[] = [
     'profile', 'name', 'company', 'photo', 'appearance', 'theme', 'dark', 'light',
     'enter sends', 'send', 'tray', 'close', 'login', 'startup', 'start with windows', 'notifications', 'sound',
     'behavior', 'keep running', 'keep the screen on', 'screen', 'keep awake', 'sleep',
+  ] },
+  // AF-006: how the agents speak to the person (settings.json `personality`, profile.notes as "About me")
+  { id: 'personality', title: 'Personality', icon: 'smiley', file: SETTINGS_FILE, requires: [], tour: 'personality', keywords: [
+    'personality', 'tone', 'style', 'voice of the ai', 'casual', 'formal', 'factual', 'friendly', 'direct', 'playful', 'du', 'sie', 'address', 'form of address',
+    'language', 'emoji', 'length', 'short', 'detailed', 'custom instructions', 'instructions', 'how the ai should treat me', 'about me', 'notes', 'presets', 'template',
   ] },
   // Listed everywhere (B-078: it holds the former Voice page); its providers and uses show where accounts.detect is allowed.
   { id: 'models', title: 'Models', icon: 'plugs', file: SETTINGS_FILE, requires: [], keywords: [

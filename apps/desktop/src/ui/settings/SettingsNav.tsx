@@ -43,7 +43,7 @@ export function SettingsNav() {
       <ul class="settings-nav-list">
         {matches.map((section) => (
           <li key={section.id}>
-            <button type="button" class={`settings-nav-item${section.id === current ? ' selected' : ''}`} aria-current={section.id === current ? 'page' : undefined}
+            <button type="button" class={`settings-nav-item${section.id === current ? ' selected' : ''}`} aria-current={section.id === current ? 'page' : undefined} data-tour={section.tour}
               onClick={() => navigate({ view: 'settings', section: section.id }, { replace: route.value.view === 'settings' })}>
               <Icon name={section.icon} size={18} />
               <span>{section.title}</span>
