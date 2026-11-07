@@ -15,6 +15,7 @@ import { draftFor, flushAllDrafts } from '../chat/composer/draft.ts';
 import { dictating } from '../chat/composer/voice.ts';
 import { realtimeChat } from '../chat/call/realtime-call.ts';
 import { changeNotifier, isRestartReady } from './readiness.ts';
+import { openFolderAgent } from '../team/folder-agent.ts'; // AF-014
 
 /** True while any modal <dialog> is open (kept by an attribute observer, no polling). */
 const dialogOpen = signal(false);
@@ -29,6 +30,7 @@ function watchDialogs(): void {
 
 /** Opens the chat (and the task's message) a notification click points at. */
 export async function openTarget(request: NavigateRequest): Promise<void> {
+  if (request.agentFromFolder) { openFolderAgent(request.agentFromFolder); return; } // AF-014: the Explorer's entry
   let conversationId = request.conversationId;
   let messageId: string | undefined;
   if (request.taskId) {

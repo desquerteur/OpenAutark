@@ -41,6 +41,7 @@ export const IPC = {
   captureScreen: 'capture:screen',
   filesPick: 'files:pick',
   filesPickFolder: 'files:pick-folder',
+  explorerMenu: 'explorer:menu', // AF-014: the Explorer's "Create Autark agent from this folder" entry (state / on / off)
   filesOpen: 'files:open',
   clipboardWrite: 'clipboard:write',
   openExternal: 'shell:open-external',
@@ -63,9 +64,9 @@ export type RuntimeStatus =
 
 export type PickKind = 'files' | 'folder' | 'images' | 'audio' | 'video';
 /** What a picked folder is for – main chooses the dialog's title and button from it (Settings › About: the backup to restore). */
-export type FolderPurpose = 'backup' | 'restore' | 'chats';
+export type FolderPurpose = 'backup' | 'restore' | 'chats' | 'agent'; // AF-014 'agent': the folder an agent works in
 
-export interface NavigateRequest { conversationId?: string; taskId?: string }
+export interface NavigateRequest { conversationId?: string; taskId?: string; /** AF-014: the Explorer asked for an agent from this folder. */ agentFromFolder?: string }
 
 /**
  * `window.workforce` (desktop only; the PWA has no such object).
@@ -117,9 +118,13 @@ export interface WorkforceDesktopApi {
     openPath(fileId: string, reveal?: boolean): Promise<void>;
     /** The absolute path of a folder the person chose (nothing is read or uploaded); null when cancelled. */
     pickFolder?(purpose: FolderPurpose): Promise<string | null>;
+    /** AF-014: a dropped file's or folder's absolute path (Electron's webUtils.getPathForFile); '' when it has none. */
+    pathOf?(file: unknown): string;
   };
   clipboard: { writeText(text: string): Promise<void> };
   openExternal(url: string): Promise<void>;
+  /** AF-014 (Windows): the Explorer entry's state, or turn it on / off (this user only); resolves whether it is on. */
+  explorerMenu?(action: 'state' | 'on' | 'off'): Promise<boolean>;
   onNavigate(listener: (request: NavigateRequest) => void): () => void;
 }
 

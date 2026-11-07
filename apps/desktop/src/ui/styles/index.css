@@ -43,6 +43,8 @@
 @import "./skill-links.css"; /* AF-007: Settings › Skills › Add from link and its update preview */
 @import "./notes.css"; /* Chat details › Notes row */
 @import "./bridges.css";
+@import "./access.css"; /* AF-013: the composer's access mode cell, the approval dialog, the agent's access rules */
+@import "./folder-agent.css"; /* AF-014: the "Agent from folder" dialog and the Team list's folder groups */
 @import "./splits.css"; /* B-057: split rows, the sidebar's split rows, a split's page, the composer's Ultra cell */
 @import "./agent-view.css"; /* AF-004: the chat's agent view – several agents and their parts as one tree */
 @import "./remote.css";

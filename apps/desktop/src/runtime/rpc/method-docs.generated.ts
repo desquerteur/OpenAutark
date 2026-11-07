@@ -4,6 +4,12 @@
 
 export const METHOD_DOCS: Record<string, { params: string; note?: string }> = {
   "abilities.status": {"params":"void","note":"every ability with its state, source and the action that turns it on (ABILITY_IDS order)."},
+  "access.answer": {"params":"{ id: string; answer: AccessAnswer }","note":"Owner: answers one: once, always for this agent (its rules grow by the request's `always`), or deny."},
+  "access.get": {"params":"{ agentId: string; conversationId?: string }","note":"'chat': the access in effect for the agent's turns – in the chat `conversationId` when given (its mode cell)."},
+  "access.pending": {"params":"void","note":"Owner: the approval requests waiting for the person, oldest first."},
+  "access.set": {"params":"{ agentId: string; mode?: AccessMode; rules?: AccessRules }","note":"Owner: sets the agent's own mode and/or rules (rules replace the stored ones whole). Kept in agents/<id>/access.json."},
+  "access.setChatMode": {"params":"{ conversationId: string; mode: AccessMode | null }","note":"Owner: the mode for every agent's turns in this chat (null: each agent's own mode again)."},
+  "access.setRunMode": {"params":"{ runId: string; mode: AccessMode | null }","note":"Owner: the mode of one running run (null: back to the chat's or the agent's). Kept while this runtime runs."},
   "accounts.add": {"params":"{ provider: ProviderId; label?: string; apiKey?: string; baseUrl?: string; rotation?: boolean; envVar?: string; detected?: boolean }","note":"apiKey: typed, or a handle secret://<id> of the catalog (the account then only names that entry); PR5: envVar = key variable name, detected = \"Add again\"; B-051: signInUrl = the page the CLI's sign-in printed (when it did within a few seco…"},
   "accounts.detect": {"params":"{ force?: boolean } | void"},
   "accounts.install": {"params":"{ provider: 'claude' | 'codex' }"},
@@ -124,6 +130,9 @@ export const METHOD_DOCS: Record<string, { params: string; note?: string }> = {
   "files.uploadChunk": {"params":"{ uploadId: string; index: number; dataBase64: string; final?: boolean; name: string; mime?: string; conversationId?: string }","note":"chunked upload for recordings/large files (chunks ≤ 4 MB, base64). Chunks of one `uploadId` (prefix 'up') arrive in `index` order; the call with `final: true` stores the joined bytes and returns the FileRef. Intermediate calls return `{ re…"},
   "files.uploadPath": {"params":"{ path: string; device?: string }","note":"the owner and the phone ('manage'); B-076 `device`: a linked PC's file"},
   "files.writePath": {"params":"{ path: string; text: string; base?: string; device?: string }","note":"Writes the text (folders are created). `base`: the stamp it was made on; a file changed since is a conflict."},
+  "folderAgents.create": {"params":"{ folder: string; name?: string; role?: string; mode?: AccessMode }","note":"Owner: hires the agent – the folder its home project, its own text following the folder's files, mode `project` unless given."},
+  "folderAgents.find": {"params":"{ folder: string }","note":"Owner (a folder of this PC): the suggested name and role, the instruction files, skills and agents of `folder`."},
+  "folderAgents.homes": {"params":"void","note":"Owner: each agent's home project folder (agents without one are left out) – the sidebar groups agents by it."},
   "import.legacy": {"params":"{ path?: string } | void"},
   "knowledge.expire": {"params":"{ id: string; reason?: string }"},
   "knowledge.forget": {"params":"{ id: string; confirm: true }","note":"forget permanently – every version of the item and its search rows. Owner only; `confirm` must be true."},
@@ -310,6 +319,10 @@ export const METHOD_DOCS: Record<string, { params: string; note?: string }> = {
 };
 
 export const TYPE_DOCS: Record<string, string> = {
+  "AccessAnswer": "type AccessAnswer = 'once' | 'always' | 'deny'",
+  "AccessChoice": "type AccessChoice = 'allow' | 'ask' | 'deny'",
+  "AccessMode": "type AccessMode = 'read' | 'ask' | 'project' | 'full'",
+  "AccessRules": "interface AccessRules { folders?: { write?: string[]; deny?: string[] }; commands?: { allow?: string[]; deny?: string[] }; network?: AccessChoice; tools?: { allow?: string[]; deny?: string[] }; money?: AccessChoice; }",
   "Agent": "interface Agent { id: string; name: string; role: string; avatar: Avatar; spaceId?: string; managerId?: string; team?: string; instructions: string; mode: string; skills: string[]; modelPolicy: ModelPolicy; deviceId?: string; status: AgentStatus; statusNote?: string; template?: string; voice?: string; createdBy: string; createdAt: number; updatedAt: number; archivedAt?: number; }",
   "AgentPersonality": "type AgentPersonality = Partial<Personality>",
   "AgentStatus": "type AgentStatus = 'idle' | 'working' | 'waiting' | 'paused' | 'error'",

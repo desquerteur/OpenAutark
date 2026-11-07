@@ -25,6 +25,8 @@ export interface DesktopIpcParts<P extends PortLike> {
   clipboardWrite(text: string): Promise<void>;
   openExternal(url: string): Promise<void>;
   titleBarLayout?(layout: TitleBarLayout): void;
+  /** AF-014: the Explorer entry (explorer-menu.ts). */
+  explorerMenu?(action: unknown): Promise<boolean>;
   log(line: string): void;
 }
 
@@ -56,6 +58,7 @@ export function desktopIpcDeps<P extends PortLike>(parts: DesktopIpcParts<P>): I
     clipboardWrite: parts.clipboardWrite,
     openExternal: parts.openExternal,
     titleBarLayout: parts.titleBarLayout,
+    explorerMenu: parts.explorerMenu, // AF-014
     online: () => link.power('online'), // B-044: the window's network came back (chat re-delivery in the runtime)
     log: parts.log,
   };

@@ -12,7 +12,8 @@
 // when there is none yet); CLAUDE_MODELS when the CLI is missing or cannot list models. A 1M
 // variant's catalog id `<id>-1m` runs as `--model <id>[1m]` (cliModel).
 //
-// Agent turns run with `--permission-mode bypassPermissions`: Claude Code never asks before its own tools.
+// Agent turns run with `--permission-mode bypassPermissions`: Claude Code never asks before its own tools – unless AF-013 gives
+// the turn an access policy (input.access): then access.ts sets Claude Code's own permission mode and the hub's prompt tool.
 // Login guard 03.11.: a turn's CLI is never hard-killed when the turn ends or is stopped (it may be saving a refreshed
 // sign-in): its stdin closes and it ends by itself; its tree is killed only after the grace (CLAUDE_EXIT_GRACE_MS). A
 // stopped turn still returns after 3 s at the latest; what the CLI prints after the turn returned is dropped.
@@ -65,6 +66,7 @@ import { claudeDown, providerDownMessage } from '../provider-outage.ts'; // B-05
 import { ClaudeForks } from './fork.ts'; // B-057
 import { ClaudeRebuilder } from './rebuilder.ts';
 import { LEAN_ENV, LeanMemory, helperPromptArgs, hubConfig, promptArgs, promptText } from './lean.ts';
+import { permissionArgs } from './access.ts'; // AF-013
 
 export { CLAUDE_MODELS } from './models.ts';
 
@@ -211,7 +213,7 @@ export class ClaudeEngine implements Engine {
       if (input.mcp) {
         // File (0600, deleted after the turn) instead of argv: argv is visible to other processes.
         await this.files.writeFile(mcpFile, hubConfig(input.mcp, lean));
-        args.push('--mcp-config', mcpFile, '--strict-mcp-config', '--permission-mode', 'bypassPermissions');
+        args.push('--mcp-config', mcpFile, '--strict-mcp-config', ...permissionArgs(input.access)); // AF-013: bypassPermissions without an access policy (access.ts)
       } else {
         args.push('--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--permission-prompts', 'none');
         if (input.tools.length === 0) {

@@ -6,6 +6,7 @@ import type { Account, AccountLimits, Effort, EngineId } from '../../shared/mode
 import type { WorkforceErrorData } from '../../shared/errors.ts';
 import type { ToolOutput, ToolSpec } from '../tools/types.ts';
 import type { SubconsciousTrace, TraceCall } from '../../shared/model/subconscious.ts';
+import type { AccessAction, AccessMode } from '../../shared/model/access.ts'; // AF-013
 
 export interface EngineCaps {
   sessions: boolean; // keeps a native session we can resume (only new input per turn)
@@ -153,6 +154,25 @@ export interface EngineTurnInput {
   readOnly?: boolean;
   /** What the subconscious shows this turn: real tool calls with outputs in the main AI's history, as if it had made them (each engine's injectTrace). */
   trace?: SubconsciousTrace;
+  /** AF-013: the agent's access for this turn (runtime/access/turn.ts). Absent: full access, every engine as before AF-013. */
+  access?: TurnAccessPolicy;
+}
+
+/**
+ * AF-013: what an engine enforces with its own means – Claude Code: permission mode, disallowed tools and the hub's
+ * permission prompt tool; Codex: sandbox and approval policy, its approval requests judged by `decide`; ACP: its
+ * permission requests judged by `decide`. The app's own tools are judged by the tool registry on every engine.
+ */
+export interface TurnAccessPolicy {
+  mode: AccessMode;
+  /** Folders a turn may change besides its cwd (the rules' write folders). */
+  writable: string[];
+  /** The network is on without asking (a sandbox may open it). */
+  network: boolean;
+  /** The rules forbid the network (built-in web tools are taken away). */
+  networkDenied: boolean;
+  /** Judges an engine-native step; for 'ask' it waits for the person. `via`: the engine id. */
+  decide(via: string, actions: AccessAction[], signal: AbortSignal): Promise<{ allow: boolean; message: string }>;
 }
 
 export interface EngineTurnResult {

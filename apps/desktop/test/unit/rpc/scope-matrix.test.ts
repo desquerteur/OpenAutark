@@ -114,6 +114,16 @@ const PC_LOCAL: Record<string, string> = {
   'companies.open': 'opens a company window on this PC (B-072)',
   'companies.tool': 'runs an agent tool for another company of this PC, over loopback with its owner token (B-075)',
   'phone.pairLink': 'this PC\'s Remote ID and the QR of its pair link (B-078)',
+  // AF-013: what an agent may do on this PC is the person's decision on this PC – never a device's, never an agent's.
+  'access.set': 'an agent\'s access mode and rules on this PC (AF-013)',
+  'access.setChatMode': 'a chat\'s access mode on this PC (AF-013)',
+  'access.setRunMode': 'a running run\'s access mode on this PC (AF-013)',
+  'access.pending': 'the approval requests the person answers on this PC (AF-013)',
+  'access.answer': 'answers an agent\'s approval request on this PC (AF-013)',
+  // AF-014: an agent made from a folder of this PC.
+  'folderAgents.find': 'reads a folder of this PC for an agent\'s name, role, instruction files and skills (AF-014)',
+  'folderAgents.create': 'hires an agent whose home project is a folder of this PC (AF-014)',
+  'folderAgents.homes': 'the home project folders of this PC\'s agents (AF-014)',
 };
 
 /** The spec's tier lists (DEV2). */
@@ -122,7 +132,8 @@ const CHAT = ['chats.update', 'chats.members', 'chats.archive', 'chats.direct' /
   'knowledge.expire', 'skills.list', 'skills.get', 'media.describe', 'feedback.create', 'feedback.list', 'feedback.send', 'feedback.dismiss',
   'voice.transcribe', 'runs.items' /* C5: chat devices read run details */,
   'voice.localModels', 'voice.speak' /* B-047 D14: a phone reads answers in the PC's local voice */,
-  'splits.list', 'splits.get' /* B-057: an agent's splits, with the runs.items rule through the group's parent run */];
+  'splits.list', 'splits.get' /* B-057: an agent's splits, with the runs.items rule through the group's parent run */,
+  'access.get' /* AF-013: the composer's mode cell */];
 const MANAGE = ['agents.create', 'agents.update', 'agents.archive', 'agents.export', 'spaces.save', 'spaces.archive',
   'schedules.update', 'schedules.delete', 'schedules.runNow', 'models.setPolicy', 'routing.preview', 'skills.save', 'agents.runs', 'runs.cancel',
   'splits.stop' /* B-057: the rights of runs.cancel */,

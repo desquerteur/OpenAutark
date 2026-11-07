@@ -2,7 +2,7 @@
 // chosen per task – no "Auto" word, also while a pin holds: lib/route-preview.ts), the agent's two files that open in
 // the pane's file tab (SYSTEM.md, last-prompt.md), the agent folder with its skills (the agent and the AI write
 // SKILL.md files; here only their names and "Open folder") and the schedules it owns (each row has the schedule menu:
-// pause or resume, delete). Nothing else is set here – whom it reports to, effort limits or budgets are things the AI
+// pause or resume, delete), and (AF-013, AccessSection.tsx) its access mode and rules. Nothing else is set here – whom it reports to, effort limits or budgets are things the AI
 // changes on request.
 // Owns: these sections. Never: invents data – the folder and skills come from the runtime.
 
@@ -25,6 +25,7 @@ import { fullDate } from '../lib/format.ts';
 import { toastError } from '../lib/toasts.ts';
 import { skillTitle } from './agent-core-model.ts';
 import { ensureSchedules, scheduleMenu, schedules } from '../tasks/schedules.ts';
+import { AccessSection } from './AccessSection.tsx'; // AF-013
 
 function Section(props: { title: string; action?: ComponentChildren; children: ComponentChildren }) {
   return (
@@ -134,6 +135,7 @@ export function AgentDetails(props: { agent: Agent }) {
   return (
     <>
       <ModelSection agent={agent} readOnly={!live} />
+      <AccessSection agent={agent} />
       <FolderSection agent={agent} />
       <SchedulesSection agentId={agent.id} />
     </>

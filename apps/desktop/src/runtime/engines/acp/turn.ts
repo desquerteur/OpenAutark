@@ -15,6 +15,7 @@ import type { AcpProcess, LiveSession, SessionTurn } from './process.ts';
 import { AcpRpcError, isAuthError, isLimitError } from './protocol.ts';
 import { nextConfigRequest } from './config.ts';
 import { applyUpdate, hubToolName, hubToolOf, isHubPermission, newTurnState, permissionOutcome, promptUsage, stopFor } from './updates.ts';
+import { acpActions } from '../../access/classify.ts'; // AF-013
 import { ERR, isRecord, str } from '../shared.ts';
 import { acpDown, providerDownMessage } from '../provider-outage.ts'; // B-059 #184
 
@@ -110,6 +111,8 @@ export async function runAcpTurn(args: {
         if (id) state.hubCalls.set(id, hubToolOf(call) ?? nameFromId(id) ?? 'workforce');
         return permissionOutcome(options, 'allow');
       }
+      // AF-013: with an access policy the agent's rules judge the request (and may wait for the person); else as before.
+      if (input.access && !input.readOnly) return permissionOutcome(options, (await input.access.decide('acp', acpActions(call, input.cwd), input.signal)).allow ? 'allow' : 'deny');
       return permissionOutcome(options, input.readOnly ? 'deny' : 'allow');
     },
   };

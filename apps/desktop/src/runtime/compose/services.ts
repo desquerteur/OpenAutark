@@ -43,6 +43,7 @@ import { profileZone } from '../context/time.ts'; // B-044: a hit's saved day in
 import { createDataLifecycle } from './data-lifecycle.ts';
 import { SkillLibrary } from '../skills/service.ts';
 import { createAgentCore, mainSkillOptions } from './agent-core.ts';
+import { createAccess } from './access.ts'; // AF-013: access modes, rules and approval requests
 import { RootWatcher } from '../root/watcher.ts'; // B-044: the open data folder's one watcher
 import '../contracts/root.ts';
 import '../contracts/secret-files.ts';
@@ -199,6 +200,7 @@ export async function createCore(options: CoreOptions): Promise<Core> {
   s.skills = skillLibrary;
   // Wave 3: <data>/agents/<id>/SYSTEM.md is each agent's instructions (the row keeps the last good text), skills/ its Main Skills.
   createAgentCore(s, org, skillLibrary);
+  createAccess(s); // AF-013: per agent agents/<id>/access.json; no file = full access as before
   // B-044: <data>/README.md and agents/README.md – the maps of the data folder, written at start and when the team changes.
   s.rootMaps = new RootMaps({
     paths: { data: paths.data, workspace: paths.workspace }, bus, log, writes: s.rootWatcher,

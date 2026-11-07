@@ -6,7 +6,7 @@
 // AF-016: while an agent works (or messages wait), Enter does the person's default – send now or add to the chat's queue
 // (composer/queue.ts) – and Ctrl+Enter the other; the caret right of Send offers both (SendSplit.tsx); the queued
 // messages show right above the composer (QueueList.tsx).
-// Action row, fixed cells: [+] [spacer] [Ultra] [Model] [Mic] [Send] – nothing in it moves on a click.
+// Action row, fixed cells: [+] [Access mode] [spacer] [Ultra] [Model] [Mic] [Send] – nothing in it moves on a click (AF-013: the mode cell).
 // How a message goes out: /important, /silent, or the Plus menu's and the Send button's right-click menu's "Send as important",
 // "Send silently" (with nothing to send yet: the draft's level) and "Schedule…": that switches the composer into schedule
 // mode (composer/ScheduleBar.tsx above the text, the field taller, Send = Schedule; Esc or × leaves; text only – a draft
@@ -52,6 +52,7 @@ import type { SendWhileWorking } from '../../shared/model/prompt-queue.ts';
 import { preferredMode, queueDraft, queueFor, sendMode, setPreferredMode } from './composer/queue.ts';
 import { QueueList } from './composer/QueueList.tsx';
 import { SendSplit } from './composer/SendSplit.tsx';
+import { AccessModeCell } from './composer/AccessModeCell.tsx'; // AF-013
 
 export function Composer(props: { chat: ConversationSummary }) {
   const { chat } = props;
@@ -286,6 +287,7 @@ export function Composer(props: { chat: ConversationSummary }) {
             makeTask: () => void makeTask(),
             ...sendActions,
           }} />
+          <AccessModeCell chat={chat} agentId={agentId} />{/* AF-013: the access mode (click / Shift+Tab) */}
           <div class="composer-spacer"><DictationWave state={waveState(chat.id)} /></div>
           <UltraCell chat={chat} on={ultra} onToggle={(next) => updateDraft(chat.id, { ultra: next || undefined })} />
           <ModelChip chat={chat} agentId={agentId} openSignal={modelSignal} />
