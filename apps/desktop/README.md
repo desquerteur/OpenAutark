@@ -52,7 +52,7 @@ Public binaries: https://github.com/desquerteur/OpenAutark (from 0.3.3; up to 0.
 - Android: `.../releases/latest/download/autark-android.apk` (its version: `latest-android.json`)
 - Version: `.../releases/latest/download/release.json`
 
-GitHub decides which release is latest; installed apps check through `electron-updater` from it. The install itself is the app's own: on Windows and Linux a small relaunch helper (`src/main/updates/install-helper.ts`) waits for the app to end, installs (NSIS silently / the AppImage swapped in place) and starts the new version, with one line per step in `<data>/logs/update-helper.log`; on a Mac `mac-self-update.ts` swaps the bundle. The release scripts are in `scripts/desktop-release/`. Production signing (Windows certificate, Apple notarization) and native ARM64 packaging are open.
+GitHub decides which release is latest; installed apps check through `electron-updater` from it. The install itself is the app's own: on Windows and Linux a small relaunch helper (`src/main/updates/install-helper.ts`) waits for the app to end, installs (NSIS silently / the AppImage swapped in place) and starts the new version, with one line per step in `<data>/logs/update-helper.log`; on a Mac `mac-self-update.ts` swaps the bundle. The release scripts are in `scripts/desktop-release/`. This fork (AF-019) updates from `desquerteur/OpenAutark` by default (Settings › Updates switches the source, the channel and automatic checks; stored in `<data>/update-source.json`); a pushed tag `vX.Y.Z` builds and publishes its Windows release through `.github/workflows/build-desktop.yml` – see [UPDATES_FORK](../../docs/UPDATES_FORK.md). Production signing (Windows certificate, Apple notarization) and native ARM64 packaging are open.
 
 ## Documentation
 

@@ -6,6 +6,9 @@
 // operation that failed (check, download, restart; a failed open says so itself), and a failed
 // background check while a found update is offered keeps the offer (the next check retries).
 // The failed step is explicit: a background check alone never requests a global retry action.
+// AF-019: the update source (repository, channel, automatic checks: source.ts) is set here and reaches the updater's
+// feed (setFeedURL) and the manual download; "nothing published there yet" is a calm 'current' with a message, and an
+// offered version must be newer than this one (and no prerelease on the stable channel).
 // Owns: UpdateState, check/download/install/apply/defer, the automatic-restart countdown.
 // Never: imports electron or electron-updater (updater and browser opener are injected), never
 // relaunches without prepareInstall() having drained the app.
@@ -16,6 +19,8 @@ import { openManualDownload } from './manual-download.ts';
 import { COUNTDOWN_MS, evaluateGate } from './restart-gate.ts';
 import type { GateInput } from './restart-gate.ts';
 import { downloadURL } from './release.ts';
+import { DEFAULT_SOURCE, feedOptions, isNoReleaseError, noReleaseText, normalizeSource, offersUpdate, releaseNotesText } from './source.ts';
+import type { UpdateSource } from './source.ts';
 import { NamedTimers } from './timers.ts';
 import type { TimerHooks } from './timers.ts';
 
@@ -34,6 +39,8 @@ export interface Updater {
   resetInstallAttempt?(): void;
   /** Installs on macOS too, where the plain updater cannot (mac-self-update.ts); its 'manual-only' event ends that. */
   installsItself?: boolean;
+  /** AF-019: points the updater at the chosen GitHub repository (electron-updater's AppUpdater.setFeedURL). */
+  setFeedURL?(options: { provider: 'github'; owner: string; repo: string }): void;
 }
 
 type GateFacts = Omit<GateInput, 'packaged' | 'automaticInstall' | 'autoDownload' | 'deferred'>;
@@ -54,6 +61,8 @@ export interface UpdateServiceOptions extends TimerHooks {
   /** Opens the manual download in the system browser (automatic install unavailable). */
   openExternal(url: string): Promise<void> | void;
   changed(state: UpdateState): void;
+  /** AF-019: where updates come from (Settings › Updates); default: this build's repository, stable, automatic checks. */
+  source?: UpdateSource;
   /** Operational states and safe error codes only; never updater URLs, paths or raw errors. */
   log?(line: string): void;
 }
@@ -77,23 +86,28 @@ export class UpdateService {
   private visible = true;
   private evaluating = false;
   private disposed = false;
+  private source: UpdateSource;
 
   constructor(updater: Updater, options: UpdateServiceOptions) {
     this.updater = updater;
     this.options = options;
     this.timers = new NamedTimers(options);
+    this.source = normalizeSource(options.source ?? DEFAULT_SOURCE);
     this.value = {
       status: options.packaged && options.enabled ? 'idle' : 'development',
       version: options.version,
       percent: 0,
       automaticInstall: options.platform !== 'darwin' || updater.installsItself === true, // macOS builds are ad hoc signed: self-update or manual download
-      downloadURL: downloadURL(options.platform, options.arch) ?? undefined,
+      downloadURL: downloadURL(options.platform, options.arch, this.source.repository) ?? undefined,
+      source: this.source.repository,
+      channel: this.source.channel,
+      autoCheck: this.source.autoCheck,
     };
     updater.autoDownload = false;
     updater.autoInstallOnAppQuit = false;
-    updater.allowPrerelease = false;
     updater.allowDowngrade = false;
     updater.logger = null;
+    this.applySource();
     for (const event of ['checking-for-update', 'update-available', 'update-not-available', 'download-progress', 'update-downloaded', 'error', 'manual-only']) {
       updater.on(event, value => this.onEvent(event, value));
     }
@@ -103,7 +117,36 @@ export class UpdateService {
   private get active(): boolean { return !this.disposed && this.options.packaged && this.options.enabled; }
 
   /** Arms the first check (shortly after start) and the recurring check timer. */
-  start(firstDelayMs = 3000): void { if (this.active) this.armCheck(firstDelayMs); }
+  start(firstDelayMs = 3000): void { if (this.active && this.source.autoCheck) this.armCheck(firstDelayMs); }
+
+  /** The current update source (Settings › Updates). */
+  get updateSource(): UpdateSource { return { ...this.source }; }
+
+  /**
+   * AF-019: a new source (repository, channel, automatic checks). A different repository or channel forgets an offered
+   * update and checks there at once; a downloaded or installing update stays. Invalid fields keep their value.
+   */
+  setSource(patch: Partial<UpdateSource>): UpdateState {
+    const previous = this.source;
+    const next = normalizeSource({ ...previous, ...patch }, previous);
+    this.source = next;
+    const moved = next.repository !== previous.repository || next.channel !== previous.channel;
+    this.applySource();
+    const change: Partial<UpdateState> = {
+      source: next.repository,
+      channel: next.channel,
+      autoCheck: next.autoCheck,
+      downloadURL: downloadURL(this.options.platform, this.options.arch, next.repository) ?? undefined,
+    };
+    if (moved && ['idle', 'current', 'error', 'available'].includes(this.value.status)) {
+      Object.assign(change, { status: this.active ? 'idle' : this.value.status, availableVersion: undefined, releaseName: undefined, releaseNotes: undefined, message: undefined, failure: undefined });
+    }
+    this.emit(change);
+    if (this.active && !next.autoCheck) this.timers.clear('check');
+    if (this.active && next.autoCheck && !previous.autoCheck && !moved) this.armCheck(this.interval());
+    if (this.active && moved) void this.check();
+    return this.state;
+  }
 
   dispose(): void { this.disposed = true; this.timers.clear('check'); this.timers.clear('restart'); this.timers.clear('install'); }
 
@@ -115,6 +158,7 @@ export class UpdateService {
   }
 
   checkIfDue(): Promise<UpdateState> {
+    if (!this.source.autoCheck) return Promise.resolve(this.state); // AF-019: only "Check for updates now"
     return this.timers.now() - this.lastCheck < CHECK_THROTTLE_MS ? Promise.resolve(this.state) : this.check();
   }
 
@@ -123,8 +167,8 @@ export class UpdateService {
     this.busy = true;
     this.running = 'check';
     this.lastCheck = this.timers.now();
-    try { await this.updater.checkForUpdates(); } catch { this.onEvent('error', undefined); } finally { this.busy = false; this.running = undefined; }
-    this.armCheck(this.interval());
+    try { await this.updater.checkForUpdates(); } catch (error) { this.onEvent('error', error); } finally { this.busy = false; this.running = undefined; }
+    if (this.source.autoCheck) this.armCheck(this.interval());
     if (this.pendingDownload) {
       this.pendingDownload = false;
       await this.download();
@@ -237,18 +281,29 @@ export class UpdateService {
 
   private onEvent(event: string, value: unknown): void {
     if (this.disposed) return;
-    const info = (value ?? {}) as { version?: string; percent?: number };
+    const info = (value ?? {}) as { version?: string; percent?: number; releaseName?: unknown; releaseNotes?: unknown };
+    if (event === 'update-available' && info.version && !offersUpdate(info.version, this.options.version, this.source.channel)) event = 'update-not-available'; // AF-019: never an older/equal version
     if (event === 'manual-only') this.emit({ automaticInstall: false });
     if (event === 'checking-for-update' && !this.value.availableVersion) this.emit({ status: 'checking', message: undefined, failure: undefined });
     if (event === 'update-available') {
-      this.emit({ status: 'available', message: undefined, failure: undefined, availableVersion: info.version });
+      this.emit({
+        status: 'available', message: undefined, failure: undefined, availableVersion: info.version,
+        releaseName: typeof info.releaseName === 'string' && info.releaseName.trim() ? info.releaseName.trim().slice(0, 200) : undefined,
+        releaseNotes: releaseNotesText(info.releaseNotes),
+      });
       if (this.options.autoDownload() && this.value.automaticInstall) this.pendingDownload = true;
     }
-    if (event === 'update-not-available') this.emit({ status: 'current', availableVersion: undefined, percent: 0, message: undefined, failure: undefined });
+    if (event === 'update-not-available') this.emit({ status: 'current', availableVersion: undefined, releaseName: undefined, releaseNotes: undefined, percent: 0, message: undefined, failure: undefined });
     if (event === 'download-progress') this.emit({ status: 'downloading', percent: Math.max(0, Math.min(100, Math.round(info.percent ?? 0))) });
     if (event === 'update-downloaded') {
       this.emit({ status: 'downloaded', percent: 100, restartAt: undefined, message: undefined, failure: undefined });
       queueMicrotask(() => { void this.evaluateRestart(); });
+    }
+    if (event === 'error' && this.running === 'check' && isNoReleaseError(value)) {
+      // AF-019: the source has no (usable) release yet – that is "up to date from there", not a failure.
+      this.options.log?.('update check: no release in the source yet');
+      if (this.value.status !== 'available') this.emit({ status: 'current', availableVersion: undefined, releaseName: undefined, releaseNotes: undefined, percent: 0, failure: undefined, message: noReleaseText(this.source.repository) });
+      return;
     }
     if (event === 'error') {
       this.pendingDownload = false;
@@ -290,6 +345,13 @@ export class UpdateService {
   }
 
   private async gateOpen(): Promise<boolean> { return evaluateGate(await this.gateInput()).action === 'restart'; }
+
+  /** The source's channel and repository on the updater (prereleases only on that channel). */
+  private applySource(): void {
+    this.updater.allowPrerelease = this.source.channel === 'prerelease';
+    if (!this.options.packaged || !this.options.enabled) return;
+    try { this.updater.setFeedURL?.(feedOptions(this.source)); } catch { this.options.log?.('update source could not be set'); }
+  }
 
   private interval(): number { return this.visible ? CHECK_INTERVAL_VISIBLE_MS : CHECK_INTERVAL_HIDDEN_MS; }
 

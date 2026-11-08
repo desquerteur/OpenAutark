@@ -4,8 +4,10 @@
 // IpcResult mapping. Never: performs the action, imports electron.
 
 import type { IpcResult, PickKind } from '../shared/api/desktop.ts';
+import type { UpdateSourcePatch } from '../shared/model/system.ts';
 import { WorkforceError } from '../shared/errors.ts';
 import type { MediaKind } from './security.ts';
+import { parseRepository } from './updates/source.ts';
 
 export class IpcArgError extends Error {
   constructor(name: string) {
@@ -57,6 +59,25 @@ export function clipboardText(value: unknown): string {
 export function requestId(value: unknown): number {
   if (!Number.isSafeInteger(value) || (value as number) < 1) throw new IpcArgError('request');
   return value as number;
+}
+
+/** AF-019: { repository?: 'owner/name', channel?: 'stable' | 'prerelease', autoCheck?: boolean } – nothing else. */
+export function updateSourcePatch(value: unknown): UpdateSourcePatch {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new IpcArgError('update source');
+  const raw = value as Record<string, unknown>;
+  if (Object.keys(raw).some(key => key !== 'repository' && key !== 'channel' && key !== 'autoCheck')) throw new IpcArgError('update source');
+  const patch: UpdateSourcePatch = {};
+  if (raw.repository !== undefined) {
+    const repository = typeof raw.repository === 'string' && raw.repository.length <= 200 ? parseRepository(raw.repository) : null;
+    if (!repository) throw new WorkforceError('bad_request', 'Enter the repository as owner/name, for example desquerteur/OpenAutark.');
+    patch.repository = `${repository.owner}/${repository.repo}`;
+  }
+  if (raw.channel !== undefined) {
+    if (raw.channel !== 'stable' && raw.channel !== 'prerelease') throw new IpcArgError('update channel');
+    patch.channel = raw.channel;
+  }
+  if (raw.autoCheck !== undefined) patch.autoCheck = flag(raw.autoCheck);
+  return patch;
 }
 
 /** Error → user-safe IPC error. Our own sentences pass; system errors (errno) stay generic. */

@@ -72,6 +72,11 @@ export const SECTIONS: readonly SectionInfo[] = [
   { id: 'feedback', title: 'Feedback', icon: 'megaphone', file: SETTINGS_FILE, requires: ['feedback.list'], keywords: [
     'feedback', 'report', 'reports', 'bug', 'idea', 'from agents', 'inbox', 'watch how it works', 'tour',
   ] },
+  // AF-019: where updates come from (the fork or teydra/OpenAutark), check now, automatic checks, channel
+  { id: 'updates', title: 'Updates', icon: 'download-simple', file: { path: 'update-source.json', label: 'Open update-source.json' }, requires: [], tour: 'updates', keywords: [
+    'update', 'updates', 'check for updates', 'check now', 'source', 'repository', 'github', 'fork', 'desquerteur', 'teydra', 'release', 'releases',
+    'channel', 'stable', 'prerelease', 'beta', 'automatic', 'auto-check', 'auto-download', 'version', 'release notes', 'install',
+  ] },
   { id: 'about', title: 'About', icon: 'info', file: SETTINGS_FILE, requires: [], keywords: [
     'version', 'update', 'download', 'restart', 'auto-download', 'backup', 'back up to', 'restore', 'data folder', 'autark folder', 'settings.json', 'export', 'chats', 'chat export',
   ] },

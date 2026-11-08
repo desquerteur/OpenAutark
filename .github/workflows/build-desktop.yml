@@ -1,45 +1,106 @@
-# Owns: building the Mac (universal DMG/ZIP) and Linux (x64 AppImage) packages of this fork straight from its sources
-# and attaching them to an existing release of this repository (Windows and Android are built on the release PC).
-# Never: signs or notarizes, creates or publishes a release, or touches another repository.
-name: Build Mac and Linux packages
+# Owns: building the desktop packages of this fork straight from its sources and publishing them as a release of this
+# repository with exactly the files the app's updater and download links expect (AF-019):
+#   Windows x64  autark-windows-x64.exe (+ .blockmap, latest.yml)       – unsigned NSIS installer
+#   Linux x64    autark-linux-x64.AppImage (+ .blockmap, latest-linux.yml)
+#   macOS        autark-mac-universal.dmg/.zip (+ .blockmap, latest-mac.yml) – ad hoc signed, not notarized
+# plus SHA256SUMS.txt (every file of the release) and release.json (version, commit, files with size and SHA-256).
+# A pushed tag vX.Y.Z (or vX.Y.Z-beta.N: a prerelease) builds Windows and publishes the release; "Run workflow"
+# builds the chosen platforms for an existing tag and adds them (Android stays on the release PC).
+# The version always comes from the tag (package.json is set to it on the runner).
+# Never: runs in teydra/OpenAutark (it has release-from-compiled.yml), signs or notarizes, touches another repository,
+# publishes a release that a step failed for. How to release: docs/UPDATES_FORK.md.
+name: Build desktop packages
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing release tag (vX.Y.Z) to attach the packages to
+        description: Existing tag (vX.Y.Z or vX.Y.Z-beta.N) to build and attach the packages to
         type: string
         required: true
       platform:
         description: Platform to build
         type: choice
-        options: [all, mac, linux]
+        options: [all, windows, mac, linux]
         default: all
 permissions:
   contents: write
+concurrency:
+  group: build-desktop-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 jobs:
+  prepare:
+    if: github.repository != 'teydra/OpenAutark'
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+      matrix: ${{ steps.tag.outputs.matrix }}
+      created: ${{ steps.release.outputs.created }}
+    steps:
+      - name: Check the tag and choose the platforms
+        id: tag
+        shell: bash
+        env:
+          PLATFORM: ${{ inputs.platform || 'windows' }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$ ]] || { echo "Use a vX.Y.Z or vX.Y.Z-beta.N tag (got $RELEASE_TAG)"; exit 1; }
+          version="${BASH_REMATCH[1]}"
+          windows='{"os":"windows-latest","arguments":"--win --x64"}'
+          mac='{"os":"macos-15","arguments":"--mac --universal"}'
+          linux='{"os":"ubuntu-24.04","arguments":"--linux --x64"}'
+          case "$PLATFORM" in
+            windows) matrix="[$windows]" ;;
+            mac) matrix="[$mac]" ;;
+            linux) matrix="[$linux]" ;;
+            *) matrix="[$windows,$mac,$linux]" ;;
+          esac
+          {
+            echo "version=$version"
+            [[ "$version" == *-* ]] && echo 'prerelease=true' || echo 'prerelease=false'
+            echo "matrix=$matrix"
+          } >> "$GITHUB_OUTPUT"
+      - name: Create the release as a draft when it does not exist yet
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo 'created=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "Autark ${RELEASE_TAG#v}" --notes 'Building…'
+          echo 'created=true' >> "$GITHUB_OUTPUT"
+
   package:
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.platform == 'mac' && '[{"os":"macos-15","arguments":"--mac --universal"}]' || inputs.platform == 'linux' && '[{"os":"ubuntu-24.04","arguments":"--linux --x64"}]' || '[{"os":"macos-15","arguments":"--mac --universal"},{"os":"ubuntu-24.04","arguments":"--linux --x64"}]') }}
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
+    timeout-minutes: 45
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
     defaults:
       run:
+        shell: bash
         working-directory: apps/desktop
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-node@v4
         with:
-          node-version: '24.22.2'
-      - name: Check the tag and the package version
-        shell: bash
-        run: |
-          [[ "${{ inputs.tag }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Use a vX.Y.Z tag'; exit 1; }
-          [[ "$(node -p 'require("./package.json").version')" == "${{ inputs.tag }}" ]] && exit 0
-          [[ "v$(node -p 'require("./package.json").version')" == "${{ inputs.tag }}" ]] || { echo 'Package and tag versions differ'; exit 1; }
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - name: Take the version from the tag
+        run: npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
       - name: Install the pinned package dependencies
         run: npm ci --no-fund --no-audit
       - name: Add the native voice add-on for both Mac architectures
@@ -47,16 +108,99 @@ jobs:
         run: |
           version=$(node -p 'require("sherpa-onnx-node/package.json").version')
           npm install --no-save --force --no-fund --no-audit "sherpa-onnx-darwin-x64@$version" "sherpa-onnx-darwin-arm64@$version"
+      - name: Build
+        run: npm run build
       - name: Package
         run: npm run package -- ${{ matrix.arguments }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Check the packages and the update feeds
+        run: |
+          shopt -s nullglob
+          case "$RUNNER_OS" in
+            Windows) expected=(dist/autark-windows-x64.exe dist/autark-windows-x64.exe.blockmap) ;;
+            Linux) expected=(dist/autark-linux-x64.AppImage) ;;
+            macOS) expected=(dist/autark-mac-universal.dmg dist/autark-mac-universal.zip) ;;
+          esac
+          for file in "${expected[@]}"; do [[ -f "$file" ]] || { echo "Missing $file"; ls -la dist; exit 1; }; done
+          feeds=()
+          for feed in dist/*.yml; do [[ "$(basename "$feed")" == builder-debug.yml ]] || feeds+=("$feed"); done
+          (( ${#feeds[@]} )) || { echo 'electron-builder wrote no update feed (latest*.yml)'; exit 1; }
+          # A prerelease (v1.2.3-beta.1) gets beta*.yml; latest*.yml beside it is the updater's fallback on that channel.
+          for feed in "${feeds[@]}"; do
+            name=$(basename "$feed"); channel="${name%%[-.]*}"; target="dist/latest${name#"$channel"}"
+            [[ -e "$target" ]] || cp "$feed" "$target"
+          done
+          for feed in dist/latest*.yml; do
+            grep -qx "version: $RELEASE_VERSION" "$feed" || { echo "$feed does not name version $RELEASE_VERSION"; exit 1; }
+            grep -q '^sha512: ' "$feed" || { echo "$feed has no SHA-512"; exit 1; }
+          done
+          [[ "$RUNNER_OS" != Windows ]] || grep -qx 'path: autark-windows-x64.exe' dist/latest.yml || { echo 'latest.yml does not point at autark-windows-x64.exe'; exit 1; }
+          ls -la "${expected[@]}" dist/*.yml
       - name: Attach the packages to the release
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          files=(dist/*.dmg dist/*.zip dist/*.AppImage dist/*.blockmap dist/latest-mac.yml dist/latest-linux.yml)
-          ls -la "${files[@]}"
-          gh release upload "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
+          files=(dist/*.exe dist/*.dmg dist/*.zip dist/*.AppImage dist/*.blockmap)
+          for feed in dist/*.yml; do [[ "$(basename "$feed")" == builder-debug.yml ]] || files+=("$feed"); done
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
+
+  finish:
+    needs: [prepare, package]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      RELEASE_PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+      PACKAGED: ${{ needs.package.result }}
+      CREATED: ${{ needs.prepare.outputs.created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          sparse-checkout: docs/releases
+      - name: Write SHA256SUMS.txt and release.json over every file of the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/release"; mkdir -p "$work"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir "$work" --clobber
+          rm -f "$work/SHA256SUMS.txt" "$work/release.json"
+          (cd "$work" && sha256sum -- * | sort -k2) > "$RUNNER_TEMP/SHA256SUMS.txt"
+          cat "$RUNNER_TEMP/SHA256SUMS.txt"
+          node - "$work" > "$RUNNER_TEMP/release.json" <<'NODE'
+          const { readdirSync, statSync, readFileSync } = require('node:fs');
+          const { createHash } = require('node:crypto');
+          const path = require('node:path');
+          const dir = process.argv[2];
+          const platform = (name) => /windows/.test(name) || name === 'latest.yml' || /^[a-z]+\.yml$/.test(name) ? 'windows-x64'
+            : /linux/.test(name) ? 'linux-x64' : /mac/.test(name) ? 'mac-universal' : /android/.test(name) ? 'android' : 'other';
+          const files = readdirSync(dir).sort().map((name) => {
+            const file = path.join(dir, name);
+            return { name, platform: platform(name), size: statSync(file).size, sha256: createHash('sha256').update(readFileSync(file)).digest('hex') };
+          });
+          process.stdout.write(JSON.stringify({
+            version: process.env.RELEASE_VERSION, tag: process.env.RELEASE_TAG, repository: process.env.GITHUB_REPOSITORY,
+            prerelease: process.env.RELEASE_PRERELEASE === 'true', commit: process.env.GITHUB_SHA,
+            publishedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), signed: false, files,
+          }, null, 2) + '\n');
+          NODE
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber "$RUNNER_TEMP/SHA256SUMS.txt" "$RUNNER_TEMP/release.json"
+      - name: Publish the release this run created
+        if: env.CREATED == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$PACKAGED" != success ]]; then
+            echo "A package failed ($PACKAGED): the release stays a draft – fix it and run the workflow again for $RELEASE_TAG."
+            exit 1
+          fi
+          notes="docs/releases/$RELEASE_TAG.md"
+          args=(release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false)
+          if [[ -f "$notes" ]]; then args+=(--notes-file "$notes"); else args+=(--notes "Autark $RELEASE_VERSION"); fi
+          if [[ "$RELEASE_PRERELEASE" == true ]]; then args+=(--prerelease); else args+=(--latest); fi
+          gh "${args[@]}"

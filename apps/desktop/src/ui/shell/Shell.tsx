@@ -48,6 +48,7 @@ import { ColumnResize } from './ColumnResize.tsx';
 import { TourDialog } from '../tour/TourDialog.tsx'; // B-055: the feedback tour (replay)
 import { CallOverlay } from '../chat/call/CallOverlay.tsx'; // AF-015: the call view (its own layer, not a panel)
 import { SpotlightHost } from '../tour/Spotlight.tsx'; // AF-002: the spotlight tour and first-visit hints
+import { UpdateNotice } from './UpdateNotice.tsx'; // AF-019: "Version X is available" with release notes
 
 function useGlobalHotkeys(): void {
   useEffect(() => {
@@ -80,6 +81,7 @@ function Overlays() {
       <SpotlightHost />
       <RegionDialog />
       <CallOverlay />
+      <UpdateNotice />
     </>
   );
 }

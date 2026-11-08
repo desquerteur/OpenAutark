@@ -32,6 +32,8 @@ env:
   RELEASE_PAYLOAD_SHA256: ${{ inputs.sha256 }}
 jobs:
   package:
+    # AF-019: only in the upstream repository – a fork releases with build-desktop.yml (no compiled snapshot there).
+    if: github.repository == 'teydra/OpenAutark'
     strategy:
       fail-fast: false
       matrix:

@@ -22,6 +22,7 @@ import { UpdateService } from './updates/update-service.ts';
 import type { Updater } from './updates/update-service.ts';
 import { allowInstallerRetry } from './updates/install-retry.ts';
 import { HELPER_LOG, installWithHelper, spawnHelper } from './updates/install-helper.ts';
+import type { UpdateSource } from './updates/source.ts';
 
 export interface DesktopUpdatesDeps {
   updater: Updater;
@@ -41,6 +42,9 @@ export interface DesktopUpdatesDeps {
     start(): void;
   };
   publish(state: UpdateState): void;
+  /** AF-019: the stored update source (updates/source-store.ts) and how a change is saved. */
+  source?: UpdateSource;
+  saveSource?(source: UpdateSource): Promise<void>;
   /** The system browser for the manual download (desktop.ts passes electron's shell; default: loaded on first use). Only https reaches it. */
   openExternal?(url: string): Promise<void>;
   log?(line: string): void;
@@ -219,6 +223,7 @@ export class DesktopUpdates {
       cancelInstall: () => this.cancelInstall(),
       openExternal: url => openHttps(url, deps.openExternal),
       changed: state => deps.publish(state),
+      source: deps.source,
       log: deps.log,
       now: deps.now,
       setTimer: deps.setTimer,
@@ -246,6 +251,15 @@ export class DesktopUpdates {
   dispose(): void { this.service.dispose(); }
   setVisible(visible: boolean): void { this.service.setVisible(visible); }
   checkIfDue(): void { void this.service.checkIfDue().catch(() => {}); }
+  /** AF-019: "Check for updates now" (Settings › Updates), also with automatic checks off. */
+  check(): Promise<UpdateState> { return this.service.check(); }
+
+  /** AF-019: a new update source; saved first, so a failed save changes nothing. */
+  async setSource(patch: Partial<UpdateSource>): Promise<UpdateState> {
+    const next = { ...this.service.updateSource, ...patch };
+    await this.deps.saveSource?.(next);
+    return this.service.setSource(next);
+  }
 
   async setAutoDownload(enabled: boolean): Promise<UpdateState> {
     await this.deps.setAutoDownload(enabled);

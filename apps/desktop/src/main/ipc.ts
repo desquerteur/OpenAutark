@@ -11,7 +11,7 @@
 
 import { IPC } from '../shared/api/desktop.ts';
 import type { IpcResult, PickKind, RuntimeStatus, TitleBarLayout } from '../shared/api/desktop.ts';
-import type { FileRef, UpdateState } from '../shared/model/system.ts';
+import type { FileRef, UpdateSourcePatch, UpdateState } from '../shared/model/system.ts';
 import * as args from './ipc-args.ts';
 import { externalUrl, isTrustedSender } from './security.ts';
 import type { MediaKind } from './security.ts';
@@ -36,6 +36,8 @@ export interface IpcDeps {
     apply(): Promise<UpdateState>;
     defer(): UpdateState;
     setAutoDownload(enabled: boolean): Promise<UpdateState>;
+    check(): Promise<UpdateState>; // AF-019
+    setSource(patch: UpdateSourcePatch): Promise<UpdateState>; // AF-019
     setRendererReady(ready: boolean): void;
   };
   restartAck(id: number, ok: boolean): void;
@@ -141,6 +143,8 @@ export function registerIpc(ipc: IpcMainLike, deps: IpcDeps): void {
   handle(IPC.updateApply, () => deps.updates.apply());
   handle(IPC.updateDefer, () => deps.updates.defer());
   handle(IPC.updateAutoDownload, enabled => deps.updates.setAutoDownload(args.flag(enabled)));
+  handle(IPC.updateCheck, () => deps.updates.check()); // AF-019
+  handle(IPC.updateSource, patch => deps.updates.setSource(args.updateSourcePatch(patch))); // AF-019
   on(IPC.updateReady, (_event, ready) => deps.updates.setRendererReady(ready === true));
   on(IPC.prepareRestartAck, (_event, id, ok) => deps.restartAck(args.requestId(id), ok === true));
 

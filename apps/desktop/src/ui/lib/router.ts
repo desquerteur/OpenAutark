@@ -27,7 +27,7 @@ export type Route =
 export type RouteView = Route['view'];
 
 /** The Settings pages (settings/sections.ts holds their titles and keywords), in nav order. */
-export const SETTINGS_PAGES = ['general', 'appearance', 'personality', 'models', 'calendar', 'secrets', 'apps', 'skills', 'devices', 'feedback', 'about'] as const; // AF-008: appearance; AF-006: personality
+export const SETTINGS_PAGES = ['general', 'appearance', 'personality', 'models', 'calendar', 'secrets', 'apps', 'skills', 'devices', 'feedback', 'updates', 'about'] as const; // AF-008: appearance; AF-006: personality; AF-019: updates
 export type SettingsPage = (typeof SETTINGS_PAGES)[number];
 export const DEFAULT_SETTINGS_PAGE: SettingsPage = 'general';
 
@@ -41,7 +41,7 @@ const PAGE_OF: Readonly<Record<string, SettingsPage>> = {
   remote: 'devices', phone: 'devices', android: 'devices',
   profile: 'general', notifications: 'general', customize: 'general',
   themes: 'appearance', theme: 'appearance', layout: 'appearance', look: 'appearance', // AF-008
-  advanced: 'about', updates: 'about', privacy: 'about', backup: 'about',
+  advanced: 'about', privacy: 'about', backup: 'about', update: 'updates', // AF-019: Updates has its own page
 };
 
 /** The Settings page a section name opens: itself when it is one, the nearest page for an older name, else undefined (the first page). */

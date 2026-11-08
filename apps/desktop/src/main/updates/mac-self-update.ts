@@ -135,6 +135,9 @@ export class MacSelfUpdater implements Updater {
     return this.inner.on(event, value => { this.info = value as typeof this.info; listener(value); });
   }
 
+  /** AF-019: the chosen update source belongs on the real updater too (its provider resolves the feed files). */
+  setFeedURL(options: { provider: 'github'; owner: string; repo: string }): void { this.inner.setFeedURL?.(options); }
+
   checkForUpdates(): Promise<unknown> { return this.inner.checkForUpdates(); }
 
   async downloadUpdate(): Promise<unknown> {

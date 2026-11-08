@@ -5,7 +5,7 @@
 // Speech never crosses this bridge: the page records and uploads over the runtime port, and only
 // asks main to open the microphone (armMedia).
 
-import type { FileRef, UpdateState } from '../model/system.ts';
+import type { FileRef, UpdateSourcePatch, UpdateState } from '../model/system.ts';
 import type { WorkspaceBrowserApi } from './workspace-browser.ts';
 
 /** The desktop header row's height in CSS px (styles/tokens.css --header-h): native window
@@ -30,6 +30,8 @@ export const IPC = {
   updateApply: 'update:apply',
   updateDefer: 'update:defer',
   updateAutoDownload: 'update:auto-download',
+  updateCheck: 'update:check', // AF-019: "Check for updates now"
+  updateSource: 'update:source', // AF-019: set repository / channel / automatic checks
   updateReady: 'update:ready', // renderer → main: UI is in a restart-safe state (sent on change only)
   updateState: 'update:state', // main → renderer
   prepareRestart: 'app:prepare-restart', // main → renderer (request id)
@@ -101,6 +103,10 @@ export interface WorkforceDesktopApi {
     apply(): Promise<UpdateState>;
     defer(): Promise<UpdateState>;
     setAutoDownload(enabled: boolean): Promise<UpdateState>;
+    /** AF-019: checks the chosen source now (also with automatic checks off). Optional: older bridges lack it. */
+    check?(): Promise<UpdateState>;
+    /** AF-019: changes the update source (GitHub repository owner/name, channel, automatic checks). */
+    setSource?(patch: UpdateSourcePatch): Promise<UpdateState>;
     /** Tell main whether the UI is safe to restart (no open dialog/settings, empty composer). Send on change. */
     setReady(ready: boolean): void;
   };

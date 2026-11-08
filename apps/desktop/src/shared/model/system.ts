@@ -201,6 +201,20 @@ export interface UpdateState {
   failure?: 'check' | 'download' | 'open' | 'restart';
   automaticInstall: boolean;
   downloadURL?: string;
+  /** AF-019: the update source (Settings › Updates): GitHub repository `owner/name`, channel, automatic checks. */
+  source?: string;
+  channel?: 'stable' | 'prerelease';
+  autoCheck?: boolean;
+  /** AF-019: the found release's title and notes as plain text (shown in the update notice). */
+  releaseName?: string;
+  releaseNotes?: string;
+}
+
+/** AF-019: a change of the update source (Settings › Updates → main's update:source channel). */
+export interface UpdateSourcePatch {
+  repository?: string;
+  channel?: 'stable' | 'prerelease';
+  autoCheck?: boolean;
 }
 
 export interface SystemInfo {
