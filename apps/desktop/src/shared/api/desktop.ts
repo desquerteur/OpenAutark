@@ -64,7 +64,7 @@ export type RuntimeStatus =
 
 export type PickKind = 'files' | 'folder' | 'images' | 'audio' | 'video';
 /** What a picked folder is for – main chooses the dialog's title and button from it (Settings › About: the backup to restore). */
-export type FolderPurpose = 'backup' | 'restore' | 'chats' | 'agent'; // AF-014 'agent': the folder an agent works in
+export type FolderPurpose = 'backup' | 'restore' | 'chats' | 'agent' | 'project'; // AF-014 'agent': the folder an agent works in; AF-018 'project': a folder to add as a project
 
 export interface NavigateRequest { conversationId?: string; taskId?: string; /** AF-014: the Explorer asked for an agent from this folder. */ agentFromFolder?: string }
 

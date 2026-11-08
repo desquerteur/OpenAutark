@@ -29,3 +29,9 @@ test('pickFolder: restore answers the chosen folder; cancel answers null; only t
   folderDialogOptions('restore').properties.push('multiSelections');
   assert.ok(!folderDialogOptions('restore').properties.includes('multiSelections'));
 });
+
+test('AF-018: the project purpose shows a plain folder dialog named for adding a project', async () => {
+  const chosen = dialog({ canceled: false, filePaths: [root] });
+  assert.equal(await pickFolder('project', chosen.deps), root);
+  assert.deepEqual(chosen.seen[0], { title: 'Choose the project folder', buttonLabel: 'Add project', properties: ['openDirectory'] });
+});

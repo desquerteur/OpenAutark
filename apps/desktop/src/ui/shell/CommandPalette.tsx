@@ -1,7 +1,8 @@
 // Command palette (Ctrl/Cmd+K; search icon on mobile): chats (main chats and Team activity rooms, never
 // the app-owned system chats), agents, Settings and actions (new chat, new task in this chat, My day, feedback, the
 // feedback tour's replay "Watch how it works", "Set up team again" for the owner while a Manager exists, "Stop all
-// agent work" / "Resume agent work"). Actions this connection may not call are left out (shell/gates.ts
+// agent work" / "Resume agent work"), and for the owner the projects (AF-018, palette-projects.ts: open one, a new session
+// in one, Add project…). Actions this connection may not call are left out (shell/gates.ts
 // paletteActions). Matching: a label that starts with or contains the query, then a hint; a loose subsequence only
 // for 3+ characters starting at a word ("nwc" → New chat); the matched words are marked. The list keeps one
 // height, so typing never resizes it.
@@ -16,7 +17,7 @@ import { chatSection } from '../../shared/text/chat-sections.ts';
 import { agents, conversations, isMobile } from '../lib/store.ts';
 import { chatTitle } from '../lib/chat-face.tsx';
 import { go, navigate } from '../lib/router.ts';
-import { can } from '../lib/session.ts';
+import { can, isOwner } from '../lib/session.ts';
 import { visibleSections } from '../settings/sections.ts';
 import { composerFill, newChatOpen, paletteOpen } from '../lib/shell-state.ts';
 import { activeConversationId } from '../lib/store.ts';
@@ -30,6 +31,10 @@ import { startTour } from '../tour/spotlight.ts';
 import { toggleSidebar } from './WindowBar.tsx';
 import { resumeAllWork, stopAllWork, watchWorkStop, workStop } from './work-stop.ts';
 import { comboLabel } from '../lib/hotkeys.ts';
+import { bridge } from '../lib/platform.ts';
+import { toastError } from '../lib/toasts.ts';
+import { addAndOpenProject, openProjectPage, projectList, watchProjects } from '../lib/projects.ts'; // AF-018
+import { PROJECTS_GROUP, projectEntries } from './palette-projects.ts';
 
 interface Entry {
   id: string;
@@ -79,7 +84,23 @@ function buildEntries(): Entry[] {
     .map((agent) => ({ id: `g:${agent.id}`, group: 'Agents', label: agent.name, hint: agent.role, icon: 'user', run: () => go.agent(agent.id) }));
   const settingsEntry: Entry = { id: 's:settings', group: 'Settings', label: 'Settings', hint: comboLabel('mod+,'), icon: 'gear-six', run: () => go.settings() };
   const pages: Entry[] = visibleSections(can).map((section) => ({ id: `s:${section.id}`, group: 'Settings', label: section.title, hint: 'Settings', icon: section.icon, run: () => go.settings(section.id) }));
-  return [...actions, ...chats, ...agentEntries, settingsEntry, ...pages];
+  return [...actions, ...projects(), ...chats, ...agentEntries, settingsEntry, ...pages];
+}
+
+/** AF-018: the project entries with what they do (the new session's prompt is typed on the project's page). */
+function projects(): Entry[] {
+  const pick = bridge?.files.pickFolder;
+  const add = async () => {
+    try {
+      const folder = await pick?.('project');
+      if (folder) await addAndOpenProject(folder);
+    } catch (error) { toastError(error, 'Could not add the project'); }
+  };
+  return projectEntries(projectList.value, { owner: isOwner(), canPick: !!pick }).map((entry) => ({
+    id: entry.id, group: PROJECTS_GROUP, label: entry.label, hint: entry.hint,
+    icon: (entry.kind === 'add' ? 'plus' : entry.kind === 'new-session' ? 'chat-circle' : 'folder') as IconName,
+    run: entry.kind === 'add' ? () => { void add(); } : () => openProjectPage(entry.projectId!),
+  }));
 }
 
 function score(entry: Entry, query: string): number {
@@ -106,7 +127,8 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (open) watchWorkStop(); }, [open]); // the brake entry knows whether work is stopped
-  const entries = useMemo(() => (open ? buildEntries() : []), [open, workStop.value?.stopped]);
+  useEffect(() => { if (open && isOwner()) watchProjects(); }, [open]); // AF-018
+  const entries = useMemo(() => (open ? buildEntries() : []), [open, workStop.value?.stopped, projectList.value]);
   const q = query.trim().toLowerCase();
   const results = entries
     .map((entry) => ({ entry, s: score(entry, q) }))

@@ -127,6 +127,19 @@
   margin: -3px 0 -3px -6px; padding: 0 6px; border-radius: var(--r-sm); color: var(--text); font-size: 14px; font-weight: 500; line-height: 20px;
 }
 .chat-title-button:hover { background: var(--hover); }
+/* AF-018: the name's line with the project chip after it (ProjectChip.tsx) – the chip gives way first (its own
+   ellipsis down to 72 px), then the name; one fixed 18 px pill, its look never changes on hover but the tint */
+.chat-head-line { display: flex; align-items: center; gap: 4px; min-width: 0; height: 20px; }
+.chat-head-line > .chat-title-button { flex: 0 1 auto; }
+.chat-project-chip {
+  display: inline-flex; flex: 0 100 auto; align-items: center; gap: 4px; min-width: 72px; max-width: 60%; height: 18px; padding: 0 7px;
+  border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 11px; line-height: 16px; white-space: nowrap;
+}
+.chat-project-chip > .icon { flex: none; }
+.chat-project-chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.chat-project-chip:hover { background: var(--hover); color: var(--text); }
+.chat-project-chip.missing { opacity: .6; }
+/* end AF-018 */
 .chat-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-title-caret { flex: none; opacity: .55; }
 .chat-title-button[aria-expanded=true] .chat-title-caret { opacity: 1; }

@@ -9,6 +9,7 @@
 // second header inside it). Phone: Back as the lead and the cells [call][chat tabs] at the row's end (the details sheet
 // keeps its own top line). B-075: who works and what comes from the chat's rows (the summary's live runs, live-text.ts
 // liveRuns) – the same line on every device –, a running split group as one entry (B-057, splits/split-model.ts).
+// AF-018: a project chip after the name when an agent of the chat works in a project (ProjectChip.tsx).
 // Owns: the chat header's data and title markup. Never: shows provider logos or invented titles.
 
 import type { ConversationSummary } from '../../shared/model/chat.ts';
@@ -29,6 +30,7 @@ import { groupWorking } from '../splits/split-text.ts';
 import { useCallCell } from './call/CallHeader.tsx';
 import { chatMenu } from './chat-actions.ts';
 import { chatAttention } from '../workspace/attention.ts';
+import { ProjectChip } from './ProjectChip.tsx'; // AF-018
 
 export const PANEL_TITLES: Record<ChatPanel, string> = { details: 'Chat details', thread: 'Thread' };
 
@@ -57,10 +59,13 @@ function ChatTitle(props: { chat: ConversationSummary }) {
         <ChatFace chat={chat} size={28} onClick={onAvatar} />
       </span>
       <div class="chat-head-text">
-        <button type="button" class="chat-title-button" aria-expanded={open} onClick={() => toggleChatPanel(chat.id, 'details')}>
-          <span class="chat-title">{chatTitle(chat)}</span>
-          <Icon name={open ? 'caret-up' : 'caret-down'} size={12} class="chat-title-caret" />
-        </button>
+        <div class="chat-head-line">
+          <button type="button" class="chat-title-button" aria-expanded={open} onClick={() => toggleChatPanel(chat.id, 'details')}>
+            <span class="chat-title">{chatTitle(chat)}</span>
+            <Icon name={open ? 'caret-up' : 'caret-down'} size={12} class="chat-title-caret" />
+          </button>
+          <ProjectChip chat={chat} />{/* AF-018 */}
+        </div>
         <div class="chat-sub" ref={working.anchor} data-clock={clock12 ? '12' : undefined}>
           {status
             ? <LiveLine text={status} short={liveShort(chat, solo, entries, nameOf)} names={liveNames(chat, solo, entries, nameOf)} open={working.open} onToggle={working.toggle} />

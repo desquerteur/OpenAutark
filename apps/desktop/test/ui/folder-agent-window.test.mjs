@@ -1,7 +1,8 @@
 // AF-014 Electron window check of "Agent from folder" with the demo engine in an isolated test profile and a test repo
 // (package.json, README.md, CLAUDE.md, AGENTS.md, .claude/skills, .codex/skills, .codex/config.toml):
 //   * a folder dropped on the Team list opens the dialog: name and role from package.json, Follows CLAUDE.md · AGENTS.md,
-//     the repo's skills, the other tools' settings; Create agent opens the new agent's page;
+//     the repo's skills, the other tools' settings; Create agent says it is ready (AF-018: Open as project or Open
+//     agent page) and Open agent page opens the new agent's page;
 //   * the agent's home project is the repo, its access mode is "Auto in project folder";
 //   * in its chat the agent's system prompt carries the repo's CLAUDE.md and AGENTS.md rules and names its skills
 //     (the demo engine's [[prompt:…]] quotes those lines), and its own text says it follows them;
@@ -97,6 +98,8 @@ test('agent from folder: drop, suggestions, home project, its CLAUDE.md/AGENTS.m
   assert.match(text, /\.codex\/config\.toml/);
   await shot('folder-agent-dialog-light');
   await dialog.getByRole('button', { name: 'Create agent' }).click();
+  await dialog.getByRole('button', { name: 'Open as project' }).waitFor({ timeout: 15_000 }); // AF-018: the ready step
+  await dialog.getByRole('button', { name: 'Open agent page' }).click();
   await until('the new agent\'s page', async () => {
     if (/^#\/team\/ag_/.test(await page.evaluate(() => location.hash))) return true;
     const message = (await page.locator('dialog.folder-agent-dialog .dialog-message').textContent().catch(() => '')) ?? '';
@@ -150,6 +153,7 @@ test('agent from folder: drop, suggestions, home project, its CLAUDE.md/AGENTS.m
   await dialog.getByRole('textbox', { name: 'Name' }).fill('Shop Reviewer');
   await dialog.getByRole('button', { name: 'Create agent' }).click();
   await until('the second agent', async () => (await rpc.call('agents.list')).some((agent) => agent.name === 'Shop Reviewer'));
+  await dialog.getByRole('button', { name: 'Open agent page' }).click(); // AF-018: closes the ready step
   await page.evaluate(() => { location.hash = '#/team'; });
   await page.locator('.side-zone [aria-label="Add"], .team-nav ~ * [aria-label="Add"], [aria-label="Add"]').first().click();
   await page.getByRole('menuitemcheckbox', { name: 'Group agents by folder' }).or(page.getByRole('menuitem', { name: 'Group agents by folder' })).first().click();

@@ -2,6 +2,7 @@
 // and its fine rules: folders it may also change or must never touch, commands that run without asking or never,
 // tools and connectors allowed or forbidden, the network and spending money. The rules dialog writes them whole
 // (access.set); "Always for this agent" in the approval dialog adds to them. Only the person on the PC changes them.
+// AF-018: the folder it works in as its own row (Project: the folder's name) with "Open as project" (OpenAsProject.tsx).
 // Owns: this section and its dialog. Never: judges (the runtime does).
 
 import { useEffect, useState } from 'preact/hooks';
@@ -13,6 +14,8 @@ import { Select, type SelectOption } from '../lib/ui.tsx';
 import { isOwner } from '../lib/session.ts';
 import { errorText } from '../lib/rpc.ts';
 import { toastError } from '../lib/toasts.ts';
+import { folderName } from '../lib/projects.ts';
+import { OpenAsProject } from './OpenAsProject.tsx'; // AF-018
 
 const MODE_OPTIONS: Array<SelectOption<AccessMode>> = ACCESS_MODES.map((mode) => ({ value: mode, label: ACCESS_MODE_LABELS[mode].label, hint: ACCESS_MODE_LABELS[mode].description }));
 type ChoiceValue = AccessChoice | '';
@@ -115,9 +118,15 @@ export function AccessSection(props: { agent: Agent }) {
     <section class="agent-section" aria-label="Access">
       <div class="agent-section-head"><h3 class="agent-section-title">Access</h3></div>
       <div class="agent-row">
-        <span class="agent-row-text"><span class="agent-row-label">Mode</span><small class="agent-row-hint" title={access.project}>{ACCESS_MODE_LABELS[mode].description}{access.project ? ` Project folder: ${access.project.split(/[\\/]/).filter(Boolean).pop() ?? access.project}` : ''}</small></span>
+        <span class="agent-row-text"><span class="agent-row-label">Mode</span><small class="agent-row-hint">{ACCESS_MODE_LABELS[mode].description}</small></span>
         <Select label="Access mode" value={mode} options={MODE_OPTIONS} disabled={!owner} onChange={(next) => void save(next)} />
       </div>
+      {access.project && isOwner() && (
+        <div class="agent-row">{/* AF-018: the folder it works in, as a project */}
+          <span class="agent-row-text"><span class="agent-row-label">Project</span><small class="agent-row-hint" title={access.project}>{folderName(access.project)}</small></span>
+          <OpenAsProject folder={access.project} />
+        </div>
+      )}
       <div class="agent-row">
         <span class="agent-row-text"><span class="agent-row-label">Rules</span><small class="agent-row-hint">{count ? `${count} rule${count === 1 ? '' : 's'}` : 'None – the mode decides'}</small></span>
         {owner && <button type="button" class="text-button" onClick={() => setEditing(true)}>Edit</button>}
