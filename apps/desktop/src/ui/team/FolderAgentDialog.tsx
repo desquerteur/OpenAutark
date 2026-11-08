@@ -1,7 +1,8 @@
 // AF-014: the "Agent from folder" dialog – the folder (typed, chosen with Choose…, or dropped on the dialog), what it
 // suggests (name and role from its README / package.json …) and what the agent will follow and see there (instruction
 // files, skills, other tools' settings, agents already working in it – several per folder are fine), the access mode it
-// starts in (Auto in project folder) and Create, which opens the new agent's page. Mounted once by the shell.
+// starts in (Auto in project folder) and Create. AF-018: after Create the dialog says the agent is ready and offers
+// "Open as project" (the folder on the Projects tab, OpenAsProject.tsx) or "Open agent page". Mounted once by the shell.
 // Owns: the dialog. Never: reads folders itself (folderAgents.find) or creates agents without the person's click.
 
 import { useEffect, useState } from 'preact/hooks';
@@ -15,6 +16,8 @@ import { errorText, rpc } from '../lib/rpc.ts';
 import { isOwner } from '../lib/session.ts';
 import { navigate } from '../lib/router.ts';
 import { droppedFolder, folderAgentRequest, mayHoldFolder } from './folder-agent.ts';
+import { folderName } from '../lib/projects.ts';
+import { OpenAsProject } from './OpenAsProject.tsx'; // AF-018
 
 const MODE_OPTIONS: Array<SelectOption<AccessMode>> = ACCESS_MODES.map((mode) => ({ value: mode, label: ACCESS_MODE_LABELS[mode].label, hint: ACCESS_MODE_LABELS[mode].description }));
 
@@ -51,6 +54,7 @@ function FolderAgentForm(props: { start?: string; onClose: () => void }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
+  const [created, setCreated] = useState<{ agentId: string; name: string; folder: string } | null>(null); // AF-018
 
   const look = async (path: string) => {
     setFolder(path);
@@ -72,17 +76,29 @@ function FolderAgentForm(props: { start?: string; onClose: () => void }) {
     setBusy(true);
     try {
       const made = await rpc.call('folderAgents.create', { folder: finding.folder, name: name.trim(), role: role.trim(), mode });
-      props.onClose();
-      navigate({ view: 'team', agentId: made.agent.id });
+      setCreated({ agentId: made.agent.id, name: made.agent.name, folder: finding.folder });
     } catch (error) { setMessage(errorText(error)); } finally { setBusy(false); }
   };
+
+  if (created) { // AF-018: the agent is there – open its folder as a project or the agent's page
+    const openAgent = () => { props.onClose(); navigate({ view: 'team', agentId: created.agentId }); };
+    return (
+      <div class="folder-agent">
+        <p class="dialog-text">{created.name} is ready and works in {folderName(created.folder)}. Open the folder as a project to start sessions there.</p>
+        <DialogActions>
+          <button type="button" class="button secondary" onClick={openAgent}>Open agent page</button>
+          <OpenAsProject folder={created.folder} class="button primary" onOpened={props.onClose} />
+        </DialogActions>
+      </div>
+    );
+  }
 
   return (
     <form class={`folder-agent${over ? ' drag-over' : ''}`} onSubmit={(event) => { event.preventDefault(); void create(); }}
       onDragOver={(event) => { if (mayHoldFolder(event.dataTransfer)) { event.preventDefault(); event.stopPropagation(); setOver(true); } }}
       onDragLeave={() => setOver(false)}
       onDrop={(event) => { setOver(false); const dropped = droppedFolder(event.dataTransfer); if (dropped) { event.preventDefault(); event.stopPropagation(); void look(dropped); } }}>
-      <p class="dialog-text">The agent works in this folder: its turns start there, it follows the folder's instruction files and sees its skills.</p>
+      <p class="dialog-text">The agent works in this folder (your project): it starts its work there, follows the folder's instruction files and sees its skills.</p>
       <label class="folder-agent-field">
         <span class="folder-agent-label">Folder</span>
         <span class="folder-agent-row">
