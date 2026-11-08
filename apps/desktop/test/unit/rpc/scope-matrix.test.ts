@@ -124,6 +124,13 @@ const PC_LOCAL: Record<string, string> = {
   'folderAgents.find': 'reads a folder of this PC for an agent\'s name, role, instruction files and skills (AF-014)',
   'folderAgents.create': 'hires an agent whose home project is a folder of this PC (AF-014)',
   'folderAgents.homes': 'the home project folders of this PC\'s agents (AF-014)',
+  // AF-018: projects are folders of this PC; a session start can hire an agent for one.
+  'projects.list': 'the project folders of this PC and their git state (AF-018)',
+  'projects.get': 'a project folder of this PC and its git state (AF-018)',
+  'projects.add': 'adds a folder of this PC as a project (AF-018)',
+  'projects.update': 'renames or pins a project folder of this PC (AF-018)',
+  'projects.remove': 'takes a project folder of this PC off the list (AF-018)',
+  'projects.startSession': 'starts a session in a project folder of this PC and may hire an agent (AF-018)',
 };
 
 /** The spec's tier lists (DEV2). */
