@@ -45,6 +45,7 @@ import { SettingsView, changedPreferences } from './settings-view.ts';
 import { quitSteps, runShutdown } from './shutdown.ts';
 import { AppTray } from './tray.ts';
 import { DesktopUpdates, inactiveUpdater, loadUpdater, settleAfterStart } from './updates-wiring.ts';
+import { loadUpdateSource, saveUpdateSource } from './updates/source-store.ts'; // AF-019
 import { MainWindow } from './window.ts';
 import { WorkspaceBrowser } from './workspace-browser.ts';
 import { setFillRpc } from './workspace-fill.ts';
@@ -241,6 +242,8 @@ export async function startDesktop(options: DesktopOptions): Promise<Desktop> {
       stop: reason => link.stop(reason),
       start: () => link.start(),
     },
+    source: await loadUpdateSource(paths.data), // AF-019: Settings › Updates (update-source.json)
+    saveSource: source => saveUpdateSource(paths.data, source),
     publish: state => {
       renderer.send(IPC.updateState, state);
       link.event('update.state', state);

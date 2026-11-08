@@ -15,6 +15,7 @@ import { isPersonSession } from '../lib/people.ts';
 import { can } from '../lib/session.ts';
 import { accounts, isMobile } from '../lib/store.ts';
 import { AboutPage } from './AboutPage.tsx';
+import { UpdatesPage } from './UpdatesPage.tsx'; // AF-019
 import { AccountRow } from './AccountRow.tsx';
 import { AppsPage } from './AppsPage.tsx';
 import { AppearancePage } from './AppearancePage.tsx';
@@ -85,6 +86,7 @@ const CONTENT: Readonly<Record<SettingsPage, ComponentType>> = {
   skills: SkillsPage,
   devices: DevicesGroup,
   feedback: FeedbackPage,
+  updates: UpdatesPage, // AF-019
   about: AboutPage,
 };
 

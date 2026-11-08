@@ -42,6 +42,8 @@ export function desktopIpcDeps<P extends PortLike>(parts: DesktopIpcParts<P>): I
       apply: () => updates.apply(),
       defer: () => updates.defer(),
       setAutoDownload: enabled => updates.setAutoDownload(enabled),
+      check: () => updates.check(), // AF-019
+      setSource: patch => updates.setSource(patch), // AF-019
       setRendererReady: ready => renderer.setReady(ready),
     },
     restartAck: (id, ok) => renderer.ack(id, ok),

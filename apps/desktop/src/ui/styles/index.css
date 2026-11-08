@@ -53,3 +53,4 @@
 @import "./repair.css"; /* 23.10.: repair screen after a broken upgrade or a crash loop */
 @import "./appearance.css"; /* AF-008: the person's own theme beyond the tokens, Settings › Appearance */
 @import "./call.css"; /* AF-015: the call view (full and mini) and the call card in the chat */
+@import "./updates.css"; /* AF-019: the update notice and the release notes in Settings › Updates */

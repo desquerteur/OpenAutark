@@ -50,6 +50,8 @@ test('every page opens itself, an older name the page that holds its rows, an un
   assert.deepEqual(parseRoute('#/settings/remote'), { view: 'settings', section: 'devices' });
   assert.deepEqual(parseRoute('#/settings/abilities'), { view: 'settings', section: 'models' });
   assert.deepEqual(parseRoute('#/settings/advanced'), { view: 'settings', section: 'about' });
+  assert.deepEqual(parseRoute('#/settings/updates'), { view: 'settings', section: 'updates' }); // AF-019: its own page
+  assert.deepEqual(parseRoute('#/settings/update'), { view: 'settings', section: 'updates' });
   assert.deepEqual(parseRoute('#/settings/usage'), { view: 'settings', section: 'models' });
   assert.deepEqual(parseRoute('#/settings/profile'), { view: 'settings', section: 'general' });
   assert.deepEqual(parseRoute('#/settings/memory'), { view: 'settings', section: 'skills' });

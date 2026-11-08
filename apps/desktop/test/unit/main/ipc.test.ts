@@ -47,6 +47,8 @@ function setup(overrides: Partial<IpcDeps> = {}) {
       apply: async () => { calls.push('apply'); return STATE; },
       defer: () => STATE,
       setAutoDownload: async enabled => { calls.push(`auto:${enabled}`); return STATE; },
+      check: async () => { calls.push('check'); return STATE; }, // AF-019
+      setSource: async patch => { calls.push(`source:${JSON.stringify(patch)}`); return STATE; }, // AF-019
       setRendererReady: ready => { calls.push(`ready:${ready}`); },
     },
     restartAck: (id, ok) => { calls.push(`ack:${id}:${ok}`); },
@@ -109,6 +111,9 @@ test('argument validation: bad input never reaches the action', async () => {
   await bad(IPC.filesPick, 'executables');
   await bad(IPC.filesOpen, '../../etc/passwd');
   await bad(IPC.updateAutoDownload, 'yes');
+  await bad(IPC.updateSource, { repository: 'not a repository' }); // AF-019
+  await bad(IPC.updateSource, { channel: 'nightly' });
+  await bad(IPC.updateSource, { feed: 'https://evil.example/feed' });
   await bad(IPC.clipboardWrite, 'a\0b');
   await bad(IPC.openExternal, 'file:///C:/Windows/System32/cmd.exe');
   // fire-and-forget channels drop invalid input silently
@@ -119,7 +124,9 @@ test('argument validation: bad input never reaches the action', async () => {
   ipc.send(e.app, IPC.updateReady, true);
   assert.deepEqual(await ipc.invoke(e.app, IPC.filesOpen, 'a'.repeat(64), true), { ok: true, value: null });
   assert.deepEqual(await ipc.invoke(e.app, IPC.openExternal, 'https://example.com'), { ok: true, value: null });
-  assert.deepEqual(calls, ['ack:4:true', 'ready:true', 'open:true', 'external:https://example.com/']);
+  assert.deepEqual(await ipc.invoke(e.app, IPC.updateCheck), { ok: true, value: STATE });
+  assert.deepEqual(await ipc.invoke(e.app, IPC.updateSource, { repository: 'teydra/OpenAutark', autoCheck: false }), { ok: true, value: STATE });
+  assert.deepEqual(calls, ['ack:4:true', 'ready:true', 'open:true', 'external:https://example.com/', 'check', 'source:{"repository":"teydra/OpenAutark","autoCheck":false}']);
 });
 
 test('runtime connect posts a port to the asking renderer (none when the runtime is stopped)', async () => {

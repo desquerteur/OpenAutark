@@ -132,6 +132,8 @@ const api: WorkforceDesktopApi = {
     apply: () => invoke<UpdateState>(IPC.updateApply),
     defer: () => invoke<UpdateState>(IPC.updateDefer),
     setAutoDownload: enabled => invoke<UpdateState>(IPC.updateAutoDownload, enabled === true),
+    check: () => invoke<UpdateState>(IPC.updateCheck), // AF-019
+    setSource: patch => invoke<UpdateState>(IPC.updateSource, patch), // AF-019
     setReady: ready => { ipcRenderer.send(IPC.updateReady, ready === true); },
   },
   onUpdate: listener => listen<[UpdateState]>(IPC.updateState, listener),

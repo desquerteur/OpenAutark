@@ -1,0 +1,137 @@
+# AF-019 – Owns: building the Windows x64 installer of this fork from its own sources for a pushed tag vX.Y.Z (or
+# vX.Y.Z-beta.N as a prerelease) and publishing it as a GitHub release of this repository with exactly the files the
+# app's updater and download links expect: autark-windows-x64.exe, its .blockmap, latest.yml (electron-updater's feed
+# with SHA-512), SHA256SUMS.txt and release.json. The version comes from the tag (package.json is set to it here).
+# Never: runs in teydra/OpenAutark (that repository has release-from-compiled.yml), signs the installer (unsigned is
+# intended for the fork), overwrites a release that is already published for another version.
+# How to release: docs/UPDATES_FORK.md.
+name: Fork release (Windows)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and publish (vX.Y.Z or vX.Y.Z-beta.N)
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    # Only in forks: the upstream repository builds its releases from a compiled snapshot instead.
+    if: github.repository != 'teydra/OpenAutark'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: apps/desktop
+    steps:
+      - name: Check out the tagged sources
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Take the version from the tag
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v(?<version>[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)$') {
+            throw "The tag must look like v1.2.3 or v1.2.3-beta.1 (got '$env:RELEASE_TAG')"
+          }
+          $version = $Matches['version']
+          npm version $version --no-git-tag-version --allow-same-version
+          if ($LASTEXITCODE) { throw 'Could not set the version' }
+          "RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "RELEASE_PRERELEASE=$($version.Contains('-').ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Building Autark $version"
+
+      - name: Install the pinned dependencies
+        run: npm ci --no-fund --no-audit
+
+      - name: Build
+        run: npm run build
+
+      - name: Package the Windows installer (unsigned)
+        run: npm run package -- --win --x64
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Check the installer and the update feed
+        run: |
+          $installer = 'dist/autark-windows-x64.exe'
+          foreach ($file in @($installer, "$installer.blockmap")) {
+            if (-not (Test-Path -LiteralPath $file)) { throw "Missing $file" }
+          }
+          $feeds = @(Get-ChildItem -Path dist -Filter *.yml -File | Where-Object { $_.Name -ne 'builder-debug.yml' })
+          if (-not $feeds.Count) { throw 'electron-builder wrote no update feed (latest.yml)' }
+          # A prerelease (v1.2.3-beta.1) gets beta.yml; latest.yml beside it is the updater's fallback on that channel.
+          if (-not (Test-Path -LiteralPath 'dist/latest.yml')) { Copy-Item -LiteralPath $feeds[0].FullName -Destination 'dist/latest.yml' }
+          $feeds = @(Get-ChildItem -Path dist -Filter *.yml -File | Where-Object { $_.Name -ne 'builder-debug.yml' })
+          foreach ($feed in $feeds) {
+            $text = Get-Content -LiteralPath $feed.FullName -Raw
+            if ($text -notmatch "(?m)^version: $([regex]::Escape($env:RELEASE_VERSION))\s*$") { throw "$($feed.Name) does not name version $env:RELEASE_VERSION" }
+            if ($text -notmatch '(?m)^path: autark-windows-x64\.exe\s*$') { throw "$($feed.Name) does not point at autark-windows-x64.exe" }
+            if ($text -notmatch '(?m)^sha512: \S+') { throw "$($feed.Name) has no SHA-512" }
+          }
+          Write-Host "Feeds: $($feeds.Name -join ', ')"
+
+      - name: Write SHA256SUMS.txt and release.json
+        run: |
+          $files = @(Get-ChildItem -Path dist -File | Where-Object { $_.Name -eq 'autark-windows-x64.exe' -or $_.Name -eq 'autark-windows-x64.exe.blockmap' -or ($_.Extension -eq '.yml' -and $_.Name -ne 'builder-debug.yml') } | Sort-Object Name)
+          $lines = foreach ($file in $files) { "$((Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($file.Name)" }
+          [System.IO.File]::WriteAllText((Join-Path (Resolve-Path dist) 'SHA256SUMS.txt'), (($lines -join "`n") + "`n"))
+          $release = [ordered]@{
+            version     = $env:RELEASE_VERSION
+            tag         = $env:RELEASE_TAG
+            repository  = $env:GITHUB_REPOSITORY
+            prerelease  = $env:RELEASE_PRERELEASE -eq 'true'
+            commit      = $env:GITHUB_SHA
+            publishedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+            signed      = $false
+            files       = @(foreach ($file in $files) {
+              [ordered]@{
+                name     = $file.Name
+                platform = if ($file.Name -like 'autark-windows-x64.exe*') { 'windows-x64' } else { 'update-feed' }
+                size     = $file.Length
+                sha256   = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+              }
+            })
+          }
+          [System.IO.File]::WriteAllText((Join-Path (Resolve-Path dist) 'release.json'), ($release | ConvertTo-Json -Depth 5))
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = @(Get-ChildItem -Path dist -File | Where-Object { $_.Name -in @('autark-windows-x64.exe', 'autark-windows-x64.exe.blockmap', 'SHA256SUMS.txt', 'release.json') -or ($_.Extension -eq '.yml' -and $_.Name -ne 'builder-debug.yml') }).FullName
+          $notes = Join-Path $env:GITHUB_WORKSPACE "docs/releases/$env:RELEASE_TAG.md"
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json tagName 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            # Same tag again (e.g. a re-run): replace the files of that release.
+            $uploadArgs = @('release', 'upload', $env:RELEASE_TAG, '--repo', $env:GITHUB_REPOSITORY, '--clobber') + $assets
+            & gh @uploadArgs
+          } else {
+            $createArgs = @('release', 'create', $env:RELEASE_TAG, '--repo', $env:GITHUB_REPOSITORY, '--verify-tag', '--title', "Autark $env:RELEASE_VERSION")
+            if (Test-Path -LiteralPath $notes) { $createArgs += @('--notes-file', $notes) } else { $createArgs += '--generate-notes' }
+            if ($env:RELEASE_PRERELEASE -eq 'true') { $createArgs += '--prerelease' } else { $createArgs += '--latest' }
+            $allArgs = $createArgs + $assets
+            & gh @allArgs
+          }
+          if ($LASTEXITCODE) { throw 'Publishing the release failed' }

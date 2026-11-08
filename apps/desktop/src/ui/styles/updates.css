@@ -1,0 +1,23 @@
+/* AF-019: the update notice (shell/UpdateNotice.tsx) – a non-modal card in the lower right corner with the version, the
+   release notes and Later / Install now – and the release notes in Settings › Updates (settings/UpdatesPage.tsx).
+   Owns: these rules. Never: the rail's update button (shell.css). */
+
+.update-notice {
+  position: fixed; right: 16px; bottom: 16px; z-index: 60;
+  width: min(380px, calc(100vw - 32px));
+  padding: 14px 16px; font-size: 13px;
+  background: var(--elevated); color: var(--text);
+  border: 1px solid var(--elevated-line); border-left: 3px solid var(--update); border-radius: 10px;
+  box-shadow: var(--shadow-popover);
+}
+.update-notice-title { font-weight: 600; font-size: 14px; }
+.update-notice-source, .update-notice-hint { margin-top: 2px; font-size: 12px; }
+.update-notice-name { margin-top: 8px; font-weight: 600; }
+.update-notice .update-notes { margin-top: 8px; max-height: 220px; }
+.update-notice-hint { margin-top: 8px; }
+
+.update-notes {
+  white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; max-height: 320px; width: 100%; box-sizing: border-box;
+  padding: 8px 10px; border-radius: 6px; background: var(--chrome); color: var(--secondary);
+  font-size: 12px; line-height: 1.45;
+}

@@ -29,6 +29,8 @@ env:
 
 jobs:
   verify-mac-intel:
+    # AF-019: only in the upstream repository (a fork has no compiled drafts to check).
+    if: github.repository == 'teydra/OpenAutark'
     runs-on: macos-15-intel
     timeout-minutes: 15
     steps:
