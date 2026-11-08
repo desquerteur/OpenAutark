@@ -94,6 +94,14 @@ function codexPrompts(folder: string): string[] {
   try { return readdirSync(path.join(folder, '.codex', 'prompts'), { withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith('.md')).map((entry) => `.codex/prompts/${entry.name}`).sort().slice(0, 20); } catch { return []; }
 }
 
+/** AF-018: one line about `folder` from its manifest's description or its README ('' when nothing says) – the cheap part of analyzeFolder. */
+export function folderAbout(folder: string): string {
+  const found = manifest(folder);
+  const readmeText = found?.description ? undefined : READMES.map((name) => read(folder, name)).find((text) => text !== undefined);
+  const readme = readmeText ? readmeParts(readmeText) : {};
+  return cut(oneLine(found?.description ?? readme.about ?? ''), ABOUT_MAX);
+}
+
 /** Everything create.ts and the dialog need about `folder` (an absolute folder the caller checked). */
 export function analyzeFolder(folder: string, agents: Array<{ id: string; name: string }> = []): FolderFinding {
   const label = path.basename(folder) || folder;
