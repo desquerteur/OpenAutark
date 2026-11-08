@@ -12,9 +12,9 @@ android {
         applicationId = 'com.teydralab.autark.android'
         minSdk = 26
         targetSdk = 36
-        // Release 0.3.3: the first APK published in teydra/OpenAutark (latest-android.json carries this versionCode).
-        versionCode = 3
-        versionName = '0.3.3'
+        // Release 0.3.4: the first APK published in desquerteur/OpenAutark (latest-android.json carries this versionCode).
+        versionCode = 4
+        versionName = '0.3.4'
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

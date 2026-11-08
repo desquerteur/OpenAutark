@@ -1,5 +1,5 @@
 // Owns: the app's own update check (B-078, D18) – at most once a day, in the release build only, it reads
-// latest-android.json of the newest public release (github.com/teydra/OpenAutark: {versionCode, versionName, url,
+// latest-android.json of the newest public release (github.com/desquerteur/OpenAutark: {versionCode, versionName, url,
 // sha256, bytes, signer}) and, when its versionCode is newer than the installed one, offers "Update", which opens the
 // APK's address in the browser (Android installs it over this app – same signature). Later remembers that version.
 // Never: downloads or installs by itself, or nags twice for the same version.
@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 final class UpdateCheck {
-    static final String FEED = "https://github.com/teydra/OpenAutark/releases/latest/download/latest-android.json";
+    static final String FEED = "https://github.com/desquerteur/OpenAutark/releases/latest/download/latest-android.json";
     private static final long DAY_MS = 24 * 60 * 60_000L;
     private static final int MAX_BYTES = 16 * 1024;
 
@@ -36,7 +36,7 @@ final class UpdateCheck {
         try { release = Json.object(json); } catch (IllegalArgumentException error) { return null; }
         long code = Json.num(release, "versionCode", -1);
         String url = Json.str(release, "url");
-        if (code <= installed || url == null || !url.startsWith("https://github.com/teydra/OpenAutark/")) return null;
+        if (code <= installed || url == null || !url.startsWith("https://github.com/desquerteur/OpenAutark/")) return null;
         return release;
     }
 

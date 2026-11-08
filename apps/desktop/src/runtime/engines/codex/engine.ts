@@ -281,12 +281,12 @@ export class CodexEngine implements Engine {
   }
 
   /** A thread's settings: model, cwd, instructions; read-only and untrusted on open (runCodexTurn gives each turn its own sandbox). */
-  private async settings(input: { model?: string; cwd: string; system?: { stable: string; volatile: string } }): Promise<{ config?: Record<string, unknown>; developerInstructions?: string } & Record<string, unknown>> {
+  private async settings(input: { model?: string; cwd: string; system?: { stable: string; volatile: string }; agentId?: string }): Promise<{ config?: Record<string, unknown>; developerInstructions?: string } & Record<string, unknown>> {
     const real = await (this.deps.realpath ?? fsp.realpath)(input.cwd).catch(() => undefined);
     return {
       ...(input.model ? { model: input.model } : {}), cwd: input.cwd,
       ...(input.system ? { baseInstructions: input.system.stable, developerInstructions: input.system.volatile } : {}),
-      approvalPolicy: 'never', ...threadIsolation(trustKeys(input.cwd, real), this.deps.shellEnv),
+      approvalPolicy: 'never', ...threadIsolation(trustKeys(input.cwd, real), this.deps.shellEnv, input.agentId), // AF-001: agentId – the thread's wf identity
     };
   }
 
@@ -350,7 +350,7 @@ export class CodexEngine implements Engine {
     this.loaded.set(input.account.id, loaded);
     const cwd = input.cwd ?? loaded.get(input.parentRef);
     if (!cwd) throw new Error('the folder of the forked session is unknown');
-    const params = forkParams(input, await this.settings({ model: input.model, cwd }));
+    const params = forkParams(input, await this.settings({ model: input.model, cwd, agentId: input.agentId }));
     const ref = await forkThread(params, (fork) => openAgentThread<{ thread?: { id?: string } }>(rpc, 'thread/fork', fork, this.agentLeanRefused, input.account.id));
     loaded.set(ref, cwd);
     this.noteDue.add(ref); // H1: Codex sets its own note again in a fork, after the parent's history

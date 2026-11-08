@@ -30,7 +30,7 @@ const OLD_REPO = 'teydra/proactive-agent-workforce-releases';
 const NAMES = RENAMED ? {
   // Since the bridge release 0.3.3 (B-078) the one public home is teydra/OpenAutark. These equal
   // apps/desktop/package.json (productName, artifactName, publish.repo) and apps/android (autark-android.apk).
-  repo: 'teydra/OpenAutark',
+  repo: 'desquerteur/OpenAutark',
   app: 'Autark',
   files: { windows: 'autark-windows-x64.exe', macDmg: 'autark-mac-universal.dmg', macZip: 'autark-mac-universal.zip', linux: 'autark-linux-x64.AppImage', android: 'autark-android.apk' },
 } : {

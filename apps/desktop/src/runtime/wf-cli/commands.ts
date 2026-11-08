@@ -129,7 +129,7 @@ const read: Command = {
 
 const send: Command = {
   usage: 'send <chat> <text… | -> [--important | --silent] [--wait [--timeout s]]',
-  summary: 'Send a message as you (@Name in the text mentions an agent). --silent posts it quietly: it wakes only the members it @mentions. --wait prints the first agent reply (default timeout 300 s).',
+  summary: 'Send a message as you – run by an agent (AUTARK_AGENT_TOKEN), as that agent, into a chat it is a member of (@Name in the text mentions an agent). --silent posts it quietly: it wakes only the members it @mentions. --wait prints the first agent reply (default timeout 300 s).',
   options: ['important', 'silent', 'wait', 'timeout'],
   arity: [2, Number.POSITIVE_INFINITY],
   defaultTimeoutMs: (parsed) => (flag(parsed, 'wait') ? SEND_WAIT_MS : undefined),

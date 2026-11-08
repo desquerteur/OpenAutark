@@ -1,6 +1,6 @@
 // Release locations (GitHub releases repo used by electron-updater and the manual download). From 0.3.3 (B-078) the
 // public home is teydra/OpenAutark; this build (AF-019) is the fork desquerteur/OpenAutark, which builds its own
-// releases (.github/workflows/fork-release.yml) – package.json build.publish names the same repo for the packaged feed.
+// releases (.github/workflows/build-desktop.yml) – package.json build.publish names the same repo for the packaged feed.
 // The person can switch the source in Settings › Updates (source.ts); every address here takes that repository.
 // Owns: stable asset names per platform. Never: network access.
 

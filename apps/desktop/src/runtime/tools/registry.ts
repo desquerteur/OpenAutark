@@ -60,8 +60,11 @@ export function matchesPatterns(name: string, patterns: string[] | undefined): b
 /** Offered in every mode, whatever its tool patterns: asking the person, handing work on, self-routing, reporting,
  *  handing a choice to the decision model, the secrets catalog (save, generate, run, import, export, delete), the
  *  companies on this PC, finding knowledge and the person's references, the web search, splitting, the meta tools,
- *  seeing an image and starting a CLI sign-in. */
+ *  seeing an image and starting a CLI sign-in. AF-001: and the chat essentials (CHAT_ALWAYS) – an agent session can always
+ *  write, read and open chats, so it never has to fall back to the person's wf to say something. */
+export const CHAT_ALWAYS: readonly string[] = ['chat.send', 'chat.read', 'chat.direct', 'chat.create', 'chat.list', 'chat.search'];
 export const EVERY_MODE: ReadonlySet<string> = new Set([
+  ...CHAT_ALWAYS, // AF-001
   'human.ask', 'agents.handoff', 'agents.delegate', 'model.set', 'models.list', 'feedback.report', 'decide',
   'references.find', 'references.capture',
   'secrets.list', 'secrets.save', 'secrets.generate', 'secrets.run', 'secrets.import', 'secrets.export', 'secrets.delete',

@@ -25,7 +25,7 @@ const electronPath = path.join(root, 'node_modules', 'electron', 'dist', process
 const UPDATE_STATE = 'update:state'; // IPC.updateState in src/shared/api/desktop.ts
 
 const base = { version: '0.2.0', percent: 0, automaticInstall: true };
-const MANUAL = { ...base, status: 'available', availableVersion: '0.3.0', automaticInstall: false, downloadURL: 'https://github.com/teydra/OpenAutark/releases/latest/download/autark-mac-universal.dmg' };
+const MANUAL = { ...base, status: 'available', availableVersion: '0.3.0', automaticInstall: false, downloadURL: 'https://github.com/desquerteur/OpenAutark/releases/latest/download/autark-mac-universal.dmg' };
 const FAILED = { ...base, status: 'error', failure: 'download', availableVersion: '0.3.0', message: 'Download failed. Click to try again.' };
 const CHECK_FAILED = { ...base, status: 'error', failure: 'check', message: 'Could not check for updates. Retrying automatically.' };
 const DOWNLOADING = { ...base, status: 'downloading', availableVersion: '0.3.0', percent: 42 };
