@@ -36,6 +36,8 @@ import { SplitView } from '../splits/SplitView.tsx'; // B-057: #/team/<agentId>/
 import { Settings, settingsSectionTitle } from '../settings/Settings.tsx';
 import { SettingsNav, settingsNavHeader } from '../settings/SettingsNav.tsx';
 import { TaskFiltersNav, taskFiltersHeader } from './TaskFiltersNav.tsx';
+import { ProjectsNav, projectsNavHeader } from '../projects/ProjectsNav.tsx'; // AF-018
+import { ProjectPage, ProjectsHome } from '../projects/ProjectPage.tsx';
 import { chatRouteAllowed } from './gates.ts';
 
 /** A zone's header row as data (lib/header.tsx props; the frame sets the zone). */
@@ -84,6 +86,7 @@ function sideView(current: Route): DesktopViews['side'] {
     case 'team': return { key: 'team', body: h(TeamNav, null), header: teamNavHeader };
     case 'settings': return { key: 'settings', body: h(SettingsNav, null), header: settingsNavHeader };
     case 'tasks': return { key: 'tasks', body: h(TaskFiltersNav, null), header: taskFiltersHeader };
+    case 'projects': return { key: 'projects', body: h(ProjectsNav, null), header: projectsNavHeader }; // AF-018
     case 'home': // the same My day as 'day': one side column
     case 'day': return { key: 'day', body: h(DayNav, null), header: dayNavHeader }; // B-041: mini month, connected calendars
     default: return { key: 'chats', body: h(ChatList, null), header: chatListHeader };
@@ -98,6 +101,11 @@ function teamBody(current: Extract<Route, { view: 'team' }>): { key: string; bod
   return { key: 'team', body: h(TeamView, null) };
 }
 
+/** AF-018: the projects route's page – one project, or the start page. */
+function projectsBody(current: Extract<Route, { view: 'projects' }>): { key: string; body: ComponentChildren } {
+  return current.id ? { key: `project:${current.id}`, body: h(ProjectPage, { key: current.id, projectId: current.id }) } : { key: 'projects', body: h(ProjectsHome, null) };
+}
+
 const EMPTY_CHATS: HeaderSource = () => ({ title: '' });
 
 function mainView(current: Route): ZoneView {
@@ -107,6 +115,7 @@ function mainView(current: Route): ZoneView {
     case 'chats': return { key: 'chats', body: h('div', { class: 'main-empty' }), header: EMPTY_CHATS };
     case 'tasks': return { key: 'tasks', body: h(TasksView, null) };
     case 'team': return teamBody(current);
+    case 'projects': return projectsBody(current);
     case 'settings': return { key: 'settings', body: h(Settings, null) };
     default: return firstRunActive() ? { key: 'first-run', body: h(FirstRun, null) } : { key: 'day', body: h(DayView, null) };
   }
@@ -128,6 +137,7 @@ export function tabTitle(current: Route): string {
 /** Pushed screens: a chat, an agent and a person. */
 export function isPushed(current: Route): boolean {
   if (current.view === 'chat') return chatRouteAllowed();
+  if (current.view === 'projects') return !!current.id; // AF-018: a project's page lies over the list
   return current.view === 'team' && !!(current.agentId || current.personId);
 }
 
@@ -150,6 +160,10 @@ export function phoneView(current: Route): PhoneView {
     case 'settings': return current.section
       ? { key: 'settings', body: h(Settings, null), pushed, title: settingsSectionTitle(current.section), back: 'settings', ownHeader: false }
       : { key: 'settings-list', body: h(SettingsNav, null), pushed, title: tabTitle(current), back: 'home', header: settingsNavHeader, ownHeader: false };
+    case 'projects': {
+      const page = current.id ? projectsBody(current) : { key: 'projects-list', body: h(ProjectsNav, null) }; // AF-018: the list is the tab's root
+      return { ...page, pushed, title: pushed ? '' : tabTitle(current), back: null, ...(pushed ? {} : { header: projectsNavHeader }), ownHeader: ownsTopRow(current) };
+    }
     case 'team': {
       const page = teamBody(current);
       return { ...page, pushed, title: pushed ? '' : tabTitle(current), back: null, ownHeader: ownsTopRow(current) };

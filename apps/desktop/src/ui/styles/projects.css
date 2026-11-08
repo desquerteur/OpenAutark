@@ -1,0 +1,73 @@
+/* AF-018: the Projects tab – the sidebar list (projects, their sessions), the start page with its cards and a project's
+   page with the big session field. Theme tokens only (tokens.css); the spec is apps/desktop/style.md › Projects.
+   Owns: these components. Never: the shared rows (.row-title, .row-preview in chat.css) or the header (header.css). */
+
+/* sidebar */
+.projects-nav { display: grid; gap: 2px; padding: 4px 8px 12px; align-content: start; min-height: 100%; }
+.projects-nav.drag-over, .projects-view.drag-over { outline: 2px dashed color-mix(in srgb, var(--update) 60%, transparent); outline-offset: -6px; border-radius: var(--r-md); }
+.project-row { position: relative; display: flex; align-items: center; min-height: 48px; padding: 0 8px; border-radius: var(--r-sm); color: var(--text); }
+.project-row:hover { background: var(--hover); }
+.project-row.active { background: var(--selected); }
+.project-row.missing .row-title { color: var(--muted); text-decoration: line-through; }
+.project-row:has(.project-row-open:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
+.project-row-open { display: flex; flex-direction: column; justify-content: center; gap: 1px; flex: 1 1 auto; min-width: 0; padding: 6px 0; color: inherit; text-align: left; }
+.project-row-open::before { content: ''; position: absolute; inset: 0; }
+.project-row-open:focus-visible { outline: none; }
+.project-row-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.project-row-open .row-preview { padding-left: 22px; }
+.project-row-icon { flex: none; color: var(--secondary); }
+.project-row-pin { flex: none; color: var(--muted); }
+.project-working { display: inline-grid; flex: none; }
+.project-dirty { flex: none; min-width: 18px; padding: 0 5px; border-radius: 9px; background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); font-size: 11px; line-height: 18px; text-align: center; }
+.project-sessions { display: grid; gap: 1px; margin: 0 0 6px 22px; padding-left: 8px; border-left: 1px solid var(--line); }
+.project-session { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 8px; border-radius: var(--r-sm); color: var(--secondary); font-size: 13px; text-align: left; }
+.project-session:hover { background: var(--hover); color: var(--text); }
+.project-session .row-title { font-size: 13px; }
+.project-session-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.projects-nav-empty { padding: 12px 8px; }
+
+/* main zone */
+.projects-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.projects-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.projects-loading { display: grid; place-items: center; padding: 48px; }
+.projects-intro { display: grid; justify-items: start; gap: 12px; max-width: 640px; margin: 0 auto; padding: 48px 24px 24px; }
+.projects-title { margin: 0; font-size: 24px; font-weight: 600; line-height: 32px; }
+.projects-lead { margin: 0; color: var(--secondary); font-size: 14px; line-height: 22px; }
+.projects-hint { margin: 0; color: var(--muted); font-size: 12px; }
+.projects-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; max-width: 880px; margin: 0 auto; padding: 0 24px 48px; }
+.project-card { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); color: var(--text); text-align: left; }
+.project-card:hover { background: var(--hover); border-color: var(--elevated-line); }
+.project-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.project-card-name { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-card-line, .project-card-foot { color: var(--muted); font-size: 12px; }
+.project-card-about { color: var(--secondary); font-size: 13px; line-height: 18px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.project-page { display: grid; gap: 20px; max-width: 760px; margin: 0 auto; padding: 24px 24px 48px; }
+.project-about { margin: 0; color: var(--secondary); font-size: 14px; line-height: 22px; }
+.project-warn { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--danger); font-size: 13px; }
+.project-composer { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-composer); background: var(--field); box-shadow: var(--shadow-composer); }
+.project-composer:focus-within { border-color: var(--focus); }
+.project-composer-field { width: 100%; min-height: 96px; resize: vertical; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 16px; line-height: 24px; }
+.project-composer-field:focus { outline: none; }
+.project-composer-field::placeholder { color: var(--muted); }
+.project-composer-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.project-composer-who { color: var(--muted); font-size: 12px; }
+.project-facts { display: grid; gap: 6px; }
+.project-fact { display: grid; grid-template-columns: 110px 1fr; gap: 12px; font-size: 13px; line-height: 20px; }
+.project-fact-label { color: var(--secondary); }
+.project-fact-value { min-width: 0; overflow-wrap: anywhere; }
+.project-fact-value .icon { vertical-align: -2px; }
+.project-sha { font-family: var(--mono); font-size: 12px; color: var(--secondary); }
+.project-sync { color: var(--secondary); }
+.project-muted { color: var(--muted); }
+.project-section { margin: 4px 0 0; font-size: 14px; font-weight: 600; }
+.project-session-list { display: grid; gap: 2px; }
+.project-session-card { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: var(--r-sm); color: var(--text); text-align: left; }
+.project-session-card:hover { background: var(--hover); }
+.project-session-card .project-muted { flex: none; font-size: 12px; }
+
+@media (max-width: 640px) {
+  .projects-intro { padding: 24px 16px 16px; }
+  .projects-cards, .project-page { padding-left: 16px; padding-right: 16px; }
+  .project-fact { grid-template-columns: 1fr; gap: 0; }
+}
