@@ -67,8 +67,12 @@ export type DeviceCapability = 'todo' | 'chat' | 'tasks' | 'settings' | 'manage'
 
 /** Who is calling. Decided by the transport during the handshake, never by the client. */
 export type ClientScope =
-  /** Desktop window / local CLI with the launch token: full access. `main` marks Electron main's own port (entry-electron). */
-  | { kind: 'owner'; main?: true }
+  /**
+   * Desktop window / local CLI with the launch token: full access. `main` marks Electron main's own port (entry-electron).
+   * AF-001 `agentId`: the local CLI an agent runs (wf with AUTARK_AGENT_TOKEN, checked by the transport – runtime/agents/
+   * agent-token.ts): still full access, but what it writes into chats is that agent's (rpc/handlers/agent-send.ts).
+   */
+  | { kind: 'owner'; main?: true; agentId?: string }
   /**
    * PWA / phone. `secure` is set by the transport: true for loopback (incl. the local
    * `tailscale serve` https proxy) and tailnet peers that reached this PC's tailnet address;
@@ -88,4 +92,9 @@ export interface Hello {
   token: string; // launch token, device token or peer session token
   client: 'desktop' | 'pwa' | 'peer' | 'cli' | 'external'; // 'external': C8 external agent
   deviceName?: string;
+  /** AF-001: the agent's identity token (AGENT_TOKEN_ENV) beside the owner token – wf run by an agent writes as that agent. */
+  agent?: string;
 }
+
+/** AF-001: the variable the app sets in an agent's shells and engine processes; its wf sends it as Hello `agent`. */
+export const AGENT_TOKEN_ENV = 'AUTARK_AGENT_TOKEN';

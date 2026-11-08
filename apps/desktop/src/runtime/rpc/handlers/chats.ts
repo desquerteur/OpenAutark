@@ -33,6 +33,7 @@ import { registerExternalAgents } from '../../bridges/external-rpc.ts'; // C8
 import { attachedSecrets } from '../../secrets/chat-capture.ts';
 import { callLogOf, talkerOf } from '../../calls/wiring.ts';
 import { callDevice } from './calls.ts';
+import { sendAsAgent, sendingAgent } from './agent-send.ts'; // AF-001
 
 const CHAT = { capability: 'chat' } as const;
 const EFFORTS: readonly Effort[] = ['none', 'low', 'medium', 'high', 'xhigh', 'max'];
@@ -243,6 +244,8 @@ export function register(table: HandlerTable): void {
     });
   }, CHAT);
   table.add('messages.send', (params, ctx) => {
+    const agentId = sendingAgent(ctx); // AF-001: an agent's own wf writes as that agent, never as the person
+    if (agentId) return sendAsAgent(params, ctx, agentId);
     const o = input(params);
     onlyKeys(o, ['conversationId', 'body', 'attachments', 'mentions', 'priority', 'silent', 'replyTo', 'model', 'effort', 'pin', 'clientId', 'speech', 'secrets', 'ultra']);
     const conversationId = id(o, 'conversationId');

@@ -6,6 +6,7 @@ import { harness, tick } from '../chat/harness.ts';
 import { DispatcherImpl } from '../../../src/runtime/agents/dispatcher.ts';
 import type { TurnOutcome, TurnRequest } from '../../../src/runtime/agents/turn-types.ts';
 import type { RunJournal, SettingsService } from '../../../src/runtime/contracts.ts';
+import type { RestartLimit } from '../../../src/runtime/agents/restart-guard.ts';
 import type { AgentStatus } from '../../../src/shared/model/org.ts';
 
 export interface FakeCall {
@@ -48,7 +49,7 @@ export class FakeExecutor {
   }
 }
 
-export function setup(options: { maxConcurrent?: number } = {}) {
+export function setup(options: { maxConcurrent?: number; restartLimit?: Partial<RestartLimit> } = {}) {
   const h = harness();
   const statuses: Array<{ id: string; status: AgentStatus; note?: string }> = [];
   const org = Object.assign(h.org, {
@@ -74,7 +75,7 @@ export function setup(options: { maxConcurrent?: number } = {}) {
   const admitted: AbortSignal[] = [];
   const supervisor = { admit: async (signal?: AbortSignal) => { if (signal) admitted.push(signal); return () => {}; } };
   const executor = new FakeExecutor();
-  const dispatcher = new DispatcherImpl({ services: () => h.services, executor, supervisor, maxConcurrent: options.maxConcurrent ?? 2 });
+  const dispatcher = new DispatcherImpl({ services: () => h.services, executor, supervisor, maxConcurrent: options.maxConcurrent ?? 2, restartLimit: options.restartLimit }); // AF-001: restartLimit
   h.services.dispatcher = dispatcher;
   h.scheduler.start();
   return { ...h, org, statuses, runItems, finishedRuns, runStatus, awake, admitted, executor, dispatcher };

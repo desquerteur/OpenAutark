@@ -5,14 +5,16 @@
 // <data>/runtime.json {port, token, pid} is what the runtime writes once it listens (main.ts).
 // B-044: that data dir is the documented Workforce folder – its generated README.md names wf as the way other
 // programs control the app (root/readme.ts); agents may use it too.
+// AF-001: run by an agent (AUTARK_AGENT_TOKEN set by the app, engines/agent-token.ts), the Endpoint also holds that agent's
+// identity and hands it over with the Hello: the runtime then writes what this wf sends into chats as that agent.
 // Owns: the per-OS default data dir, reading and checking runtime.json, the Endpoint that holds
-// the owner token. Never: prints, logs or serialises the token (it is a private field that only
+// the owner token (and an agent's identity). Never: prints, logs or serialises a token (they are private fields that only
 // Endpoint.hello() and Endpoint.redact() use); never connects anywhere or writes files.
 
 import { readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { PROTOCOL_VERSION } from '../../shared/api/protocol.ts';
+import { AGENT_TOKEN_ENV, PROTOCOL_VERSION } from '../../shared/api/protocol.ts';
 import type { Hello } from '../../shared/api/protocol.ts';
 
 /** Electron's app name – package.json `productName` – names the userData folder (unit-tested against package.json). */
@@ -51,26 +53,36 @@ export class Endpoint {
   readonly port: number;
   readonly pid?: number;
   readonly #token: string;
+  /** AF-001: the agent identity of the agent running this wf (AUTARK_AGENT_TOKEN) – the runtime then writes as that agent. */
+  readonly #agent?: string;
 
-  constructor(input: { dataDir: string; port: number; token: string; pid?: number }) {
+  constructor(input: { dataDir: string; port: number; token: string; pid?: number; agent?: string }) {
     this.dataDir = input.dataDir;
     this.port = input.port;
     this.pid = input.pid;
     this.#token = input.token;
+    this.#agent = input.agent;
   }
 
   get url(): string {
     return `ws://127.0.0.1:${this.port}/ws`;
   }
 
-  /** The first frame on `/ws` – the only place the token is handed out. */
-  hello(): Hello {
-    return { protocol: PROTOCOL_VERSION, token: this.#token, client: 'cli' };
+  /** True when this wf runs for an agent (it acts with the owner's rights, but writes as the agent). */
+  get asAgent(): boolean {
+    return this.#agent !== undefined;
   }
 
-  /** Replaces the token wherever it would appear in output (defence in depth). */
+  /** The first frame on `/ws` – the only place the tokens are handed out. */
+  hello(): Hello {
+    return { protocol: PROTOCOL_VERSION, token: this.#token, client: 'cli', ...(this.#agent ? { agent: this.#agent } : {}) };
+  }
+
+  /** Replaces the tokens wherever they would appear in output (defence in depth). */
   redact(text: string): string {
-    return text.includes(this.#token) ? text.split(this.#token).join('[token]') : text;
+    let out = text.includes(this.#token) ? text.split(this.#token).join('[token]') : text;
+    if (this.#agent && out.includes(this.#agent)) out = out.split(this.#agent).join('[token]');
+    return out;
   }
 
   toJSON(): { dataDir: string; port: number; pid?: number } {
@@ -105,7 +117,20 @@ export function discover(options: { data?: string }, env: DiscoverEnv): Discover
     // Never send the token to whatever may listen on that port now.
     return { ok: false, dataDir, reason: 'stopped', message: `The app that wrote ${file} is no longer running. ${start}` };
   }
-  return { ok: true, endpoint: new Endpoint({ dataDir, port: info.port, token: info.token, pid: info.pid }) };
+  return { ok: true, endpoint: new Endpoint({ dataDir, port: info.port, token: info.token, pid: info.pid, agent: agentIdentity(env, dataDir, flavor) }) };
+}
+
+/**
+ * AF-001: AUTARK_AGENT_TOKEN, which the app sets for its agents' shells and engines, when this wf talks to that agent's own
+ * app – AUTARK_DATA's data dir (or no AUTARK_DATA). Another company (--data elsewhere) does not know the agent.
+ */
+export function agentIdentity(env: Pick<DiscoverEnv, 'env' | 'platform'>, dataDir: string, flavor: typeof path.posix = env.platform === 'win32' ? path.win32 : path.posix): string | undefined {
+  const token = env.env[AGENT_TOKEN_ENV]?.trim();
+  if (!token || token.length > MAX_TOKEN) return undefined;
+  const own = env.env.AUTARK_DATA?.trim();
+  if (!own || !flavor.isAbsolute(own)) return token; // as defaultDataDir: only an absolute AUTARK_DATA names a folder
+  const same = (a: string, b: string) => (env.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b);
+  return same(flavor.resolve(own), flavor.resolve(dataDir)) ? token : undefined;
 }
 
 /** {port, token, pid?} from runtime.json text; undefined when anything is off. */
