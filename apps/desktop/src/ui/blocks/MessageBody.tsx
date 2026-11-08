@@ -23,6 +23,7 @@ import { isSuperseded, registerMessageIds } from './ids.ts';
 import { Markdown } from './markdown.tsx';
 import { MermaidBlock } from './Mermaid.tsx';
 import { DisplayBlock } from './registry.tsx';
+import { agentLinker } from '../agents/agent-link-state.ts'; // AF-017: agent names become links
 
 // ------------------------------------------------------------------ parsing + memo
 
@@ -133,7 +134,7 @@ function PartViewInner(props: { part: Part; message: Message }) {
   const { part, message } = props;
   let view;
   switch (part.kind) {
-    case 'markdown': view = <Markdown text={part.text} />; break;
+    case 'markdown': view = <Markdown text={agentLinker.value(part.text)} />; break; // AF-017
     case 'code': view = <CodeBlock code={part.text} lang={part.lang} />; break;
     case 'mermaid': view = <MermaidBlock source={part.source} closed={part.closed} />; break;
     case 'ui': view = <UiPart part={part} message={message} />; break;

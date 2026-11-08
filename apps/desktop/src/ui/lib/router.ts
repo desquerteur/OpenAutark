@@ -153,6 +153,8 @@ export const go = {
   chat: (id: string) => navigate({ view: 'chat', id }),
   /** AF-018: the Projects tab, or one project's page. */
   project: (id?: string) => navigate(id ? { view: 'projects', id } : { view: 'projects' }),
+  /** AF-017: Team's main page, the agent directory. */
+  team: () => navigate({ view: 'team' }),
   agent: (agentId: string) => navigate({ view: 'team', agentId }),
   /** B-057: a split's page under its agent. */
   split: (agentId: string, splitId: string) => navigate({ view: 'team', agentId, splitId }),

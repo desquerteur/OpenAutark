@@ -1,0 +1,138 @@
+/* AF-017: the agent directory (#/team's main page, agents/AgentDirectory.tsx), the "New agent" card in the chat
+   (chat/AgentHiredCard.tsx), the agent page's whereabouts line, Team's "All agents" row and agent names as links.
+   Tokens only (style.md). Owns: these rules. */
+
+/* --- directory ------------------------------------------------------------------------------------------------ */
+.agent-directory { max-width: 980px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 40px) 40px; }
+.directory-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+.directory-title-line { display: flex; align-items: baseline; gap: 8px; }
+.directory-title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; color: var(--text); }
+.directory-total { color: var(--muted); font-size: 13px; }
+.directory-lead { margin: 0 0 8px; color: var(--secondary); font-size: 13px; line-height: 20px; }
+.directory-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.directory-search {
+  display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0; height: 36px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--muted);
+}
+.directory-search:focus-within { border-color: var(--focus); }
+.directory-search input { flex: 1 1 auto; min-width: 0; border: 0; outline: none; background: transparent; color: var(--text); font: inherit; font-size: 13px; }
+.directory-filters, .directory-grouping { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.directory-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line);
+  border-radius: 14px; color: var(--secondary); font-size: 12px; font-weight: 500;
+}
+.directory-chip > span { color: var(--muted); }
+.directory-chip:hover { background: var(--hover); color: var(--text); }
+.directory-chip[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: var(--surface); }
+.directory-chip[aria-pressed="true"] > span { color: inherit; opacity: .75; }
+.directory-grouping-label { margin-right: 4px; color: var(--muted); font-size: 12px; }
+.directory-seg { height: 28px; padding: 0 10px; border-radius: var(--r-sm); color: var(--secondary); font-size: 12px; font-weight: 500; }
+.directory-seg:hover { background: var(--hover); color: var(--text); }
+.directory-seg:is([aria-pressed="true"], [aria-selected="true"]) { background: var(--selected); color: var(--text); box-shadow: var(--shadow-raised); }
+.directory-chip:focus-visible, .directory-seg:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+.directory-group + .directory-group { margin-top: 20px; }
+.directory-group-title { display: flex; align-items: baseline; gap: 6px; margin: 0 0 6px; color: var(--secondary); font-size: 12px; font-weight: 600; text-transform: none; }
+.directory-group-title > span { color: var(--muted); font-weight: 400; }
+.directory-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.directory-row {
+  display: grid; grid-template-columns: 36px minmax(0, 1.4fr) minmax(0, 1fr) auto; align-items: center; gap: 4px 14px;
+  min-height: 72px; padding: 12px 14px;
+}
+.directory-row + .directory-row { border-top: 1px solid var(--line); }
+.directory-row:hover { background: color-mix(in srgb, var(--hover) 45%, transparent); }
+.directory-row.is-new { background: color-mix(in srgb, var(--update) 7%, var(--surface)); }
+.directory-row > .agent-status-avatar { align-self: start; cursor: pointer; }
+.directory-main, .directory-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.directory-name-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.directory-name { overflow: hidden; color: var(--text); font-size: 14px; line-height: 20px; font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.directory-name:hover { text-decoration: underline; }
+.directory-new {
+  flex: none; height: 18px; padding: 0 6px; border-radius: 9px; background: var(--update); color: var(--badge-fg);
+  font-size: 11px; line-height: 18px; font-weight: 600;
+}
+.directory-role, .directory-activity, .directory-hired, .directory-team { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.directory-role { color: var(--secondary); font-size: 12px; line-height: 18px; }
+.directory-now { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; line-height: 18px; }
+.directory-activity { color: var(--muted); }
+.directory-status { display: inline-flex; align-items: center; gap: 5px; flex: none; color: var(--secondary); font-size: 12px; font-weight: 500; }
+.directory-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.directory-status.status-working { color: var(--success); }
+.directory-status.status-working::before { background: var(--success); }
+.directory-status.status-waiting { color: var(--warn); }
+.directory-status.status-waiting::before { background: var(--warn); }
+.directory-status.status-error { color: var(--danger); }
+.directory-status.status-error::before { background: var(--danger); }
+.directory-project {
+  display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; max-width: 100%; height: 22px; padding: 0 8px;
+  border: 1px solid var(--line); border-radius: 11px; color: var(--secondary); font-size: 12px;
+}
+.directory-project > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.directory-project:hover { background: var(--hover); color: var(--text); }
+.directory-project.none { border-style: dashed; color: var(--muted); }
+.directory-team { color: var(--secondary); font-size: 12px; line-height: 18px; }
+.directory-hired { color: var(--muted); font-size: 12px; line-height: 18px; }
+.directory-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.button.small { min-height: 28px; padding: 4px 10px; font-size: 12px; gap: 5px; }
+.directory-empty { padding: 32px 0; }
+
+@media (max-width: 860px) {
+  .directory-row { grid-template-columns: 36px minmax(0, 1fr); }
+  .directory-meta { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+  .directory-actions { grid-column: 2; justify-content: flex-start; flex-wrap: wrap; margin-top: 4px; }
+}
+@media (max-width: 640px) {
+  .agent-directory { padding: 16px 16px 32px; }
+}
+
+/* Team sidebar: the row above the org chart that opens the directory; the phone's Team tabs */
+.team-all {
+  display: flex; align-items: center; gap: 10px; width: calc(100% - 16px); min-height: 36px; margin: 0 8px 6px; padding: 0 10px;
+  border-radius: var(--r-sm); color: var(--secondary); font-size: 13px; font-weight: 500; text-align: left;
+}
+.team-all-label { flex: 1 1 auto; }
+.team-all:hover { background: var(--hover); color: var(--text); }
+.team-all.active { background: var(--selected); color: var(--text); }
+.team-all:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.team-tabs { display: flex; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--line); }
+.team-tabs > .directory-seg { flex: 1 1 0; height: 32px; }
+
+/* --- the "New agent" card in the chat ------------------------------------------------------------------------- */
+.hire-card {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px 12px;
+  margin: 8px 0; padding: 12px 14px; border: 1px solid var(--line); border-left: 3px solid var(--update);
+  border-radius: var(--r-lg); background: var(--surface);
+}
+.hire-card > .avatar { cursor: pointer; }
+.hire-card-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hire-card-title { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.hire-card-kicker { flex: none; color: var(--update); font-size: 12px; font-weight: 600; }
+.hire-card-kicker::after { content: ":"; }
+.hire-card-name { overflow: hidden; color: var(--text); font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.hire-card-gone { color: var(--muted); font-size: 12px; }
+.hire-card-facts { display: flex; gap: 8px; overflow: hidden; color: var(--secondary); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.hire-card-facts > time { flex: none; color: var(--muted); }
+.hire-card-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .hire-card { grid-template-columns: 36px minmax(0, 1fr); }
+  .hire-card-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+
+/* --- the agent page's whereabouts ------------------------------------------------------------------------------ */
+.agent-whereabouts {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px;
+  margin: -12px 0 24px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-lg);
+}
+.whereabouts-facts { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0; }
+.whereabouts-facts > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.whereabouts-facts dt { color: var(--muted); font-size: 11px; line-height: 16px; }
+.whereabouts-facts dd { display: flex; align-items: center; gap: 4px; margin: 0; color: var(--text); font-size: 13px; line-height: 20px; }
+.whereabouts-facts dd .text-button { display: inline-flex; align-items: center; gap: 4px; padding: 0; font-size: 13px; }
+.whereabouts-activity { color: var(--secondary); }
+.whereabouts-actions { display: flex; gap: 6px; }
+
+/* --- agent names as links (messages, Team activity, the agent tree) --------------------------------------------- */
+.md a[href^="#/team/"] { color: inherit; font-weight: 600; text-decoration: underline; text-decoration-color: var(--update); text-underline-offset: 2px; }
+.md a[href^="#/team/"]:hover { color: var(--update); }
+.agent-link { cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 2px; }
+.agent-link:hover { color: var(--update); text-decoration-color: currentColor; }

@@ -15,6 +15,11 @@ import { callRecord, type CallLine } from '../../shared/model/call.ts';
 import type { Message } from '../../shared/model/chat.ts';
 import { isAgentNotice } from '../../shared/model/message-changes.ts';
 
+/** AF-017: the status line of a hire by an agent ("New agent" card, AgentHiredCard.tsx). */
+export function isHireLine(message: Message): boolean {
+  return message.kind === 'status' && message.meta.status?.type === 'agent_hired';
+}
+
 /** A run's own answer message (its reply with meta.model, or its failed/stopped end) – not a chat.send post of the run. */
 function isAnswer(message: Message): boolean {
   return message.authorKind === 'agent' && Boolean(message.runId) && message.kind !== 'status' && message.kind !== 'task'
@@ -98,7 +103,9 @@ export function groupRows(list: readonly Message[]): Row[] {
     if (into) { into.messages.push(message); continue; }
     const last = rows[rows.length - 1];
     if (message.kind === 'status') {
-      if (last?.kind === 'status') last.messages.push(message);
+      // AF-017: a hire is its own row (the "New agent" card), never folded into a burst
+      if (isHireLine(message) || (last?.kind === 'status' && last.messages.some(isHireLine))) rows.push({ kind: 'status', messages: [message] });
+      else if (last?.kind === 'status') last.messages.push(message);
       else rows.push({ kind: 'status', messages: [message] });
     } else rows.push({ kind: 'message', message });
   }

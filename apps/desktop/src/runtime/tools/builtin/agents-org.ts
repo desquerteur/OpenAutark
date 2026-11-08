@@ -28,6 +28,7 @@ import { SYSTEM_FILE } from '../../../shared/model/agent-core.ts';
 import type { Agent } from '../../../shared/model/org.ts';
 import '../../contracts/agent-core.ts';
 import { resolveDevice } from '../registry.ts';
+import { announceHire } from './hire-notice.ts'; // AF-017
 import { clip, defineTool } from './util.ts';
 
 export const MAX_HIRES = 6;
@@ -150,6 +151,7 @@ function hire(args: Hire, ctx: ToolContext): HireResult {
     const ignored = template?.reportsTo === 'human' && (args.role || args.mode || args.instructions);
     const note = ignored ? `${agent.name} works for the person, so role, mode and instructions come from the template. I say anything else in a chat.` : undefined;
     const system = systemFile(agent, ctx);
+    announceHire(ctx, agent, space); // AF-017: the card in this chat and the person's notification
     return { ok: true, agentId: agent.id, name: agent.name, role: agent.role, spaceId: agent.spaceId, space, ...(pc ? { worksOn: pc.name } : {}), ...(note ? { note } : {}), system };
   } catch (error) {
     return { ok: false, hire: label, error: error instanceof Error ? error.message : String(error) };

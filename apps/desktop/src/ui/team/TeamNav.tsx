@@ -230,6 +230,11 @@ export function TeamNav() {
       {isMobile.value && ( // the phone has no side header: its Add sits at the top of the list
         <button type="button" class="text-button team-add" aria-haspopup="menu" onClick={(event) => { const box = (event.currentTarget as HTMLElement).getBoundingClientRect(); openContextMenu(box.left, box.bottom, addMenu()); }}>Add</button>
       )}
+      {!isMobile.value && ( // AF-017: the agent directory (#/team's main page) – the phone has it as a tab
+        <button type="button" class={`team-all${current && !activeId && !personId ? ' active' : ''}`} aria-current={current && !activeId && !personId ? 'page' : undefined} onClick={() => go.team()}>
+          <Icon name="users-three" size={16} /><span class="team-all-label">All agents</span><span class="nav-count tabular">{list.length}</span>
+        </button>
+      )}
       <div class="team-rows">
         {q
           ? (agentMatches.length || personMatches.length

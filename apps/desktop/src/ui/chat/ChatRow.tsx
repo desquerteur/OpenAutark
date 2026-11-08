@@ -28,6 +28,7 @@ import { useContextMenu } from '../lib/context-menu.tsx';
 import { chatMenu } from './chat-actions.ts';
 import { liveRuns, liveStatus } from './live-text.ts';
 import { rowPreview } from './row-preview.ts';
+import { AgentNameText } from '../agents/AgentNameText.tsx'; // AF-017
 
 /** The row's second line as shown: a draft first, else the last message (row-preview.ts); the list's search matches it too.
  *  While agents work on a message without text yet, the chat header's live line (live-text.ts) – one source for who works. */
@@ -89,7 +90,7 @@ export function ChatRow(props: { chat: ConversationSummary; active: boolean; mut
           onClick={(event) => { event.stopPropagation(); openDetails(chat.id); }}><ChatFace chat={chat} size={props.child ? 28 : 36} /></span>}
       <button type="button" class="chat-row-open" onClick={() => navigate({ view: 'chat', id: chat.id })}>
         <span class="chat-row-line">
-          <span class="row-title">{props.mark ? <Marked text={title} query={props.mark} /> : title}</span>
+          <span class="row-title">{props.mark ? <Marked text={title} query={props.mark} /> : props.muted ? <AgentNameText text={title} /> : title}</span>{/* AF-017: in Team activity the agent names open the agent */}
           <span class="row-time tabular">{listTime(chat.lastPreview?.at ?? chat.lastMessageAt)}</span>
         </span>
         <span class="chat-row-line">

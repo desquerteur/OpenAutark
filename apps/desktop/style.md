@@ -31,3 +31,20 @@ screen's look changes.
   1 px `--line` (focus: `--focus`), radius `--r-composer`, `--shadow-composer`, 16/24 text, min 96 px high, a primary
   "Start session" button. Facts as a 110 px label column (`--secondary`) and a value column, 13/20.
 - **Narrow (≤ 640 px):** paddings 16 px, facts stack in one column.
+
+## Agent directory (AF-017) – `src/ui/styles/agent-directory.css`
+
+- **Place:** `#/team`'s main page (desktop; the org chart stays in the sidebar, with an "All agents" row on top), a tab
+  "All agents" beside "Org chart" on the phone. Column max 980 px, padding 24/clamp(16 px, 4vw, 40 px).
+- **Head:** title 20/28 600 with the count in `--muted`; lead 13/20 `--secondary`; search 36 px high, 1 px `--line`,
+  radius `--r-md`; filter chips 28 px, radius 14 px, pressed = `--text` fill on `--surface` text; Group by as 28 px
+  segments (pressed `--selected` + `--shadow-raised`).
+- **Rows:** one bordered list per group (1 px `--line`, radius `--r-lg`), rows min 72 px, grid avatar 36 px · name/role/
+  status · project/team/hired · actions. A new hire: row tinted 7 % `--update`, an 18 px `--update` "New" pill. Status
+  dot 7 px: working `--success`, waiting `--warn`, error `--danger`, idle `--muted`. Project as a 22 px pill (dashed
+  and `--muted` for "No project"). Buttons `.button.small` (28 px, 12 px text). ≤ 860 px: meta and actions move under
+  the name.
+- **"New agent" card in the chat:** 1 px `--line` with a 3 px `--update` left edge, radius `--r-lg`, avatar 36 px,
+  kicker "New agent:" in `--update` 12 px 600, facts 12/18 `--secondary`, actions on the right (below on the phone).
+- **Agent names as links:** in messages underlined in `--update`, 600; in Team activity and the agent tree only a
+  hover underline in `--update`.
