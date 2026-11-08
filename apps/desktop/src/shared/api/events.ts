@@ -18,6 +18,7 @@ import type { WorkStopState } from '../model/work-stop.ts';
 import type { BrowserFrame, BrowserViewState } from '../model/browser.ts';
 import type { PointerState } from '../model/pointers.ts'; // B-055
 import type { CalendarEvent } from '../model/calendar.ts';
+import type { Project } from '../model/project.ts'; // AF-018
 import type { Topic } from './protocol.ts';
 
 export interface EventMap {
@@ -48,6 +49,8 @@ export interface EventMap {
   // org
   'agent.upserted': Agent;
   'agent.removed': { id: string };
+  'project.upserted': Project; // AF-018: a project changed (added, renamed, git state, a session)
+  'project.removed': { id: string }; // AF-018
   'agent.activity': { active: AgentActivity[] };
   'space.upserted': Space;
   'run.upserted': Run;
@@ -125,6 +128,8 @@ export function topicOf(event: EventName, data: unknown): Topic {
       return 'tasks';
     case 'agent.upserted':
     case 'agent.removed':
+    case 'project.upserted': // AF-018
+    case 'project.removed':
     case 'agent.activity':
     case 'space.upserted':
     case 'person.upserted': // F-52: people of the organisation (shared/model/people.ts)
