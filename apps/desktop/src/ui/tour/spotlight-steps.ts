@@ -20,8 +20,8 @@ export const TOUR_STEPS: readonly TourStepDef[] = [
     text: 'This short tour shows where everything is. Use the arrow keys or the buttons, and leave whenever you like.',
   },
   {
-    id: 'rail', targets: ['nav.rail', 'nav.tab-bar'], title: 'The four places',
-    text: 'My day, Work, Chats and Team are the four places of the app. Your profile and the settings sit at the bottom.',
+    id: 'rail', targets: ['nav.rail', 'nav.tab-bar'], title: 'The five places',
+    text: 'My day, Work, Chats, Projects and Team are the five places of the app. Your profile and the settings sit at the bottom.',
   },
   {
     id: 'sidebar', targets: [tour('sidebar')], place: { kind: 'route', route: { view: 'chats' } }, title: 'Sidebar',
@@ -30,6 +30,10 @@ export const TOUR_STEPS: readonly TourStepDef[] = [
   {
     id: 'chat-list', targets: [tour('chat-list')], place: { kind: 'route', route: { view: 'chats' } }, area: 'chats', title: 'Chats',
     text: 'A chat is a place to talk with one or more agents. Your Manager is already here; New chat starts another.',
+  },
+  {
+    id: 'projects', targets: [tour('projects'), phoneTab('projects')], place: { kind: 'route', route: { view: 'projects' } }, area: 'projects', title: 'Projects', // AF-018
+    text: 'A project is a folder you code in. Open one, write what should happen, and an agent starts a session there.',
   },
   {
     id: 'composer', targets: [tour('composer')], place: { kind: 'manager-chat' }, area: 'chat', title: 'Message field',
@@ -115,6 +119,7 @@ export const AREA_HINTS: readonly AreaHint[] = [
   { area: 'day', views: ['day', 'home'], step: { id: 'hint-day', targets: [tour('my-day'), phoneTab('day')], title: 'My day', text: 'The few things only you can do, what you handed off and your calendar.' } },
   { area: 'tasks', views: ['tasks'], step: { id: 'hint-tasks', targets: [tour('tasks'), phoneTab('tasks')], title: 'Work', text: 'Every task your agents work on, with its state and result.' } },
   { area: 'chats', views: ['chats'], step: { id: 'hint-chats', targets: [tour('chat-list')], title: 'Chats', text: 'Talk with one or more agents here; New chat starts another place to talk.' } },
+  { area: 'projects', views: ['projects'], step: { id: 'hint-projects', targets: [tour('project-list'), tour('projects')], title: 'Projects', text: 'Add a folder you code in, then write what should happen – each request becomes its own session.' } }, // AF-018
   { area: 'chat', views: ['chat'], step: { id: 'hint-chat', targets: [tour('composer')], title: 'Message field', text: 'Write what you need, like to a colleague. Enter sends.' } },
   { area: 'team', views: ['team'], step: { id: 'hint-team', targets: [tour('agent-create'), '.sidebar [data-cell="add"]'], title: 'Your team', text: 'Add agents with their own jobs, or people. Click an agent to see its page.' } },
   { area: 'settings', views: ['settings'], page: 'models', step: { id: 'hint-settings', targets: [tour('accounts')], title: 'Models and accounts', text: 'Connect AI plans, API keys or a local server, and choose which model does what.' } },

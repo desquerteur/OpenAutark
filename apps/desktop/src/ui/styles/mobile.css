@@ -52,7 +52,7 @@
 .mobile-main > .chat-view { flex: 1 1 0; min-height: 0; height: auto; }
 .mobile-shell.pushed .mobile-main:not(:has(> .chat-view)) { padding-bottom: env(safe-area-inset-bottom); }
 
-/* bottom tabs: Home · My day · Work · Chats · Team – one column per shown tab (MobileShell sets --tabs) */
+/* bottom tabs: Home · My day · Work · Chats · Projects · Team – one column per shown tab (MobileShell sets --tabs) */
 .tab-bar {
   --tabs: 5;
   display: grid; grid-template-columns: repeat(var(--tabs), minmax(0, 1fr)); flex: none;

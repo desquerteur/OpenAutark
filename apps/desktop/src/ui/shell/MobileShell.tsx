@@ -61,6 +61,7 @@ const tabs: Tab[] = [
   { key: 'day', icon: 'sun', route: { view: 'day' }, match: (r) => r.view === 'day' || r.view === 'home', needs: 'todos.list' },
   { key: 'tasks', icon: 'list-checks', route: { view: 'tasks' }, match: (r) => r.view === 'tasks', needs: 'tasks.list' },
   { key: 'chats', icon: 'chat-circle', route: { view: 'chats' }, match: (r) => r.view === 'chats' || r.view === 'chat', needs: 'chats.list' },
+  { key: 'projects', icon: 'folders', route: { view: 'projects' }, match: (r) => r.view === 'projects', needs: 'projects.list' }, // AF-018
   { key: 'team', icon: 'users-three', route: { view: 'team' }, match: (r) => r.view === 'team' },
 ];
 

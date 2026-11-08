@@ -1,5 +1,6 @@
 // Left rail: global destinations in the order of the phone tabs (My day – the person's own day, also
-// the 'home' route, with the For-you badge – · Work – the task center – · Chats · Team) and, from the
+// the 'home' route, with the For-you badge – · Work – the task center – · Chats · Projects – AF-018, the folders
+// the person codes in – · Team) and, from the
 // bottom up, Profile → weekly quotas → Update (only when relevant).
 // Owns: rail layout and destination highlighting. Never: sidebar content.
 
@@ -27,11 +28,12 @@ const destinations: Destination[] = [
   { key: 'day', icon: 'sun', views: ['home', 'day'], open: () => navigate({ view: 'day' }) },
   { key: 'tasks', icon: 'list-checks', views: ['tasks'], open: () => navigate({ view: 'tasks' }) },
   { key: 'chats', icon: 'chat-circle', views: ['chats', 'chat'], open: openChats },
+  { key: 'projects', icon: 'folders', views: ['projects'], open: () => navigate({ view: 'projects' }) }, // AF-018
   { key: 'team', icon: 'users-three', views: ['team'], open: () => navigate({ view: 'team' }) },
 ];
 
 /** AF-002: the spotlight tour's names of the rail buttons (tour/spotlight-steps.ts). */
-const RAIL_TOUR: Partial<Record<NavKey, string>> = { day: 'my-day', tasks: 'tasks', chats: 'chats', team: 'team' };
+const RAIL_TOUR: Partial<Record<NavKey, string>> = { day: 'my-day', tasks: 'tasks', chats: 'chats', projects: 'projects', team: 'team' };
 
 export function Rail() {
   const view = route.value.view;

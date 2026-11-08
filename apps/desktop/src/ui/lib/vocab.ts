@@ -1,18 +1,19 @@
-// The one vocabulary of B-041 (My day · Work · Chats · Team): the names of the main destinations, in
+// The one vocabulary of B-041 (My day · Work · Chats · Projects · Team): the names of the main destinations, in
 // rail and phone-tab order, My day's group names and Work's two regions (B-078), so every view says the same thing
 // ("Needs you" means waiting on the person, everywhere). Labels only: route keys and identifiers stay as
 // they are (the workspace tab 'foryou', `.for-you`, forYouCount).
 // Owns: these UI words. Never: logic, routes or anything a view decides with them.
 
 /** The main destinations' keys. 'home' is only a route alias of My day (no rail entry or tab of its own). */
-export type NavKey = 'home' | 'day' | 'tasks' | 'chats' | 'team';
+export type NavKey = 'home' | 'day' | 'tasks' | 'chats' | 'projects' | 'team';
 
-/** The main destinations by nav key, in the order of the desktop rail and the phone tabs (My day · Work · Chats · Team). */
+/** The main destinations by nav key, in the order of the desktop rail and the phone tabs (My day · Work · Chats · Projects · Team). */
 export const DESTINATIONS: Readonly<Record<NavKey, string>> = {
   home: 'My day',
   day: 'My day',
   tasks: 'Work',
   chats: 'Chats',
+  projects: 'Projects', // AF-018: the folders the person codes in
   team: 'Team',
 };
 
