@@ -126,7 +126,8 @@ export interface StatusLine {
     | 'model_switched' | 'mode_switched' | 'member_added' | 'member_removed' | 'renamed'
     | 'task_created' | 'task_claimed' | 'task_done' | 'task_blocked' | 'schedule_created'
     | 'handoff' | 'approval' | 'guardian' | 'note'
-    | 'unarchived' | 'lead_changed'; // C2
+    | 'unarchived' | 'lead_changed' // C2
+    | 'agent_hired'; // AF-017: an agent hired another (details: agentId, name, role, by, spaceId?, space?)
   text: string; // one short English line
   details?: Record<string, unknown>;
 }

@@ -35,6 +35,9 @@ import { bridge } from '../lib/platform.ts';
 import { toastError } from '../lib/toasts.ts';
 import { addAndOpenProject, openProjectPage, projectList, watchProjects } from '../lib/projects.ts'; // AF-018
 import { PROJECTS_GROUP, projectEntries } from './palette-projects.ts';
+import { AGENTS_GROUP, agentPaletteEntries } from './palette-agents.ts'; // AF-017
+import { openAgentChat, openAgentPage } from '../agents/directory-state.ts';
+import { canMessage } from '../chat/direct.ts';
 
 interface Entry {
   id: string;
@@ -79,12 +82,15 @@ function buildEntries(): Entry[] {
       id: `c:${chat.id}`, group: 'Chats', label: chatTitle(chat) || 'Untitled chat', hint: chatSection(chat) === 'team' ? 'Team activity' : undefined,
       icon: 'chat-circle', run: () => navigate({ view: 'chat', id: chat.id }),
     }));
-  const agentEntries: Entry[] = agents.value
-    .filter((agent) => !agent.archivedAt)
-    .map((agent) => ({ id: `g:${agent.id}`, group: 'Agents', label: agent.name, hint: agent.role, icon: 'user', run: () => go.agent(agent.id) }));
+  // AF-017: per agent its page and its chat (palette-agents.ts)
+  const agentEntries: Entry[] = agentPaletteEntries(agents.value, projectList.value, { canChat: (id) => canMessage(id) }).map((entry) => ({
+    id: entry.id, group: AGENTS_GROUP, label: entry.label, hint: entry.hint, icon: (entry.kind === 'chat' ? 'chat-circle' : 'user') as IconName,
+    run: entry.kind === 'chat' ? () => openAgentChat(entry.agentId) : () => openAgentPage(entry.agentId),
+  }));
+  const directory: Entry = { id: 'g:all', group: AGENTS_GROUP, label: 'All agents', hint: 'Team', icon: 'users-three', run: () => navigate({ view: 'team' }) };
   const settingsEntry: Entry = { id: 's:settings', group: 'Settings', label: 'Settings', hint: comboLabel('mod+,'), icon: 'gear-six', run: () => go.settings() };
   const pages: Entry[] = visibleSections(can).map((section) => ({ id: `s:${section.id}`, group: 'Settings', label: section.title, hint: 'Settings', icon: section.icon, run: () => go.settings(section.id) }));
-  return [...actions, ...projects(), ...chats, ...agentEntries, settingsEntry, ...pages];
+  return [...actions, ...projects(), ...chats, ...agentEntries, directory, settingsEntry, ...pages];
 }
 
 /** AF-018: the project entries with what they do (the new session's prompt is typed on the project's page). */

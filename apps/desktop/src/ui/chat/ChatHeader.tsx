@@ -31,6 +31,19 @@ import { useCallCell } from './call/CallHeader.tsx';
 import { chatMenu } from './chat-actions.ts';
 import { chatAttention } from '../workspace/attention.ts';
 import { ProjectChip } from './ProjectChip.tsx'; // AF-018
+import { projectList } from '../lib/projects.ts'; // AF-017
+import { chatProject } from './project-chip.ts';
+import { creatorName, projectOf } from '../agents/directory-model.ts';
+import { agentChatLine } from '../agents/agent-chat-line.ts';
+
+/** AF-017: an agent 1:1's resting line (agents/agent-chat-line.ts); undefined for an agent this window does not know. */
+function agentChatSubtitle(chat: ConversationSummary, agentId: string): string | undefined {
+  const agent = knownAgentMap.value.get(agentId);
+  if (!agent) return undefined;
+  const project = projectOf(agentId, projectList.value);
+  const chip = !isMobile.value && !!chatProject(chat, projectList.value);
+  return agentChatLine({ role: agent.role, project: project?.name, chipShown: chip, hiredBy: creatorName(agent.createdBy, (id) => knownAgentMap.value.get(id)?.name) });
+}
 
 export const PANEL_TITLES: Record<ChatPanel, string> = { details: 'Chat details', thread: 'Thread' };
 
@@ -47,7 +60,7 @@ function ChatTitle(props: { chat: ConversationSummary }) {
   const live = chat.working.length > 0 || entries.length > 0;
   const nameOf = (id: string) => knownAgentMap.value.get(id)?.name;
   const status = live ? liveStatus(chat, solo, entries, nameOf) : '';
-  const resting = status ? '' : chatSubtitle(chat);
+  const resting = status ? '' : (solo ? agentChatSubtitle(chat, solo) : undefined) ?? chatSubtitle(chat); // AF-017: which agent, its project, who hired it
   const open = chatPanel.value === 'details';
   const working = useWorkingPanel(chat.id);
   const menu = useContextMenu(() => chatMenu(chat));

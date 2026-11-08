@@ -31,6 +31,9 @@ import {
 } from './agent-tree.ts';
 import type { AgentNode, AgentState } from './agent-tree.ts';
 import { stopAction } from './agent-stop.ts';
+import { AgentNameText } from './AgentNameText.tsx'; // AF-017
+import { openAgentChat } from './directory-state.ts';
+import { canMessage } from '../chat/direct.ts';
 
 /** Steps an open row shows before "+N earlier steps" while its run works (as many as the live block). */
 const ROW_STEPS = 6;
@@ -86,6 +89,7 @@ function rowMenu(node: AgentNode, stop: (() => Promise<void>) | undefined): Menu
   const open = node.split ? () => go.split(node.agentId, node.split!.id) : () => go.agent(node.agentId);
   return [{ items: [
     { label: 'Open', onSelect: open },
+    ...(node.kind === 'agent' && canMessage(node.agentId) ? [{ label: 'Open chat', onSelect: () => openAgentChat(node.agentId) }] : []), // AF-017
     ...(stop ? [{ label: 'Stop', danger: true, onSelect: () => void stop() }] : []),
   ] }];
 }
@@ -128,7 +132,7 @@ function AgentRow(props: { node: AgentNode; depth: number }) {
   const main = (
     <>
       <StateIcon state={node.state} />
-      <span class="agents-row-name">{node.title}</span>
+      <span class="agents-row-name"><AgentNameText text={node.title} /></span>{/* AF-017: the name opens the agent */}
       <span class="agents-row-activity">{line}</span>
       <span class="agents-row-steps tabular">{stepsLabel(count)}</span>
     </>

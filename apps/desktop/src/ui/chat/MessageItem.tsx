@@ -36,6 +36,7 @@ import { ReplyQuote } from './ReplyQuote.tsx';
 import { WorkingMessage } from './WorkingMessage.tsx';
 import { ScheduledLine } from './ScheduledLine.tsx';
 import { statusText } from './status-text.ts';
+import { AgentHiredCard } from './AgentHiredCard.tsx'; // AF-017
 import { messageModelTag } from './model-tag-view.ts';
 import { ModelTagMark } from './ModelTagMark.tsx';
 import { threadLine, threadsByAnchor } from './threads.ts';
@@ -154,6 +155,7 @@ export function StatusGroup(props: { messages: Message[] }) {
   const last = list[list.length - 1];
   const text = (message: Message) => statusText(message); // a cut-off call in the run line's words (status-text.ts)
   if (list.length === 1) {
+    if (last.meta.status?.type === 'agent_hired') return <AgentHiredCard message={last} />; // AF-017: "New agent: …" with Open chat
     if (last.meta.status?.type === 'schedule_created') return <ScheduledLine message={last} />; // B-044: "Scheduled · <when>" → Chat details › Scheduled
     return <div class="status-line" data-message-id={last.id}><span>{text(last)}</span><time class="tabular">{time(last.createdAt)}</time></div>;
   }

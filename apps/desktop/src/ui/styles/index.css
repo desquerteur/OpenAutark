@@ -48,6 +48,7 @@
 @import "./access.css"; /* AF-013: the composer's access mode cell, the approval dialog, the agent's access rules */
 @import "./folder-agent.css"; /* AF-014: the "Agent from folder" dialog and the Team list's folder groups */
 @import "./splits.css"; /* B-057: split rows, the sidebar's split rows, a split's page, the composer's Ultra cell */
+@import "./agent-directory.css"; /* AF-017: the agent directory, the "New agent" card, agent names as links */
 @import "./agent-view.css"; /* AF-004: the chat's agent view – several agents and their parts as one tree */
 @import "./remote.css";
 @import "./repair.css"; /* 23.10.: repair screen after a broken upgrade or a crash loop */

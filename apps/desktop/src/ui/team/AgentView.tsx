@@ -15,7 +15,7 @@ import type { HeaderCell } from '../lib/header.tsx';
 import { useContextMenu } from '../lib/context-menu.tsx';
 import { agentMap, isMobile } from '../lib/store.ts';
 import { RpcError, rpc } from '../lib/rpc.ts';
-import { back, go } from '../lib/router.ts';
+import { back } from '../lib/router.ts';
 import { AgentProfile } from './AgentProfile.tsx';
 import { AgentDetails } from './AgentDetails.tsx';
 import { AgentPersonality } from './AgentPersonality.tsx'; // AF-006
@@ -25,6 +25,7 @@ import { TitleMenu } from './TitleMenu.tsx';
 import { agentBrowser, agentMenu } from './menus.ts';
 import { ensureSpaces } from './org-state.ts';
 import { keptPage } from '../lib/kept-page.ts';
+import { AgentWhereabouts } from '../agents/AgentWhereabouts.tsx'; // AF-017
 
 /** The agent from the store, or (archived / not yet loaded) fetched once. */
 function useAgent(agentId: string): { agent: Agent | undefined; missing: boolean } {
@@ -70,7 +71,7 @@ export function AgentView(props: { agentId: string }) {
         <div class="agent-column" {...menu}>
           {archived && <p class="agent-archived">Archived</p>}
           <AgentProfile agent={agent} readOnly={archived} />
-          <button type="button" class="text-button agent-work-link" onClick={() => go.tasks(undefined, agent.id)}>Show work</button>
+          <AgentWhereabouts agent={agent} />{/* AF-017: project, team, hired by, status, Open chat and Show work */}
           <AgentDetails agent={agent} />
           <AgentPersonality agent={agent} />{/* AF-006: its own personality and its role part of SYSTEM.md */}
           <section class="agent-runs" aria-label="Runs">
