@@ -26,7 +26,7 @@ kein Fehler.
 
 ## Ein neues Update veröffentlichen
 
-Du brauchst nur drei Schritte. Den Rest macht GitHub (`.github/workflows/fork-release.yml`).
+Du brauchst nur drei Schritte. Den Rest macht GitHub (`.github/workflows/build-desktop.yml`).
 
 1. **Version erhöhen** in `apps/desktop/package.json`, z. B. von `0.3.4` auf `0.3.5`, und committen:
 
@@ -59,7 +59,14 @@ Du brauchst nur drei Schritte. Den Rest macht GitHub (`.github/workflows/fork-re
 | `SHA256SUMS.txt` | Prüfsummen zum Nachprüfen von Hand |
 | `release.json` | Version, Commit und Prüfsummen als JSON |
 
-Den Fortschritt siehst du im Fork unter **Actions → Fork release (Windows)**.
+Den Fortschritt siehst du im Fork unter **Actions → Build desktop packages**. Das Release ist erst ein Entwurf und wird veröffentlicht, wenn alles gebaut ist.
+
+### Auch Mac und Linux
+
+Ein Tag baut nur Windows. Für Mac und Linux: im Fork unter *Actions → Build desktop packages → Run workflow* den Tag
+eintragen und als Plattform `mac`, `linux` oder `all` wählen. Die Dateien kommen in dasselbe Release, und
+`SHA256SUMS.txt` und `release.json` werden neu berechnet. Die Android-App lädst du wie bisher vom Release-PC hoch –
+danach den Workflow einmal laufen lassen, damit die Prüfsummen auch die APK enthalten.
 
 ### Testversion (Prerelease)
 
@@ -70,7 +77,7 @@ Apps, die in den Einstellungen den Kanal **Prereleases** gewählt haben.
 
 - **Der Workflow ist rot:** in *Actions* auf den Lauf klicken und den roten Schritt lesen. Danach Fehler beheben,
   den Tag löschen und neu setzen (`git tag -d v0.3.5`, `git push fork :refs/tags/v0.3.5`, dann Schritt 3) – oder
-  unter *Actions → Fork release (Windows) → Run workflow* den vorhandenen Tag noch einmal bauen lassen.
+  unter *Actions → Build desktop packages → Run workflow* den vorhandenen Tag noch einmal bauen lassen.
 - **Windows warnt beim Installieren** („Der Computer wurde durch Windows geschützt“): Der Installer ist nicht
   signiert. „Weitere Informationen“ → „Trotzdem ausführen“.
 - **Die App findet das Update nicht:** Ist die Version höher als die installierte? Ist das Release veröffentlicht
