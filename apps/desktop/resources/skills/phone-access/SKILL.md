@@ -13,7 +13,7 @@ their PCs carries it), its notifications come from whichever PC decides one, and
 Settings live in `settings.json` (skill `app-settings`); the app applies a change within a second.
 
 ## Android: the Autark app (the normal way)
-- The person installs the APK (the website's download, or the newest release in github.com/teydra/OpenAutark); the app
+- The person installs the APK (the website's download, or the newest release in github.com/desquerteur/OpenAutark); the app
   offers its own updates.
 - Pairing is the same as between PCs: on the PC, Settings › Devices › **Connect a phone** shows this PC's Remote ID and a
   QR code that carries only it. The person scans it with the camera (it opens the app) or types the Remote ID in the

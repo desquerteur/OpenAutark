@@ -8,11 +8,11 @@ import path from 'node:path';
 import { RELEASE_REPOSITORY, RELEASE_URL, downloadName, downloadURL } from '../../../src/main/updates/release.ts';
 import { VAPID_SUBJECT } from '../../../src/runtime/pwa/vapid.ts';
 
-const LATEST = 'https://github.com/teydra/OpenAutark/releases/latest/download/';
+const LATEST = 'https://github.com/desquerteur/OpenAutark/releases/latest/download/';
 
 test('the stable latest-download links point at OpenAutark', () => {
-  assert.equal(RELEASE_REPOSITORY, 'teydra/OpenAutark');
-  assert.equal(RELEASE_URL, 'https://github.com/teydra/OpenAutark/releases');
+  assert.equal(RELEASE_REPOSITORY, 'desquerteur/OpenAutark');
+  assert.equal(RELEASE_URL, 'https://github.com/desquerteur/OpenAutark/releases');
   assert.equal(downloadURL('win32', 'x64'), `${LATEST}autark-windows-x64.exe`);
   assert.equal(downloadURL('darwin', 'arm64'), `${LATEST}autark-mac-universal.dmg`);
   assert.equal(downloadURL('darwin', 'x64'), `${LATEST}autark-mac-universal.dmg`);

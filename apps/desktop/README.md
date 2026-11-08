@@ -44,7 +44,7 @@ A single file: `node --test test/unit/<area>/<file>.test.ts`. Some window and en
 
 ## Release and updates
 
-Public binaries: https://github.com/teydra/OpenAutark (from 0.3.3; up to 0.3.2 they were in `teydra/proactive-agent-workforce-releases`, which carries the bridge release 0.3.3 for older installs). Stable links use GitHub's `releases/latest/download` redirect:
+Public binaries: https://github.com/desquerteur/OpenAutark (from 0.3.3; up to 0.3.2 they were in `teydra/proactive-agent-workforce-releases`, which carries the bridge release 0.3.3 for older installs). Stable links use GitHub's `releases/latest/download` redirect:
 
 - Windows: `.../releases/latest/download/autark-windows-x64.exe`
 - Linux: `.../releases/latest/download/autark-linux-x64.AppImage`

@@ -15,16 +15,16 @@ The links below always lead to the newest version.
 
 | Device | File | Download |
 |---|---|---|
-| Windows 10/11 (x64) | `autark-windows-x64.exe` | [Download for Windows](https://github.com/teydra/OpenAutark/releases/latest/download/autark-windows-x64.exe) |
-| Mac (Apple silicon and Intel) | `autark-mac-universal.dmg` | [Download for Mac](https://github.com/teydra/OpenAutark/releases/latest/download/autark-mac-universal.dmg) |
-| Linux (x64) | `autark-linux-x64.AppImage` | [Download for Linux](https://github.com/teydra/OpenAutark/releases/latest/download/autark-linux-x64.AppImage) |
-| Android phone | `autark-android.apk` | [Download for Android](https://github.com/teydra/OpenAutark/releases/latest/download/autark-android.apk) |
+| Windows 10/11 (x64) | `autark-windows-x64.exe` | [Download for Windows](https://github.com/desquerteur/OpenAutark/releases/latest/download/autark-windows-x64.exe) |
+| Mac (Apple silicon and Intel) | `autark-mac-universal.dmg` | [Download for Mac](https://github.com/desquerteur/OpenAutark/releases/latest/download/autark-mac-universal.dmg) |
+| Linux (x64) | `autark-linux-x64.AppImage` | [Download for Linux](https://github.com/desquerteur/OpenAutark/releases/latest/download/autark-linux-x64.AppImage) |
+| Android phone | `autark-android.apk` | [Download for Android](https://github.com/desquerteur/OpenAutark/releases/latest/download/autark-android.apk) |
 | iPhone | – | A web app from your own PC (see below) |
 
-- [Checksums (SHA-256)](https://github.com/teydra/OpenAutark/releases/latest/download/SHA256SUMS.txt) for every file of
-  the release, and [release.json](https://github.com/teydra/OpenAutark/releases/latest/download/release.json) with what
+- [Checksums (SHA-256)](https://github.com/desquerteur/OpenAutark/releases/latest/download/SHA256SUMS.txt) for every file of
+  the release, and [release.json](https://github.com/desquerteur/OpenAutark/releases/latest/download/release.json) with what
   was checked for it and what was not.
-- [All releases and their notes](https://github.com/teydra/OpenAutark/releases).
+- [All releases and their notes](https://github.com/desquerteur/OpenAutark/releases).
 
 Check a download on Windows with `Get-FileHash .\autark-windows-x64.exe` (PowerShell), on Mac and Linux with
 `shasum -a 256 <file>`, and compare it with the line in `SHA256SUMS.txt`.
@@ -52,7 +52,7 @@ idle, or when you click **Restart**, Autark saves your drafts and its agents' wo
 small helper runs the installer silently and starts the new version (the window is gone for about a minute); on Linux
 the AppImage is replaced in place; on a Mac Autark replaces its own app bundle where macOS allows it, otherwise the
 button opens the download. The Android app compares its version with
-[latest-android.json](https://github.com/teydra/OpenAutark/releases/latest/download/latest-android.json) and offers the
+[latest-android.json](https://github.com/desquerteur/OpenAutark/releases/latest/download/latest-android.json) and offers the
 new APK. Each step of a Windows or Linux update writes one line to `update-helper.log` in Autark's log folder
 (`%APPDATA%\Autark\logs`, `~/.config/Autark/logs`).
 

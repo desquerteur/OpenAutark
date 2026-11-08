@@ -87,7 +87,7 @@
     "artifactName": "autark-${version}-${os}-${arch}.${ext}",
     "publish": {
       "provider": "github",
-      "owner": "teydra",
+      "owner": "desquerteur",
       "repo": "OpenAutark",
       "releaseType": "draft"
     },
