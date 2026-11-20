@@ -8,5 +8,5 @@
     "deploy": "wrangler deploy",
     "dev": "wrangler dev"
   },
-  "devDependencies": { "wrangler": "4.151.3" }
+  "devDependencies": { "wrangler": "4.165.0" }
 }
